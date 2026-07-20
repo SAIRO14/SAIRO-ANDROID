@@ -1,13 +1,13 @@
 package com.example.sairo14.app
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.sairo14.core.navigation.AppNavigationViewModel
+import com.example.sairo14.core.navigation.SairoNavDisplay
 
 @Composable
-fun SairoApp() {
-    Surface(modifier = Modifier.fillMaxSize()) {
-        // Navigation is added after the feature routes are defined.
-    }
+fun SairoApp(
+    navigationViewModel: AppNavigationViewModel = hiltViewModel(),
+) {
+    SairoNavDisplay(navigationViewModel)
 }

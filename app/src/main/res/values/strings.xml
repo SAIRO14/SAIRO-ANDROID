@@ -6,4 +6,9 @@
     <string name="sairo_button_preview_default">기본</string>
     <string name="sairo_button_preview_pressed">눌림</string>
     <string name="sairo_button_preview_disabled">비활성</string>
+    <string name="sairo_tag_preview_label">조용한</string>
+    <string name="sairo_tag_preview_medium_lemon">Medium / Lemon</string>
+    <string name="sairo_tag_preview_small_lemon">Small / Lemon</string>
+    <string name="sairo_tag_preview_small_gray">Small / Gray</string>
+    <string name="sairo_tag_preview_small_white">Small / White</string>
 </resources>

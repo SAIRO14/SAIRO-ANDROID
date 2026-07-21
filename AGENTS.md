@@ -29,6 +29,51 @@
 - Figma 그림자 스타일은 `SairoShadowStyles`와 `Modifier.sairoDropShadow()`를 사용한다. 화면에서 blur, spread, 색상, offset 값을 직접 정의하지 않는다.
 - 새 UI는 작은 화면, 시스템 인셋, 접근 가능한 터치 영역을 고려한다.
 
+## KDoc 작성 규칙
+
+- 프로젝트의 공용 API는 KDoc을 한글로 작성한다. 기존 `core/extension/ModifierExt.kt`의 `sairoDropShadow` KDoc처럼 **무엇을 하는지**, **중요한 제약 또는 적용 순서**, **값·상태의 책임이 어디에 있는지**를 짧고 구체적으로 설명한다.
+- 작성 대상은 다음과 같다.
+  - 다른 화면이나 feature에서 재사용하는 공통 Composable과 디자인 시스템 컴포넌트
+  - `core` 또는 공용 패키지에 선언한 확장 함수·확장 프로퍼티
+  - 화면 상태를 소유하거나 사용자 이벤트를 처리하는 ViewModel
+- `private` 구현 세부 사항, 자명한 단순 getter, 한 곳에서만 쓰이고 이름만으로 의도가 충분히 드러나는 코드는 KDoc을 생략한다. 구현을 그대로 반복하는 설명도 작성하지 않는다.
+- 첫 문장은 마침표로 끝나는 한 문장으로, 호출자가 얻는 결과와 역할을 설명한다. 필요할 때만 빈 줄 뒤에 다음을 덧붙인다.
+  - Compose Modifier의 적용 순서, 상태 호이스팅, 스레드·수명주기 등 호출 시 알아야 할 제약
+  - 색상·문구·토큰·상태를 관리하는 주체와 그 이유
+  - 사용자에게 보이는 동작 또는 실패·로딩 처리 방식
+- 외부에 의미 있는 파라미터는 `@param`으로 설명한다. 반환값의 의미가 자명하지 않으면 `@return`을, 예외적 부수 효과가 있으면 본문에 명시한다. 링크는 `[SairoShadowStyle]`처럼 KDoc 링크 문법을 우선 사용한다.
+- `ViewModel` KDoc에는 담당 화면 또는 기능, 소유하는 `UiState`, 이벤트 처리의 결과를 설명한다. UseCase·Repository의 내부 구현을 나열하지 않는다.
+
+### KDoc 예시
+
+```kotlin
+/**
+ * 검색 결과 카드의 제목, 요약, 선택 동작을 표시한다.
+ *
+ * 표시할 문자열과 선택 상태는 호출자가 소유하며, 이 컴포넌트는 상태를 변경하지 않는다.
+ * @param item 카드에 표시할 검색 결과
+ * @param isSelected 현재 선택 여부
+ * @param onClick 카드를 선택했을 때 호출할 콜백
+ */
+@Composable
+fun SearchResultCard(...)
+
+/**
+ * 이 Modifier 뒤에 주어진 색상의 구분선을 추가한다.
+ *
+ * 구분선이 콘텐츠보다 앞에 그려져야 하면 `background` 뒤에 적용한다.
+ * @param color 구분선 색상
+ */
+fun Modifier.sairoDivider(color: Color): Modifier
+
+/**
+ * 검색 화면의 상태를 관리하고 사용자 이벤트를 화면 상태 변경으로 연결한다.
+ *
+ * 검색어, 결과 목록, 로딩·오류 상태는 [SearchUiState]로 노출한다.
+ */
+class SearchViewModel(...)
+```
+
 ## 작업 원칙
 
 - 수정 전에 인접한 코드와 기존 패턴을 먼저 확인하고, 요청 범위를 벗어난 리팩터링은 하지 않는다.

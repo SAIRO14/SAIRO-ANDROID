@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.sairo14.app.SairoApp
-import com.example.sairo14.ui.theme.Sairo14Theme
+import com.example.sairo14.core.designsystem.theme.SairoTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            Sairo14Theme {
+            SairoTheme {
                 SairoApp()
             }
         }

@@ -23,7 +23,7 @@
 - 화면 상태는 명시적인 불변 UI state로 표현하고, loading/empty/error 상태를 함께 고려한다.
 - Composable은 가능한 한 stateless하게 만들고 상태 소유는 화면 또는 ViewModel에 둔다.
 - UI 문자열은 하드코딩하지 않고 `app/src/main/res/values/strings.xml`에 둔다.
-- 색상과 타이포그래피는 `ui/theme` 또는 디자인 시스템 토큰을 사용한다. 화면별 매직 값과 색상 하드코딩을 피한다.
+- 색상과 타이포그래피는 `core/designsystem/theme` 및 `core/designsystem/token`의 디자인 시스템 토큰을 사용한다. 화면별 매직 값과 색상 하드코딩을 피한다.
 - 새 UI는 작은 화면, 시스템 인셋, 접근 가능한 터치 영역을 고려한다.
 
 ## 작업 원칙

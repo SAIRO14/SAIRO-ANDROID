@@ -14,4 +14,6 @@
     <string name="sairo_image_card_preview_default">기본</string>
     <string name="sairo_image_card_preview_selected">선택됨</string>
     <string name="sairo_image_card_preview_selected_empty">선택됨 · 이미지 없음</string>
+    <string name="sairo_chip_preview_selected">1일차</string>
+    <string name="sairo_chip_preview_unselected">2일차</string>
 </resources>

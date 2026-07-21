@@ -29,6 +29,8 @@ SairoButton(
 
 이미지 선택 카드인 [`SairoImageCard.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoImageCard.kt)는 이미지를 nullable `Painter`로 받고 `selected`만 표현한다. `painter`가 `null`이면 surface 배경을 유지한 채 선택 결과의 테두리·gradient·체크 아이콘만 그린다. 크기는 `SairoImageCardSize.Large`(300×400dp)와 `Medium`(260×347dp) 중 선택하며, 기본값은 Large다. `onClick`이 전달된 카드만 클릭 가능하고, 카드가 어떤 사진을 선택할지와 선택 변경 동작은 화면 또는 ViewModel이 소유한다.
 
+선택 가능한 공통 chip은 [`SairoChip.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoChip.kt)에서 `selected`와 `onClick`을 분리한다. 여행 일차처럼 화면은 선택 상태를 소유하고, 각 chip에는 `selected = item == selectedItem`을 전달한다. chip은 선택 표현과 RadioButton 접근성 semantics만 책임진다.
+
 ## 흐름과 영향 범위
 
 `enabled = false`이면 비활성 배경과 글자색이 적용되고 클릭 이벤트가 차단된다. 활성 버튼은 `MutableInteractionSource`에서 실제 터치 눌림 상태를 관찰해 Primary는 `actionPressed`, Outline은 `actionOutlineBackgroundPressed`로 바뀐다. 따라서 화면이 일시적인 눌림 상태를 별도로 저장할 필요가 없다.

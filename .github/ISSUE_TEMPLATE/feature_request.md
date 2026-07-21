@@ -1,12 +1,14 @@
 ---
-name: 기능 요청
-about: 새로운 기능이나 개선 사항을 제안합니다.
-title: "[Feature] "
-labels: ""
-assignees: ""
+name: Feature request
+about: Suggest an idea for this project
+title: ''
+labels: feature
+assignees: ShinHyeongcheol
+type: Feature
+
 ---
 
-## What is this issue? 🛠
+What is this issue? 🛠
 이슈 설명
 
 ## Progress 🏃‍♀️

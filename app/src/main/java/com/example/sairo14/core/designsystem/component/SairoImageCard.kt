@@ -148,14 +148,13 @@ fun SairoImageCard(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = 24.dp, bottom = 24.dp)
-                    .size(48.dp),
+                    .padding(start = 24.dp, bottom = 24.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_check_circle_2),
                     contentDescription = null,
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(48.dp),
                     tint = colors.accentBase,
                 )
             }

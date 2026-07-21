@@ -23,7 +23,9 @@
 - 화면 상태는 명시적인 불변 UI state로 표현하고, loading/empty/error 상태를 함께 고려한다.
 - Composable은 가능한 한 stateless하게 만들고 상태 소유는 화면 또는 ViewModel에 둔다.
 - UI 문자열은 하드코딩하지 않고 `app/src/main/res/values/strings.xml`에 둔다.
-- 색상과 타이포그래피는 `core/designsystem/theme` 및 `core/designsystem/token`의 디자인 시스템 토큰을 사용한다. 화면별 매직 값과 색상 하드코딩을 피한다.
+- 일반적인 색상·타이포그래피는 `MaterialTheme.colorScheme` 및 `MaterialTheme.typography`를 사용한다.
+- Material 3에 없는 Sairo 고유 역할(칩, 선택 상태, 반투명 헤더 등)은 `SairoTheme.colors`를 사용한다. 화면별 매직 값과 색상 하드코딩을 피한다.
+- `SairoColors`는 `LocalSairoColors`를 통해 `SairoTheme.colors`로 제공한다. 테마 변형이 필요해지면 같은 API를 유지한 채 제공하는 색상 세트만 교체한다.
 - Figma 그림자 스타일은 `SairoShadowStyles`와 `Modifier.sairoDropShadow()`를 사용한다. 화면에서 blur, spread, 색상, offset 값을 직접 정의하지 않는다.
 - 새 UI는 작은 화면, 시스템 인셋, 접근 가능한 터치 영역을 고려한다.
 

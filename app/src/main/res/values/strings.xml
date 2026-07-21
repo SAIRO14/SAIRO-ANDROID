@@ -11,4 +11,7 @@
     <string name="sairo_tag_preview_small_lemon">Small / Lemon</string>
     <string name="sairo_tag_preview_small_gray">Small / Gray</string>
     <string name="sairo_tag_preview_small_white">Small / White</string>
+    <string name="sairo_image_card_preview_default">기본</string>
+    <string name="sairo_image_card_preview_selected">선택됨</string>
+    <string name="sairo_image_card_preview_selected_empty">선택됨 · 이미지 없음</string>
 </resources>

@@ -27,7 +27,7 @@ SairoButton(
 
 정보 표시용 태그는 [`SairoTag.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoTag.kt)에서 제공한다. Figma에는 Medium/Lemon과 Small의 Lemon·Gray·White만 정의되어 있으므로, `size`와 `color`를 독립된 인자로 받지 않고 지원되는 네 가지 조합을 `SairoTagVariant`로 표현한다.
 
-이미지 선택 카드인 [`SairoImageCard.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoImageCard.kt)는 이미지를 `Painter`로 받고 `selected`만 표현한다. 크기는 `size`로 조정할 수 있으며 기본값은 Figma 규격인 300×400dp다. 카드가 어떤 사진을 선택할지와 선택 변경 동작은 화면 또는 ViewModel이 소유하므로, 이미지 카드 자체는 선택 결과의 테두리·gradient·체크 아이콘만 그린다.
+이미지 선택 카드인 [`SairoImageCard.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoImageCard.kt)는 이미지를 nullable `Painter`로 받고 `selected`만 표현한다. `painter`가 `null`이면 surface 배경을 유지한 채 선택 결과의 테두리·gradient·체크 아이콘만 그린다. 크기는 `SairoImageCardSize.Large`(300×400dp)와 `Medium`(260×347dp) 중 선택하며, 기본값은 Large다. `onClick`이 전달된 카드만 클릭 가능하고, 카드가 어떤 사진을 선택할지와 선택 변경 동작은 화면 또는 ViewModel이 소유한다.
 
 ## 흐름과 영향 범위
 
@@ -45,16 +45,21 @@ SairoButton(
 
 현재는 문구만 표시하는 CTA를 지원한다. 아이콘 버튼이 필요해지면 문자열 전용 API를 무리하게 확장하기보다, 아이콘의 의미를 접근성에 전달할 수 있는 별도 컴포넌트를 만든다.
 
+이미지 카드의 사진 입력은 현재 `Painter`로 받는다. 로컬 drawable을 사용하는 경우에는 간단하지만, URL 이미지의 로딩·오류 표현까지 카드가 지원해야 한다면 `Painter` API를 없애기보다 이미지 슬롯 API를 추가하는 방식을 권장한다. 호출부는 Coil의 `AsyncImage` 또는 로컬 `Image`를 선택하고, 카드 컴포넌트는 선택 테두리·gradient·체크 표시만 일관되게 책임진다.
+
 > 아래 예시는 현재 프로젝트에 적용되지 않은 대안이다.
 
 ```kotlin
 @Composable
-fun SairoIconButton(
-    contentDescription: String,
-    onClick: () -> Unit,
+fun SairoImageCard(
+    selected: Boolean,
+    image: @Composable BoxScope.() -> Unit,
 ) {
-    IconButton(onClick = onClick) {
-        Icon(imageVector = Icons.Default.ArrowForward, contentDescription = contentDescription)
+    Box {
+        image()
+        if (selected) {
+            // 선택 테두리와 체크 표시를 공통으로 그림
+        }
     }
 }
 ```

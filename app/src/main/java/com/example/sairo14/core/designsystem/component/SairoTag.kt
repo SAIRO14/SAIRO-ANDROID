@@ -20,7 +20,7 @@ import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
 import com.example.sairo14.core.extension.sairoDropShadow
 
-/** The four tag variants defined in the Sairo Figma design system. */
+/** 태그에 적용할 Figma 변형 조합이다. */
 enum class SairoTagVariant {
     MediumLemon,
     SmallLemon,
@@ -29,11 +29,15 @@ enum class SairoTagVariant {
 }
 
 /**
- * Displays a non-interactive keyword or place-information tag.
+ * 분위기 키워드나 장소 정보를 표시하는 비상호작용 태그를 그린다.
  *
- * Figma defines only [SairoTagVariant.MediumLemon] for the medium size. The remaining
- * colors are available in the small size, so the variant is represented as one enum to
- * prevent unsupported size and color combinations.
+ * Figma는 Medium 크기에 [SairoTagVariant.MediumLemon]만 정의하므로, 지원하지 않는 크기와
+ * 색상 조합을 막기 위해 [variant]가 네 가지 조합을 함께 관리한다. 문구와 변형은 호출자가
+ * 소유하며 태그는 상태를 변경하지 않는다.
+ *
+ * @param text 태그에 표시할 문구
+ * @param modifier 태그에 적용할 Modifier
+ * @param variant Figma에서 지원하는 크기와 색상 조합
  */
 @Composable
 fun SairoTag(

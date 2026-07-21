@@ -31,25 +31,32 @@ import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 
-/** Size variants defined for Sairo's primary call-to-action buttons. */
+/** 주요 CTA 버튼에 적용할 Figma 크기 규격이다. */
 enum class SairoButtonSize {
     Large,
     Medium,
     Small,
 }
 
-/** Visual variants defined for Sairo's primary call-to-action buttons. */
+/** 주요 CTA 버튼에 적용할 시각 스타일이다. */
 enum class SairoButtonStyle {
     Primary,
     Outline,
 }
 
 /**
- * Sairo's shared primary CTA button.
+ * 주요 CTA의 문구와 상호작용 상태를 Figma 규격으로 표시한다.
  *
- * The pressed state is derived from the actual touch interaction, while the disabled
- * state is controlled with [enabled]. The button expands only when its caller supplies
- * a sizing modifier such as [Modifier.fillMaxWidth].
+ * 눌림 상태는 실제 터치 상호작용에서 내부적으로 계산하고, 비활성 상태와 클릭 동작은 호출자가
+ * [enabled], [onClick]으로 관리한다. 전체 너비 버튼이 필요하면 호출자가 [modifier]에
+ * [Modifier.fillMaxWidth]를 적용한다.
+ *
+ * @param text 버튼에 표시할 문구
+ * @param onClick 버튼 클릭 시 호출할 동작
+ * @param modifier 버튼에 적용할 Modifier
+ * @param size Figma의 Large, Medium 또는 Small 크기 규격
+ * @param style Primary 또는 Outline 시각 스타일
+ * @param enabled `false`이면 비활성 표현을 적용하고 클릭 이벤트를 전달하지 않는지 여부
  */
 @Composable
 fun SairoButton(

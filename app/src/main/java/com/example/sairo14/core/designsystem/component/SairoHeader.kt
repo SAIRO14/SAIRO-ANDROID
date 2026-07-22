@@ -1,7 +1,6 @@
 package com.example.sairo14.core.designsystem.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.core.extension.noRippleClickable
 import com.skydoves.cloudy.Sky
 import com.skydoves.cloudy.cloudy
 
@@ -196,12 +196,10 @@ private fun HeaderAction(
             .size(size)
             .then(
                 if (onClick != null) {
-                    Modifier.clickable(
-                        enabled = enabled,
-                        interactionSource = null,
-                        indication = null,
-                        role = Role.Button,
+                    Modifier.noRippleClickable(
                         onClick = onClick,
+                        isEnabled = enabled,
+                        role = Role.Button,
                     )
                 } else {
                     Modifier

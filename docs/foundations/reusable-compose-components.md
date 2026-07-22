@@ -31,6 +31,16 @@ SairoButton(
 
 선택 가능한 공통 chip은 [`SairoChip.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoChip.kt)에서 `selected`와 `onClick`을 분리한다. 여행 일차처럼 화면은 선택 상태를 소유하고, 각 chip에는 `selected = item == selectedItem`을 전달한다. chip은 선택 표현과 RadioButton 접근성 semantics만 책임진다.
 
+폴더 프레임은 [`SairoFolderFrame.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoFolderFrame.kt)에서 Large·Medium·Small 시각 변형의 배경 실루엣만 제공한다. 실제 크기는 부모의 제약과 `Modifier`가 결정한다. 홈 CTA와 저장 여행지 카드처럼 내부 콘텐츠와 클릭 구조가 달라지는 경우, 화면 또는 feature Composable이 `Box`에서 프레임 위에 카드·버튼·정보를 배치한다.
+
+이미지 삭제용 썸네일은 [`SairoImageThumbnail.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoImageThumbnail.kt)에서 이미지는 `Painter`, 삭제 동작은 `onRemoveClick`으로 분리한다. X 버튼은 시각적으로 썸네일 바깥으로 돌출되므로, 부모 레이아웃이 필요한 여백을 소유한다.
+
+여행 상세 바텀시트의 장소 행은 [`SairoPlaceListItem.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoPlaceListItem.kt)에서 `Simple`과 `Detailed` 정보 배치를 [SairoPlaceListItemVariant]로 분리한다. 태그는 새로 구현하지 않고 기존 `SairoTag`의 `SmallGray` 변형을 조합한다.
+
+저장 여행지 폴더 카드는 [`SairoPlaceFolderCard.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoPlaceFolderCard.kt)에서 `SairoFolderFrame`, `SairoTag`, `SairoBookmarker`를 조합한다. 카드 이동과 저장 상태는 호출자가 소유하고, 카드·북마크 클릭 콜백을 각각 전달한다. 이 카드는 항상 Small 폴더 변형을 사용하며, 겹친 사진 레이아웃은 전달받은 이미지 목록의 첫 두 장과 부모 너비 비율을 사용한다.
+
+공통 헤더는 [`SairoHeader.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoHeader.kt)에서 Home·Sub·SubFilled 변형을 제공한다. 헤더가 상태 표시줄 inset을 직접 처리하고, 화면은 제목과 뒤로가기·우측 액션 결과를 소유한다. 실제 backdrop blur가 필요한 Home·Sub 화면은 Cloudy의 `rememberSky()`로 만든 `Sky`를 콘텐츠의 `Modifier.sky(sky)`와 헤더의 `backdropSky`에 함께 전달한다. `SubFilled`는 불투명 표면이므로 blur를 적용하지 않는다.
+
 ## 흐름과 영향 범위
 
 `enabled = false`이면 비활성 배경과 글자색이 적용되고 클릭 이벤트가 차단된다. 활성 버튼은 `MutableInteractionSource`에서 실제 터치 눌림 상태를 관찰해 Primary는 `actionPressed`, Outline은 `actionOutlineBackgroundPressed`로 바뀐다. 따라서 화면이 일시적인 눌림 상태를 별도로 저장할 필요가 없다.

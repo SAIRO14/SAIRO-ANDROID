@@ -1,7 +1,7 @@
 package com.example.sairo14.core.designsystem.component
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -12,8 +12,8 @@ import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 
-/** 폴더 프레임의 Figma 크기 변형을 정의한다. */
-enum class SairoFolderSize {
+/** 폴더 프레임에 적용할 Figma 시각 변형을 정의한다. */
+enum class SairoFolderVariant {
     Large,
     Medium,
     Small,
@@ -22,38 +22,40 @@ enum class SairoFolderSize {
 /**
  * 다른 콘텐츠 뒤에 배치할 폴더 형태의 배경 프레임을 표시한다.
  *
- * 이 컴포넌트는 폴더의 실루엣과 크기만 책임지며 클릭·콘텐츠·상태를 소유하지 않는다.
+ * 이 컴포넌트는 폴더의 실루엣과 시각 변형만 책임지며 클릭·콘텐츠·상태를 소유하지 않는다.
  * 이미지 카드, 버튼, 여행지 정보는 호출하는 화면의 `Box`에서 이 프레임 위에 배치한다.
- * @param size Figma에 정의된 폴더 프레임 크기
+ * 실제 크기는 부모의 제약과 [modifier]가 결정한다.
+ * @param variant Figma에 정의된 폴더 프레임 시각 변형
  * @param modifier 프레임에 적용할 Modifier
  */
 @Composable
 fun SairoFolderFrame(
-    size: SairoFolderSize,
+    variant: SairoFolderVariant,
     modifier: Modifier = Modifier,
 ) {
+    val specification = variant.specification
+
     Image(
-        painter = painterResource(size.specification.drawableRes),
+        painter = painterResource(specification.drawableRes),
         contentDescription = null,
-        modifier = modifier
-            .size(size.specification.size),
+        modifier = modifier.aspectRatio(specification.aspectRatio),
         contentScale = ContentScale.FillBounds,
     )
 }
 
-private val SairoFolderSize.specification: SairoFolderSpecification
+private val SairoFolderVariant.specification: SairoFolderSpecification
     get() = when (this) {
-        SairoFolderSize.Large -> SairoFolderSpecification(
+        SairoFolderVariant.Large -> SairoFolderSpecification(
             size = DpSize(375.dp, 230.dp),
             drawableRes = R.drawable.img_folder_large,
         )
 
-        SairoFolderSize.Medium -> SairoFolderSpecification(
+        SairoFolderVariant.Medium -> SairoFolderSpecification(
             size = DpSize(300.dp, 170.dp),
             drawableRes = R.drawable.img_folder_medium,
         )
 
-        SairoFolderSize.Small -> SairoFolderSpecification(
+        SairoFolderVariant.Small -> SairoFolderSpecification(
             size = DpSize(300.dp, 150.dp),
             drawableRes = R.drawable.img_folder_small,
         )
@@ -64,6 +66,9 @@ private data class SairoFolderSpecification(
     val drawableRes: Int,
 )
 
+private val SairoFolderSpecification.aspectRatio: Float
+    get() = size.width.value / size.height.value
+
 @Preview(name = "Sairo Folder Frames", showBackground = false, widthDp = 400, heightDp = 620)
 @Composable
 private fun SairoFolderFramePreview() {
@@ -71,9 +76,9 @@ private fun SairoFolderFramePreview() {
         androidx.compose.foundation.layout.Column(
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
         ) {
-            SairoFolderFrame(size = SairoFolderSize.Large)
-            SairoFolderFrame(size = SairoFolderSize.Medium)
-            SairoFolderFrame(size = SairoFolderSize.Small)
+            SairoFolderFrame(variant = SairoFolderVariant.Large)
+            SairoFolderFrame(variant = SairoFolderVariant.Medium)
+            SairoFolderFrame(variant = SairoFolderVariant.Small)
         }
     }
 }

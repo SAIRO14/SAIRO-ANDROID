@@ -22,7 +22,7 @@ val baseUrl = localProperties.getProperty("BASEURL", "")
 android {
     namespace = "com.example.sairo14"
     compileSdk {
-        version = release(36) {
+        version = release(37) {
             minorApiLevel = 1
         }
     }
@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.cloudy)
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization)
     implementation(platform(libs.okhttp.bom))

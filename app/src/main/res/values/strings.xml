@@ -1,3 +1,37 @@
 <resources>
     <string name="app_name">sairo14</string>
+    <string name="sairo_button_preview_label">버튼</string>
+    <string name="sairo_button_preview_primary">Primary</string>
+    <string name="sairo_button_preview_outline">Outline</string>
+    <string name="sairo_button_preview_default">기본</string>
+    <string name="sairo_button_preview_pressed">눌림</string>
+    <string name="sairo_button_preview_disabled">비활성</string>
+    <string name="sairo_tag_preview_label">조용한</string>
+    <string name="sairo_tag_preview_medium_lemon">Medium / Lemon</string>
+    <string name="sairo_tag_preview_small_lemon">Small / Lemon</string>
+    <string name="sairo_tag_preview_small_gray">Small / Gray</string>
+    <string name="sairo_tag_preview_small_white">Small / White</string>
+    <string name="sairo_image_card_preview_default">기본</string>
+    <string name="sairo_image_card_preview_selected">선택됨</string>
+    <string name="sairo_image_card_preview_selected_empty">선택됨 · 이미지 없음</string>
+    <string name="sairo_image_thumbnail_preview">여행지 이미지 미리보기</string>
+    <string name="sairo_image_thumbnail_remove">이미지 삭제</string>
+    <string name="sairo_place_list_item_preview_title">1. 말티재 전망대</string>
+    <string name="sairo_place_list_item_preview_hours">09:00~18:00</string>
+    <string name="sairo_place_list_item_preview_closed_day">월 휴무</string>
+    <string name="sairo_place_list_item_preview_parking">주차가능</string>
+    <string name="sairo_place_list_item_preview_image">말티재 전망대 이미지</string>
+    <string name="sairo_bookmark_saved">저장됨</string>
+    <string name="sairo_bookmark_unsaved">저장 안 됨</string>
+    <string name="sairo_place_folder_card_preview_region">충북 보은권</string>
+    <string name="sairo_place_folder_card_preview_description">고요한 자연과 전통의 분위기</string>
+    <string name="sairo_place_folder_card_preview_first_place">말티재 전망대</string>
+    <string name="sairo_place_folder_card_preview_second_place">세조길 숲 산책</string>
+    <string name="sairo_place_folder_card_preview_image">충북 보은권 여행지 이미지</string>
+    <string name="sairo_header_logo">사이로</string>
+    <string name="sairo_header_back">뒤로 가기</string>
+    <string name="sairo_header_home">홈으로 이동</string>
+    <string name="sairo_header_preview_title">추천 결과</string>
+    <string name="sairo_chip_preview_selected">1일차</string>
+    <string name="sairo_chip_preview_unselected">2일차</string>
 </resources>

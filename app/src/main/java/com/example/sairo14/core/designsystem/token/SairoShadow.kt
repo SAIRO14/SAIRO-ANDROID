@@ -23,6 +23,19 @@ class SairoShadowStyle internal constructor(
 
 /** Figma shadow styles. Select a style by its Figma name until a UI usage guide is established. */
 object SairoShadowStyles {
+    val subtle = SairoShadowStyle(listOf(
+        SairoShadowLayer(
+            offset = DpOffset.Zero,
+            blurRadius = 2.dp,
+            color = Color.Black.copy(alpha = 0.04f),
+        ),
+        SairoShadowLayer(
+            offset = DpOffset(x = 0.dp, y = 4.dp),
+            blurRadius = 8.dp,
+            color = Color.Black.copy(alpha = 0.08f),
+        ),
+    ))
+
     val mediumRight = SairoShadowStyle(listOf(
         SairoShadowLayer(
             offset = DpOffset.Zero,

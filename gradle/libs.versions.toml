@@ -18,7 +18,7 @@ coil = "3.5.0"
 retrofit = "3.0.0"
 okhttp = "5.3.0"
 serialization = "1.8.1"
-cloudy = "1.0.0-alpha01"
+cloudy = "0.7.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

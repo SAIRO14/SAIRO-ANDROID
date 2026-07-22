@@ -28,6 +28,10 @@
     <string name="sairo_place_folder_card_preview_first_place">말티재 전망대</string>
     <string name="sairo_place_folder_card_preview_second_place">세조길 숲 산책</string>
     <string name="sairo_place_folder_card_preview_image">충북 보은권 여행지 이미지</string>
+    <string name="sairo_header_logo">사이로</string>
+    <string name="sairo_header_back">뒤로 가기</string>
+    <string name="sairo_header_home">홈으로 이동</string>
+    <string name="sairo_header_preview_title">추천 결과</string>
     <string name="sairo_chip_preview_selected">1일차</string>
     <string name="sairo_chip_preview_unselected">2일차</string>
 </resources>

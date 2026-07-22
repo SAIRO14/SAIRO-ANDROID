@@ -18,6 +18,7 @@ coil = "3.5.0"
 retrofit = "3.0.0"
 okhttp = "5.3.0"
 serialization = "1.8.1"
+cloudy = "1.0.0-alpha01"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -51,6 +52,7 @@ okhttp-bom = { group = "com.squareup.okhttp3", name = "okhttp-bom", version.ref 
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp" }
 okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+cloudy = { group = "com.github.skydoves", name = "cloudy", version.ref = "cloudy" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

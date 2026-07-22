@@ -16,6 +16,11 @@
     <string name="sairo_image_card_preview_selected_empty">선택됨 · 이미지 없음</string>
     <string name="sairo_image_thumbnail_preview">여행지 이미지 미리보기</string>
     <string name="sairo_image_thumbnail_remove">이미지 삭제</string>
+    <string name="sairo_place_list_item_preview_title">1. 말티재 전망대</string>
+    <string name="sairo_place_list_item_preview_hours">09:00~18:00</string>
+    <string name="sairo_place_list_item_preview_closed_day">월 휴무</string>
+    <string name="sairo_place_list_item_preview_parking">주차가능</string>
+    <string name="sairo_place_list_item_preview_image">말티재 전망대 이미지</string>
     <string name="sairo_chip_preview_selected">1일차</string>
     <string name="sairo_chip_preview_unselected">2일차</string>
 </resources>

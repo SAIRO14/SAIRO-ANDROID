@@ -21,6 +21,13 @@
     <string name="sairo_place_list_item_preview_closed_day">월 휴무</string>
     <string name="sairo_place_list_item_preview_parking">주차가능</string>
     <string name="sairo_place_list_item_preview_image">말티재 전망대 이미지</string>
+    <string name="sairo_bookmark_saved">저장됨</string>
+    <string name="sairo_bookmark_unsaved">저장 안 됨</string>
+    <string name="sairo_place_folder_card_preview_region">충북 보은권</string>
+    <string name="sairo_place_folder_card_preview_description">고요한 자연과 전통의 분위기</string>
+    <string name="sairo_place_folder_card_preview_first_place">말티재 전망대</string>
+    <string name="sairo_place_folder_card_preview_second_place">세조길 숲 산책</string>
+    <string name="sairo_place_folder_card_preview_image">충북 보은권 여행지 이미지</string>
     <string name="sairo_chip_preview_selected">1일차</string>
     <string name="sairo_chip_preview_unselected">2일차</string>
 </resources>

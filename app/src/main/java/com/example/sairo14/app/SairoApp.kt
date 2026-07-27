@@ -1,13 +1,20 @@
 package com.example.sairo14.app
 
 import androidx.compose.runtime.Composable
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.sairo14.core.navigation.AppNavigationViewModel
+import androidx.compose.runtime.remember
+import androidx.navigation3.runtime.rememberNavBackStack
+import com.example.sairo14.core.navigation.HomeRoute
 import com.example.sairo14.core.navigation.SairoNavDisplay
+import com.example.sairo14.core.navigation.SairoNavigator
 
+/** Sairo의 최상위 Compose UI와 Nav3 백스택을 조립한다. */
 @Composable
-fun SairoApp(
-    navigationViewModel: AppNavigationViewModel = hiltViewModel(),
-) {
-    SairoNavDisplay(navigationViewModel)
+fun SairoApp() {
+    val backStack = rememberNavBackStack(HomeRoute)
+    val navigator = remember(backStack) { SairoNavigator(backStack) }
+
+    SairoNavDisplay(
+        backStack = backStack,
+        navigator = navigator,
+    )
 }

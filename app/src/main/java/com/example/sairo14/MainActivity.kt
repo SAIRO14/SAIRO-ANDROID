@@ -8,6 +8,11 @@ import com.example.sairo14.app.SairoApp
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * Sairo의 단일 Compose Activity를 시작하고 시스템 Window 설정을 적용한다.
+ *
+ * 앱 진입 목적지와 화면 전환은 [SairoApp] 아래의 앱 내비게이션이 담당한다.
+ */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

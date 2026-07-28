@@ -102,6 +102,7 @@ fun OnboardingIntroScreen(
                 variant = SairoHeaderVariant.ActionOnly,
                 actionIcon = painterResource(R.drawable.ic_home),
                 actionContentDescription = stringResource(R.string.sairo_header_home),
+                iconTint = colors.textWhite,
                 onActionClick = onHomeClick,
                 backdropSky = backdropSky,
             )

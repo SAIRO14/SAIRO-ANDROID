@@ -5,7 +5,8 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import com.example.sairo14.feature.main.MainScreen
+import com.example.sairo14.feature.home.HomeScreen
+import com.example.sairo14.feature.onboarding.OnboardingScreen
 
 /**
  * Nav3 목적지 키를 Sairo 화면으로 변환해 현재 백스택을 표시한다.
@@ -24,7 +25,10 @@ fun SairoNavDisplay(
         onBack = navigator::navigateUp,
         entryProvider = entryProvider {
             entry<HomeRoute> {
-                MainScreen()
+                HomeScreen()
+            }
+            entry<OnboardingIntroRoute> {
+                OnboardingScreen()
             }
         },
     )

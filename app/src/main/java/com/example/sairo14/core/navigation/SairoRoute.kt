@@ -11,6 +11,6 @@ sealed interface SairoRoute : NavKey
 @Serializable
 data object HomeRoute : SairoRoute
 
-/** 여행지 찾기 서비스와 시작 행동을 소개하는 첫 화면을 식별한다. */
+/** 온보딩에서 여행지 찾기 서비스와 시작 행동을 소개하는 첫 화면을 식별한다. */
 @Serializable
-data object TravelFinderIntroRoute : SairoRoute
+data object OnboardingIntroRoute : SairoRoute

@@ -2,6 +2,7 @@ package com.example.sairo14.feature.onboarding
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
@@ -17,5 +18,9 @@ fun OnboardingScreen(
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
-    ) {}
+    ) {
+        Text(
+            text = "onboarding"
+        )
+    }
 }

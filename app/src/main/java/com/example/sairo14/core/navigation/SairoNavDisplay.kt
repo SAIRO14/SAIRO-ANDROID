@@ -6,7 +6,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.example.sairo14.feature.home.HomeScreen
-import com.example.sairo14.feature.onboarding.OnboardingRoute
+import com.example.sairo14.feature.onboarding.OnboardingIntroRoute as OnboardingIntroScreenRoute
 
 /**
  * Nav3 목적지 키를 Sairo 화면으로 변환해 현재 백스택을 표시한다.
@@ -28,7 +28,7 @@ fun SairoNavDisplay(
                 HomeScreen()
             }
             entry<OnboardingIntroRoute> {
-                OnboardingRoute(
+                OnboardingIntroScreenRoute(
                     onHomeClick = navigator::popToHome,
                 )
             }

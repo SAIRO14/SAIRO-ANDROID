@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -35,18 +34,18 @@ import com.skydoves.cloudy.sky
  * 온보딩 소개 화면의 상태와 내비게이션 행동을 화면에 연결한다.
  *
  * 현재 소개 화면은 별도 상태를 소유하지 않으며, 이후 ViewModel의 UiState와 사용자 이벤트는 이
- * Route에서 [OnboardingScreen]으로 전달한다.
+ * Route에서 [OnboardingIntroScreen]으로 전달한다.
  * @param modifier 화면 컨테이너에 적용할 Modifier
  * @param onHomeClick 홈으로 이동해야 할 때 호출할 콜백
  * @param onStartClick 여행지 찾기를 시작해야 할 때 호출할 콜백
  */
 @Composable
-fun OnboardingRoute(
+fun OnboardingIntroRoute(
     modifier: Modifier = Modifier,
     onHomeClick: () -> Unit,
     onStartClick: () -> Unit = {},
 ) {
-    OnboardingScreen(
+    OnboardingIntroScreen(
         modifier = modifier,
         onHomeClick = onHomeClick,
         onStartClick = onStartClick,
@@ -63,7 +62,7 @@ fun OnboardingRoute(
  * @param onStartClick 여행지 찾기 시작 CTA를 눌렀을 때 호출할 콜백
  */
 @Composable
-fun OnboardingScreen(
+fun OnboardingIntroScreen(
     modifier: Modifier = Modifier,
     onHomeClick: () -> Unit = {},
     onStartClick: () -> Unit = {},
@@ -141,8 +140,8 @@ fun OnboardingScreen(
 
 @Preview(name = "Onboarding Intro", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun OnboardingScreenPreview() {
+private fun OnboardingIntroScreenPreview() {
     SairoTheme {
-        OnboardingScreen()
+        OnboardingIntroScreen()
     }
 }

@@ -4,22 +4,26 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,10 +31,12 @@ import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.component.SairoButton
 import com.example.sairo14.core.designsystem.component.SairoHeader
 import com.example.sairo14.core.designsystem.component.SairoHeaderVariant
+import com.example.sairo14.core.designsystem.component.SairoOverlappingImageCards
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.skydoves.cloudy.rememberSky
 import com.skydoves.cloudy.sky
+import coil3.compose.rememberAsyncImagePainter
 
 /**
  * 온보딩 소개 화면의 상태와 내비게이션 행동을 화면에 연결한다.
@@ -77,6 +83,12 @@ fun OnboardingIntroScreen(
 ) {
     val colors = SairoTheme.colors
     val backdropSky = rememberSky()
+    val backImagePainter = rememberAsyncImagePainter(
+        model = uiState.backImageUrl ?: R.drawable.img_dummy_view,
+    )
+    val frontImagePainter = rememberAsyncImagePainter(
+        model = uiState.frontImageUrl ?: R.drawable.img_dummy_view,
+    )
 
     Box(
         modifier = modifier
@@ -84,24 +96,34 @@ fun OnboardingIntroScreen(
             .background(colors.backgroundCanvas)
             .clipToBounds(),
     ) {
-        Image(
-            painter = painterResource(R.drawable.img_bg_shadow_top),
-            contentDescription = null,
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .sky(backdropSky),
-            contentScale = ContentScale.FillBounds,
-        )
+        ) {
+            Image(
+                painter = painterResource(R.drawable.img_bg_shadow_top),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds,
+            )
 
-        Image(
-            painter = painterResource(R.drawable.img_shadow_bottom),
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(130.dp),
-            contentScale = ContentScale.FillBounds,
-        )
+            OnboardingIntroImageBackdrop(
+                backPainter = backImagePainter,
+                frontPainter = frontImagePainter,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            Image(
+                painter = painterResource(R.drawable.img_shadow_bottom),
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(130.dp),
+                contentScale = ContentScale.FillBounds,
+            )
+        }
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -115,7 +137,8 @@ fun OnboardingIntroScreen(
                 backdropSky = backdropSky,
             )
 
-            Spacer(modifier = Modifier.height(37.dp))
+            Spacer(modifier = Modifier.height(70.dp))
+            //TODO : 임시로 넓혀둠 - shc
 
             Column(
                 modifier = Modifier
@@ -146,6 +169,47 @@ fun OnboardingIntroScreen(
         }
     }
 }
+
+/** 온보딩 인트로 배경에 Figma와 같은 겹친 사진 카드 장식을 배치한다. */
+@Composable
+private fun OnboardingIntroImageBackdrop(
+    backPainter: Painter,
+    frontPainter: Painter,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier = modifier) {
+        val cardWidth = minOf(maxWidth * IntroCardWidthRatio, IntroCardMaxWidth)
+        val scaleFactor = cardWidth.value / IntroCardMaxWidth.value
+
+        IntroCardPositions.forEach { position ->
+            SairoOverlappingImageCards(
+                backPainter = backPainter,
+                frontPainter = frontPainter,
+                cardWidth = cardWidth,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(
+                        x = position.x * scaleFactor,
+                        y = position.y * scaleFactor,
+                    ),
+            )
+        }
+    }
+}
+
+private const val IntroCardWidthRatio = 260f / 360f
+private val IntroCardMaxWidth = 260.dp
+
+private data class IntroCardPosition(
+    val x: Dp,
+    val y: Dp,
+)
+
+private val IntroCardPositions = listOf(
+    IntroCardPosition(x = (-143).dp, y = (-160).dp),
+    IntroCardPosition(x = (-83).dp, y = 313.dp),
+    IntroCardPosition(x = (-143).dp, y = 627.dp),
+)
 
 @Preview(name = "Onboarding Intro", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable

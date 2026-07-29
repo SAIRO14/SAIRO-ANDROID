@@ -21,6 +21,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.component.SairoButton
 import com.example.sairo14.core.designsystem.component.SairoHeader
@@ -33,20 +35,24 @@ import com.skydoves.cloudy.sky
 /**
  * 온보딩 소개 화면의 상태와 내비게이션 행동을 화면에 연결한다.
  *
- * 현재 소개 화면은 별도 상태를 소유하지 않으며, 이후 ViewModel의 UiState와 사용자 이벤트는 이
- * Route에서 [OnboardingIntroScreen]으로 전달한다.
+ * ViewModel의 UI 상태와 사용자 이벤트는 이 Route에서 [OnboardingIntroScreen]으로 전달한다.
  * @param modifier 화면 컨테이너에 적용할 Modifier
+ * @param viewModel 인트로 이미지 상태를 소유하는 ViewModel
  * @param onHomeClick 홈으로 이동해야 할 때 호출할 콜백
  * @param onStartClick 여행지 찾기를 시작해야 할 때 호출할 콜백
  */
 @Composable
 fun OnboardingIntroRoute(
     modifier: Modifier = Modifier,
+    viewModel: OnboardingIntroViewModel = hiltViewModel(),
     onHomeClick: () -> Unit,
     onStartClick: () -> Unit = {},
 ) {
+    val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+
     OnboardingIntroScreen(
         modifier = modifier,
+        uiState = uiState,
         onHomeClick = onHomeClick,
         onStartClick = onStartClick,
     )
@@ -58,12 +64,14 @@ fun OnboardingIntroRoute(
  * 사진 카드 배경은 화면 끝까지 표시하고, 헤더와 CTA는 각각 시스템 상태 표시줄·내비게이션 바
  * inset을 고려한다. 홈 이동과 시작 행동은 호출자가 소유한다.
  * @param modifier 온보딩 화면 컨테이너에 적용할 Modifier
+ * @param uiState 서버에서 제공할 인트로 이미지 상태
  * @param onHomeClick 우측 홈 버튼을 눌렀을 때 호출할 콜백
  * @param onStartClick 여행지 찾기 시작 CTA를 눌렀을 때 호출할 콜백
  */
 @Composable
 fun OnboardingIntroScreen(
     modifier: Modifier = Modifier,
+    uiState: OnboardingIntroUiState = OnboardingIntroUiState(),
     onHomeClick: () -> Unit = {},
     onStartClick: () -> Unit = {},
 ) {

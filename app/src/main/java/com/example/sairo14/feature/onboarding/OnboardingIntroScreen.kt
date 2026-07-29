@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -83,6 +86,9 @@ fun OnboardingIntroScreen(
 ) {
     val colors = SairoTheme.colors
     val backdropSky = rememberSky()
+    val navigationBarHeight = WindowInsets.navigationBars
+        .asPaddingValues()
+        .calculateBottomPadding()
     val backImagePainter = rememberAsyncImagePainter(
         model = uiState.backImageUrl ?: R.drawable.img_dummy_view,
     )
@@ -120,7 +126,7 @@ fun OnboardingIntroScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .height(130.dp),
+                    .height(130.dp + navigationBarHeight),
                 contentScale = ContentScale.FillBounds,
             )
         }
@@ -135,6 +141,7 @@ fun OnboardingIntroScreen(
                 iconTint = colors.textWhite,
                 onActionClick = onHomeClick,
                 backdropSky = backdropSky,
+                backdropCpuBlurEnabled = true,
             )
 
             Spacer(modifier = Modifier.height(70.dp))

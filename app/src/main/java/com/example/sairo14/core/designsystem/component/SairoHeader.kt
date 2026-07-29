@@ -51,6 +51,8 @@ enum class SairoHeaderVariant {
  * @param actionContentDescription 우측 액션 아이콘의 접근성 설명
  * @param onActionClick 우측 액션을 클릭했을 때 호출할 동작
  * @param backdropSky 헤더 뒤 콘텐츠를 캡처한 Cloudy [Sky]. 화면의 콘텐츠에 `sky(sky)`를 적용해 생성한다
+ * @param backdropCpuBlurEnabled Android 30 이하에서 CPU 기반 backdrop blur를 사용할지 여부.
+ * `true`이면 fallback scrim 대신 실제 blur를 적용하지만 렌더링 비용이 증가할 수 있다.
  * @param iconTint 헤더 아이콘에 적용할 색상. 기본값 [Color.Unspecified]은 아이콘 원본 색상을 유지한다
  * @param enabled `false`이면 헤더 액션 클릭을 전달하지 않는지 여부
  */
@@ -64,6 +66,7 @@ fun SairoHeader(
     actionContentDescription: String? = null,
     onActionClick: (() -> Unit)? = null,
     backdropSky: Sky? = null,
+    backdropCpuBlurEnabled: Boolean = false,
     iconTint: Color = Color.Unspecified,
     enabled: Boolean = true,
 ) {
@@ -85,7 +88,7 @@ fun SairoHeader(
                     Modifier.cloudy(
                         sky = requireNotNull(backdropSky),
                         radius = HeaderBackdropBlurRadius,
-                        cpuBlurEnabled = false,
+                        cpuBlurEnabled = backdropCpuBlurEnabled,
                     )
                 } else {
                     Modifier

@@ -25,7 +25,6 @@ import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.extension.noRippleClickable
-import com.skydoves.cloudy.Sky
 import com.skydoves.cloudy.cloudy
 
 /** Android 헤더에 적용할 Figma 배경과 내비게이션 구성을 정의한다. */
@@ -33,23 +32,25 @@ enum class SairoHeaderVariant {
     Home,
     Sub,
     SubFilled,
+    ActionOnly,
 }
 
 /**
  * 홈 또는 하위 화면의 시스템 상태 표시줄을 포함한 상단 헤더를 표시한다.
  *
  * 제목과 액션 상태는 호출자가 소유한다. [SairoHeaderVariant.Home]은 로고를, Sub 변형은
- * 뒤로가기 버튼과 [title]을 표시하며, 우측에는 필요한 아이콘 액션을 선택적으로 표시한다.
- * [backdropSky]를 전달하면 Home·Sub 변형의 배경에만 콘텐츠 뒤쪽을 흐리는 backdrop blur를
- * 적용한다. 상태 표시줄 영역은 시스템 inset만큼 자동 확보한다.
- * @param variant Figma의 Home, Sub 또는 SubFilled 헤더 변형
+ * 뒤로가기 버튼과 [title]을, [SairoHeaderVariant.ActionOnly]는 우측 액션만 표시한다.
+ * [backdropState]를 전달하면 SubFilled를 제외한 변형의 배경에 콘텐츠 뒤쪽을 흐리는 backdrop
+ * blur를 적용한다. 상태 표시줄 영역은 시스템 inset만큼 자동 확보한다.
+ * @param variant Figma의 Home, Sub, SubFilled 또는 ActionOnly 헤더 변형
  * @param modifier 헤더에 적용할 Modifier
  * @param title Sub 변형에 표시할 제목
  * @param onBackClick Sub 변형의 뒤로가기 버튼을 클릭했을 때 호출할 동작
  * @param actionIcon 우측 액션에 표시할 아이콘. `null`이면 우측 액션을 표시하지 않는다
  * @param actionContentDescription 우측 액션 아이콘의 접근성 설명
  * @param onActionClick 우측 액션을 클릭했을 때 호출할 동작
- * @param backdropSky 헤더 뒤 콘텐츠를 캡처한 Cloudy [Sky]. 화면의 콘텐츠에 `sky(sky)`를 적용해 생성한다
+ * @param backdropState 헤더 뒤 콘텐츠와 구형 Android blur 정책을 소유한 상태
+ * @param iconTint 헤더 아이콘에 적용할 색상. 기본값 [Color.Unspecified]은 아이콘 원본 색상을 유지한다
  * @param enabled `false`이면 헤더 액션 클릭을 전달하지 않는지 여부
  */
 @Composable
@@ -61,7 +62,8 @@ fun SairoHeader(
     actionIcon: Painter? = null,
     actionContentDescription: String? = null,
     onActionClick: (() -> Unit)? = null,
-    backdropSky: Sky? = null,
+    backdropState: SairoBackdropState? = null,
+    iconTint: Color = Color.Unspecified,
     enabled: Boolean = true,
 ) {
     val colors = SairoTheme.colors
@@ -69,9 +71,10 @@ fun SairoHeader(
         SairoHeaderVariant.SubFilled -> colors.surfaceDefault
         SairoHeaderVariant.Home,
         SairoHeaderVariant.Sub,
+        SairoHeaderVariant.ActionOnly,
         -> colors.surfaceHeader
     }
-    val isBackdropBlurEnabled = backdropSky != null && variant != SairoHeaderVariant.SubFilled
+    val isBackdropBlurEnabled = backdropState != null && variant != SairoHeaderVariant.SubFilled
 
     Box(
         modifier = modifier
@@ -79,9 +82,9 @@ fun SairoHeader(
             .then(
                 if (isBackdropBlurEnabled) {
                     Modifier.cloudy(
-                        sky = requireNotNull(backdropSky),
+                        sky = requireNotNull(backdropState).sky,
                         radius = HeaderBackdropBlurRadius,
-                        cpuBlurEnabled = false,
+                        cpuBlurEnabled = backdropState.cpuBlurEnabled,
                     )
                 } else {
                     Modifier
@@ -97,6 +100,7 @@ fun SairoHeader(
                 actionIcon = actionIcon,
                 actionContentDescription = actionContentDescription,
                 onActionClick = onActionClick,
+                iconTint = iconTint,
             )
 
             SairoHeaderVariant.Sub,
@@ -108,6 +112,15 @@ fun SairoHeader(
                 actionIcon = actionIcon,
                 actionContentDescription = actionContentDescription,
                 onActionClick = onActionClick,
+                iconTint = iconTint,
+            )
+
+            SairoHeaderVariant.ActionOnly -> ActionOnlyHeaderContents(
+                enabled = enabled,
+                actionIcon = actionIcon,
+                actionContentDescription = actionContentDescription,
+                onActionClick = onActionClick,
+                iconTint = iconTint,
             )
         }
     }
@@ -119,6 +132,7 @@ private fun HomeHeaderContents(
     actionIcon: Painter?,
     actionContentDescription: String?,
     onActionClick: (() -> Unit)?,
+    iconTint: Color,
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
         HeaderAction(
@@ -127,6 +141,7 @@ private fun HomeHeaderContents(
             modifier = Modifier.align(Alignment.CenterStart),
             enabled = enabled,
             onClick = null,
+            tint = iconTint,
         )
         actionIcon?.let { painter ->
             HeaderAction(
@@ -135,6 +150,7 @@ private fun HomeHeaderContents(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 enabled = enabled,
                 onClick = onActionClick,
+                tint = iconTint,
             )
         }
     }
@@ -148,6 +164,7 @@ private fun SubHeaderContents(
     actionIcon: Painter?,
     actionContentDescription: String?,
     onActionClick: (() -> Unit)?,
+    iconTint: Color,
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -161,6 +178,7 @@ private fun SubHeaderContents(
                 size = BackActionTouchSize,
                 enabled = enabled,
                 onClick = onBackClick,
+                tint = iconTint,
             )
             Text(
                 text = title,
@@ -175,6 +193,29 @@ private fun SubHeaderContents(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 enabled = enabled,
                 onClick = onActionClick,
+                tint = iconTint,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActionOnlyHeaderContents(
+    enabled: Boolean,
+    actionIcon: Painter?,
+    actionContentDescription: String?,
+    onActionClick: (() -> Unit)?,
+    iconTint: Color,
+) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        actionIcon?.let { painter ->
+            HeaderAction(
+                painter = painter,
+                contentDescription = actionContentDescription,
+                modifier = Modifier.align(Alignment.CenterEnd),
+                enabled = enabled,
+                onClick = onActionClick,
+                tint = iconTint,
             )
         }
     }
@@ -188,6 +229,7 @@ private fun HeaderAction(
     size: androidx.compose.ui.unit.Dp = HeaderActionTouchSize,
     enabled: Boolean,
     onClick: (() -> Unit)?,
+    tint: Color,
 ) {
     Icon(
         painter = painter,
@@ -206,7 +248,7 @@ private fun HeaderAction(
                 },
             )
             .padding((size - HeaderIconSize) / 2),
-        tint = Color.Unspecified,
+        tint = tint,
     )
 }
 

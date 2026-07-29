@@ -2,11 +2,13 @@ package com.example.sairo14.core.designsystem.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
@@ -27,18 +29,23 @@ enum class SairoFolderVariant {
  * 실제 크기는 부모의 제약과 [modifier]가 결정한다.
  * @param variant Figma에 정의된 폴더 프레임 시각 변형
  * @param modifier 프레임에 적용할 Modifier
+ * @param frameWidth 프레임의 실제 가로 길이. `null`이면 [modifier] 또는 부모의 제약을 사용하며,
+ * 높이는 선택한 [variant]의 원본 비율에 맞춰 계산한다.
  */
 @Composable
 fun SairoFolderFrame(
     variant: SairoFolderVariant,
     modifier: Modifier = Modifier,
+    frameWidth: Dp? = null,
 ) {
     val specification = variant.specification
 
     Image(
         painter = painterResource(specification.drawableRes),
         contentDescription = null,
-        modifier = modifier.aspectRatio(specification.aspectRatio),
+        modifier = modifier
+            .then(if (frameWidth != null) Modifier.width(frameWidth) else Modifier)
+            .aspectRatio(specification.aspectRatio),
         contentScale = ContentScale.FillBounds,
     )
 }
@@ -76,9 +83,18 @@ private fun SairoFolderFramePreview() {
         androidx.compose.foundation.layout.Column(
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
         ) {
-            SairoFolderFrame(variant = SairoFolderVariant.Large)
-            SairoFolderFrame(variant = SairoFolderVariant.Medium)
-            SairoFolderFrame(variant = SairoFolderVariant.Small)
+            SairoFolderFrame(
+                variant = SairoFolderVariant.Large,
+                frameWidth = 375.dp,
+            )
+            SairoFolderFrame(
+                variant = SairoFolderVariant.Medium,
+                frameWidth = 300.dp,
+            )
+            SairoFolderFrame(
+                variant = SairoFolderVariant.Small,
+                frameWidth = 300.dp,
+            )
         }
     }
 }

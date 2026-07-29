@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">sairo14</string>
+    <string name="app_start_loading">시작 정보를 확인하고 있어요.</string>
+    <string name="app_start_error">시작 정보를 불러오지 못했어요.</string>
+    <string name="app_start_retry">다시 시도</string>
     <string name="sairo_button_preview_label">버튼</string>
     <string name="sairo_button_preview_primary">Primary</string>
     <string name="sairo_button_preview_outline">Outline</string>
@@ -34,4 +37,7 @@
     <string name="sairo_header_preview_title">추천 결과</string>
     <string name="sairo_chip_preview_selected">1일차</string>
     <string name="sairo_chip_preview_unselected">2일차</string>
+    <string name="onboarding_intro_title">사진으로 발견하는\n나만의 여행지</string>
+    <string name="onboarding_intro_description">마음에 드는 사진을 고르면,\n어울리는 분위기의 지역과 코스를 찾아드려요.</string>
+    <string name="onboarding_intro_start">내 취향 여행지 찾으러 가기</string>
 </resources>

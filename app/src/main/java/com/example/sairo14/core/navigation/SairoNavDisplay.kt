@@ -10,9 +10,12 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import com.example.sairo14.feature.main.MainScreen
+import com.example.sairo14.feature.home.HomeScreen
+import com.example.sairo14.feature.onboarding.OnboardingIntroRoute as OnboardingIntroScreenRoute
 
 private const val ForwardEnterDurationMillis = 300
 private const val ForwardExitDurationMillis = 225
@@ -23,17 +26,19 @@ private val ForwardExitEasing = CubicBezierEasing(0.32f, 0f, 0.67f, 0f)
 /**
  * Sairo 목적지와 공통 화면 전환 정책을 연결해 현재 백스택을 표시한다.
  *
- * 전방 이동은 Figma 모션 원칙에 따라 300ms의 ease-out 전환을 사용하고,
- * 앱의 뒤로가기 액션은 즉시 복귀한다. 시스템 predictive back은 플랫폼 기본 동작을 유지한다.
- * @param navigationViewModel 앱 수준 백스택과 내비게이션 명령을 소유하는 ViewModel
+ * 전방 이동에는 Figma 모션 원칙에 따른 가로 슬라이드·페이드 전환을 적용하고, 뒤로가기는 즉시
+ * 이전 화면을 표시한다. 백스택 변경은 [SairoNavigator]가 담당하며 이 Composable은 이를 렌더링만 한다.
+ * @param backStack 현재 앱에서 표시할 Nav3 목적지 백스택
+ * @param navigator 화면에서 사용할 앱 수준 내비게이션 명령
  */
 @Composable
 fun SairoNavDisplay(
-    navigationViewModel: AppNavigationViewModel,
+    backStack: NavBackStack<NavKey>,
+    navigator: SairoNavigator,
 ) {
     NavDisplay(
-        backStack = navigationViewModel.backStack,
-        onBack = navigationViewModel::navigateUp,
+        backStack = backStack,
+        onBack = navigator::navigateUp,
         transitionSpec = {
             (
                 slideInHorizontally(
@@ -65,8 +70,13 @@ fun SairoNavDisplay(
             EnterTransition.None togetherWith ExitTransition.None
         },
         entryProvider = entryProvider {
-            entry<MainRoute> {
-                MainScreen()
+            entry<HomeRoute> {
+                HomeScreen()
+            }
+            entry<OnboardingIntroRoute> {
+                OnboardingIntroScreenRoute(
+                    onHomeClick = navigator::popToHome,
+                )
             }
         },
     )

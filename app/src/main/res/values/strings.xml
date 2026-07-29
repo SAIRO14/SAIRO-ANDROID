@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">sairo14</string>
+    <string name="app_start_loading">시작 정보를 확인하고 있어요.</string>
+    <string name="app_start_error">시작 정보를 불러오지 못했어요.</string>
+    <string name="app_start_retry">다시 시도</string>
     <string name="sairo_button_preview_label">버튼</string>
     <string name="sairo_button_preview_primary">Primary</string>
     <string name="sairo_button_preview_outline">Outline</string>

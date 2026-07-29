@@ -1,8 +1,10 @@
 package com.example.sairo14.core.datastore
 
 import android.content.Context
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -17,6 +19,9 @@ private const val APP_PREFERENCES_NAME = "app_preferences"
 
 private val Context.appPreferencesDataStore by preferencesDataStore(
     name = APP_PREFERENCES_NAME,
+    corruptionHandler = ReplaceFileCorruptionHandler {
+        emptyPreferences()
+    },
 )
 
 @Singleton

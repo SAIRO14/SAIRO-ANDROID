@@ -63,6 +63,20 @@ object SairoShadowStyles {
         ),
     ))
 
+    /** 약 90도 회전한 카드가 화면 기준 오른쪽·아래로 그림자를 보이게 하는 그림자다. */
+    val mediumTopRight = SairoShadowStyle(listOf(
+        SairoShadowLayer(
+            offset = DpOffset.Zero,
+            blurRadius = 40.dp,
+            color = SairoColor.Gray600.copy(alpha = 0.25f),
+        ),
+        SairoShadowLayer(
+            offset = DpOffset(x = (16).dp, y = (-40).dp),
+            blurRadius = 16.dp,
+            color = SairoColor.Gray700.copy(alpha = 0.25f),
+        ),
+    ))
+
     val glowSubtle = SairoShadowStyle(listOf(
         SairoShadowLayer(
             offset = DpOffset.Zero,

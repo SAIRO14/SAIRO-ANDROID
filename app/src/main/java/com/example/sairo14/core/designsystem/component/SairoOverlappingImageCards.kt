@@ -26,6 +26,7 @@ import kotlin.math.sin
  *
  * 두 이미지와 실제 카드 너비는 호출자가 소유한다. 이 컴포넌트는 Medium 카드의 비율과 Figma의
  * 회전·그림자만 적용하므로, 화면은 [cardWidth]와 [modifier]로 위치 및 화면 크기 대응을 결정한다.
+ * 그림자는 카드 좌표를 기준으로 적용된 뒤 회전하므로, 회전된 화면에서는 카드의 왼쪽·아래 방향으로 보일 수 있다.
  * @param backPainter 뒤에 표시할 이미지
  * @param frontPainter 앞에 표시할 이미지
  * @param modifier 겹친 카드 묶음에 적용할 Modifier
@@ -49,14 +50,14 @@ fun SairoOverlappingImageCards(
         height = cardHeight,
         rotation = FrontCardRotation,
     )
-    val groupSize = DpSize(
+    val cardGroupSize = DpSize(
         width = maxOf(backBounds.width, frontBounds.width),
         height = maxOf(backBounds.height, frontBounds.height),
     )
     val shape = RoundedCornerShape(24.dp)
 
     Box(
-        modifier = modifier.size(groupSize),
+        modifier = modifier.size(cardGroupSize),
         contentAlignment = Alignment.Center,
     ) {
         SairoImageCard(
@@ -69,7 +70,7 @@ fun SairoOverlappingImageCards(
                 .rotate(BackCardRotation)
                 .sairoDropShadow(
                     shape = shape,
-                    shadowStyle = SairoShadowStyles.mediumRight,
+                    shadowStyle = SairoShadowStyles.mediumTopRight,
                 ),
         )
         SairoImageCard(
@@ -82,7 +83,7 @@ fun SairoOverlappingImageCards(
                 .rotate(FrontCardRotation)
                 .sairoDropShadow(
                     shape = shape,
-                    shadowStyle = SairoShadowStyles.mediumRight,
+                    shadowStyle = SairoShadowStyles.mediumTopRight,
                 ),
         )
     }

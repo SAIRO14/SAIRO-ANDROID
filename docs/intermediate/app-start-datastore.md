@@ -15,12 +15,15 @@ Compose가 렌더링되자마자 기본값으로 화면을 만들면 DataStore �
 ## 프로젝트 적용
 
 - DataStore: [`AppPreferencesDataStore.kt`](../../app/src/main/java/com/example/sairo14/core/datastore/AppPreferencesDataStore.kt)
+- 익명 식별자 저장소: [`AnonymousIdentityDataStore.kt`](../../app/src/main/java/com/example/sairo14/core/datastore/AnonymousIdentityDataStore.kt)
 - Domain 계약: [`OnboardingRepository.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/OnboardingRepository.kt)
 - Data 구현: [`DefaultOnboardingRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/DefaultOnboardingRepository.kt)
 - 시작 상태: [`AppStartViewModel.kt`](../../app/src/main/java/com/example/sairo14/app/AppStartViewModel.kt)
 - Compose 조립: [`SairoApp.kt`](../../app/src/main/java/com/example/sairo14/app/SairoApp.kt)
 
 `DefaultOnboardingRepository`는 `IOException`과 `CorruptionException`을 Domain 오류로 변환한다. `CancellationException`은 다시 던져 ViewModel 수명주기 취소가 정상 동작하도록 한다.
+
+온보딩 상태는 파일 손상 시 빈 Preferences로 자동 복구해 인트로를 다시 표시한다. 반면 익명 사용자 ID는 서버 데이터 연결에 영향을 주므로 별도 파일에 저장하며, 손상 시 자동으로 새 UUID를 만들지 않는다. 이 분리는 온보딩 파일의 손상이 익명 ID 손실로 이어지지 않게 한다.
 
 ## 흐름과 영향 범위
 

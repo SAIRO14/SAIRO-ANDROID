@@ -7,11 +7,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -32,6 +34,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpSize
 import com.example.sairo14.R
@@ -60,6 +63,8 @@ enum class SairoImageCardSize {
  * @param selected 현재 카드의 선택 여부
  * @param modifier 카드에 적용할 Modifier
  * @param size Figma의 Large 또는 Medium 크기 규격
+ * @param cardWidth 카드의 실제 가로 길이. `null`이면 [size]의 기본 가로 길이를 사용하며,
+ * 높이는 해당 규격의 이미지 비율로 계산한다.
  * @param contentDescription 카드 이미지의 접근성 설명
  * @param enabled `false`이면 클릭 이벤트를 전달하지 않는지 여부
  * @param onClick 카드를 클릭했을 때 호출할 콜백. `null`이면 클릭 기능을 적용하지 않는다.
@@ -70,22 +75,29 @@ fun SairoImageCard(
     selected: Boolean,
     modifier: Modifier = Modifier,
     size: SairoImageCardSize = SairoImageCardSize.Large,
+    cardWidth: Dp? = null,
     contentDescription: String? = null,
     enabled: Boolean = true,
     onClick: (() -> Unit)? = null,
 ) {
     val specification = size.specification
+    val resolvedWidth = cardWidth ?: specification.defaultWidth
+    val resolvedSize = DpSize(
+        width = resolvedWidth,
+        height = resolvedWidth / specification.aspectRatio,
+    )
     val shape = RoundedCornerShape(24.dp)
     val colors = SairoTheme.colors
     val selectionBorderBrush = rememberSelectionBorderBrush(
-        size = specification.cardSize,
+        size = resolvedSize,
         startColor = colors.accentBase,
         endColor = colors.highlightBase,
     )
 
     Box(
         modifier = modifier
-            .size(specification.cardSize)
+            .width(resolvedWidth)
+            .aspectRatio(specification.aspectRatio)
             .then(
                 if (selected) {
                     Modifier.sairoDropShadow(
@@ -164,12 +176,20 @@ fun SairoImageCard(
 
 private val SairoImageCardSize.specification: SairoImageCardSpecification
     get() = when (this) {
-        SairoImageCardSize.Large -> SairoImageCardSpecification(DpSize(300.dp, 400.dp))
-        SairoImageCardSize.Medium -> SairoImageCardSpecification(DpSize(260.dp, 347.dp))
+        SairoImageCardSize.Large -> SairoImageCardSpecification(
+            defaultWidth = 300.dp,
+            aspectRatio = 3f / 4f,
+        )
+
+        SairoImageCardSize.Medium -> SairoImageCardSpecification(
+            defaultWidth = 260.dp,
+            aspectRatio = 260f / 347f,
+        )
     }
 
 private data class SairoImageCardSpecification(
-    val cardSize: DpSize,
+    val defaultWidth: Dp,
+    val aspectRatio: Float,
 )
 
 @Composable
@@ -216,6 +236,18 @@ private fun SairoImageCardMediumPreview() {
     }
 }
 
+@Preview(name = "Sairo Image Card / Responsive", showBackground = true, widthDp = 320)
+@Composable
+private fun SairoImageCardResponsivePreview() {
+    SairoTheme {
+        SairoImageCardPreview(
+            size = SairoImageCardSize.Large,
+            selected = false,
+            cardWidth = 260.dp,
+        )
+    }
+}
+
 @Preview(name = "Sairo Image Card / Large Selected", showBackground = true)
 @Composable
 private fun SairoImageCardLargeSelectedPreview() {
@@ -241,6 +273,7 @@ private fun SairoImageCardPreview(
     size: SairoImageCardSize,
     selected: Boolean,
     hasImage: Boolean = true,
+    cardWidth: Dp? = null,
 ) {
     Column(
         modifier = Modifier
@@ -263,6 +296,7 @@ private fun SairoImageCardPreview(
             painter = if (hasImage) painterResource(R.drawable.img_dummy_view) else null,
             selected = selected,
             size = size,
+            cardWidth = cardWidth,
         )
     }
 }

@@ -25,7 +25,6 @@ import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.extension.noRippleClickable
-import com.skydoves.cloudy.Sky
 import com.skydoves.cloudy.cloudy
 
 /** Android 헤더에 적용할 Figma 배경과 내비게이션 구성을 정의한다. */
@@ -41,7 +40,7 @@ enum class SairoHeaderVariant {
  *
  * 제목과 액션 상태는 호출자가 소유한다. [SairoHeaderVariant.Home]은 로고를, Sub 변형은
  * 뒤로가기 버튼과 [title]을, [SairoHeaderVariant.ActionOnly]는 우측 액션만 표시한다.
- * [backdropSky]를 전달하면 SubFilled를 제외한 변형의 배경에 콘텐츠 뒤쪽을 흐리는 backdrop
+ * [backdropState]를 전달하면 SubFilled를 제외한 변형의 배경에 콘텐츠 뒤쪽을 흐리는 backdrop
  * blur를 적용한다. 상태 표시줄 영역은 시스템 inset만큼 자동 확보한다.
  * @param variant Figma의 Home, Sub, SubFilled 또는 ActionOnly 헤더 변형
  * @param modifier 헤더에 적용할 Modifier
@@ -50,9 +49,7 @@ enum class SairoHeaderVariant {
  * @param actionIcon 우측 액션에 표시할 아이콘. `null`이면 우측 액션을 표시하지 않는다
  * @param actionContentDescription 우측 액션 아이콘의 접근성 설명
  * @param onActionClick 우측 액션을 클릭했을 때 호출할 동작
- * @param backdropSky 헤더 뒤 콘텐츠를 캡처한 Cloudy [Sky]. 화면의 콘텐츠에 `sky(sky)`를 적용해 생성한다
- * @param backdropCpuBlurEnabled Android 30 이하에서 CPU 기반 backdrop blur를 사용할지 여부.
- * `true`이면 fallback scrim 대신 실제 blur를 적용하지만 렌더링 비용이 증가할 수 있다.
+ * @param backdropState 헤더 뒤 콘텐츠와 구형 Android blur 정책을 소유한 상태
  * @param iconTint 헤더 아이콘에 적용할 색상. 기본값 [Color.Unspecified]은 아이콘 원본 색상을 유지한다
  * @param enabled `false`이면 헤더 액션 클릭을 전달하지 않는지 여부
  */
@@ -65,8 +62,7 @@ fun SairoHeader(
     actionIcon: Painter? = null,
     actionContentDescription: String? = null,
     onActionClick: (() -> Unit)? = null,
-    backdropSky: Sky? = null,
-    backdropCpuBlurEnabled: Boolean = false,
+    backdropState: SairoBackdropState? = null,
     iconTint: Color = Color.Unspecified,
     enabled: Boolean = true,
 ) {
@@ -78,7 +74,7 @@ fun SairoHeader(
         SairoHeaderVariant.ActionOnly,
         -> colors.surfaceHeader
     }
-    val isBackdropBlurEnabled = backdropSky != null && variant != SairoHeaderVariant.SubFilled
+    val isBackdropBlurEnabled = backdropState != null && variant != SairoHeaderVariant.SubFilled
 
     Box(
         modifier = modifier
@@ -86,9 +82,9 @@ fun SairoHeader(
             .then(
                 if (isBackdropBlurEnabled) {
                     Modifier.cloudy(
-                        sky = requireNotNull(backdropSky),
+                        sky = requireNotNull(backdropState).sky,
                         radius = HeaderBackdropBlurRadius,
-                        cpuBlurEnabled = backdropCpuBlurEnabled,
+                        cpuBlurEnabled = backdropState.cpuBlurEnabled,
                     )
                 } else {
                     Modifier

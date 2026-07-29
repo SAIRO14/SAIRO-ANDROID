@@ -32,14 +32,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.component.SairoButton
+import com.example.sairo14.core.designsystem.component.SairoBackdropHost
 import com.example.sairo14.core.designsystem.component.SairoHeader
 import com.example.sairo14.core.designsystem.component.SairoHeaderVariant
 import com.example.sairo14.core.designsystem.component.SairoOverlappingImageCards
+import com.example.sairo14.core.designsystem.component.rememberSairoBackdropImagePainter
+import com.example.sairo14.core.designsystem.component.rememberSairoBackdropState
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
-import com.skydoves.cloudy.rememberSky
-import com.skydoves.cloudy.sky
-import coil3.compose.rememberAsyncImagePainter
 
 /**
  * 온보딩 소개 화면의 상태와 내비게이션 행동을 화면에 연결한다.
@@ -85,27 +85,28 @@ fun OnboardingIntroScreen(
     onStartClick: () -> Unit = {},
 ) {
     val colors = SairoTheme.colors
-    val backdropSky = rememberSky()
+    val backdropState = rememberSairoBackdropState(cpuBlurEnabled = true)
     val navigationBarHeight = WindowInsets.navigationBars
         .asPaddingValues()
         .calculateBottomPadding()
-    val backImagePainter = rememberAsyncImagePainter(
+    val backImagePainter = rememberSairoBackdropImagePainter(
         model = uiState.backImageUrl ?: R.drawable.img_dummy_view,
+        backdropState = backdropState,
     )
-    val frontImagePainter = rememberAsyncImagePainter(
+    val frontImagePainter = rememberSairoBackdropImagePainter(
         model = uiState.frontImageUrl ?: R.drawable.img_dummy_view,
+        backdropState = backdropState,
     )
 
-    Box(
+    SairoBackdropHost(
+        state = backdropState,
         modifier = modifier
             .fillMaxSize()
             .background(colors.backgroundCanvas)
             .clipToBounds(),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .sky(backdropSky),
+            modifier = Modifier.fillMaxSize(),
         ) {
             Image(
                 painter = painterResource(R.drawable.img_bg_shadow_top),
@@ -140,8 +141,7 @@ fun OnboardingIntroScreen(
                 actionContentDescription = stringResource(R.string.sairo_header_home),
                 iconTint = colors.textWhite,
                 onActionClick = onHomeClick,
-                backdropSky = backdropSky,
-                backdropCpuBlurEnabled = true,
+                backdropState = backdropState,
             )
 
             Spacer(modifier = Modifier.height(70.dp))

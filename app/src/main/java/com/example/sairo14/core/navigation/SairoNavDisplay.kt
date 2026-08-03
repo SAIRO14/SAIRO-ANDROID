@@ -73,7 +73,7 @@ fun SairoNavDisplay(
             entry<HomeRoute> {
                 HomeScreenRoute(
                     onFindTripClick = {
-                        navigator.navigate(
+                        navigator.navigateSingleTop(
                             OnboardingIntroRoute(
                                 entryPoint = OnboardingIntroEntryPoint.Home,
                             ),

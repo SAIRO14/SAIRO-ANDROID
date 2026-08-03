@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -30,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -256,7 +256,7 @@ private fun PhotoSelectionTray(
     BoxWithConstraints(
         modifier = Modifier.fillMaxWidth(),
     ) {
-        val frameWidth = maxWidth
+        val frameWidth = maxWidth * FolderWidthRatio
         val frameHeight = frameWidth / FolderAspectRatio
         val trayHeight = frameHeight * FolderVisibleHeightRatio
         val trayContentTopPadding = frameWidth * FolderContentTopPaddingRatio
@@ -462,11 +462,12 @@ private const val PhotoCardWidthRatio = 300f / 360f
 private const val PhotoCardAspectRatio = 3f / 4f
 private val PhotoCardMaximumWidth = 300.dp
 private val PhotoCardPageSpacing = 16.dp
+private const val FolderWidthRatio = 375f / 360f
 private const val FolderAspectRatio = 375f / 230f
 private const val FolderVisibleHeightRatio = 219f / 230f
 private const val FolderContentTopPaddingRatio = 55f / 375f
 private const val FolderCountTopPaddingRatio = 16f / 375f
-private val FolderShadowShape = RoundedCornerShape(18.dp)
+private val FolderShadowShape = RectangleShape
 private val CountHorizontalPadding = 10.dp
 private val TrayContentSpacing = 16.dp
 private val ProgressIndicatorHeight = 4.dp

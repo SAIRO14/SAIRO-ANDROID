@@ -66,6 +66,7 @@ enum class SairoImageCardSize {
  * @param cardWidth 카드의 실제 가로 길이. `null`이면 [size]의 기본 가로 길이를 사용하며,
  * 높이는 해당 규격의 이미지 비율로 계산한다.
  * @param contentDescription 카드 이미지의 접근성 설명
+ * @param showShadow 카드 뒤에 Figma glow 그림자를 표시할지 여부. 선택 카드의 기본값은 `true`다.
  * @param enabled `false`이면 클릭 이벤트를 전달하지 않는지 여부
  * @param onClick 카드를 클릭했을 때 호출할 콜백. `null`이면 클릭 기능을 적용하지 않는다.
  */
@@ -77,6 +78,7 @@ fun SairoImageCard(
     size: SairoImageCardSize = SairoImageCardSize.Large,
     cardWidth: Dp? = null,
     contentDescription: String? = null,
+    showShadow: Boolean = selected,
     enabled: Boolean = true,
     onClick: (() -> Unit)? = null,
 ) {
@@ -102,7 +104,7 @@ fun SairoImageCard(
             .width(resolvedWidth)
             .aspectRatio(specification.aspectRatio)
             .then(
-                if (selected) {
+                if (showShadow) {
                     Modifier.sairoDropShadow(
                         shape = shape,
                         shadowStyle = SairoShadowStyles.glowDefault,

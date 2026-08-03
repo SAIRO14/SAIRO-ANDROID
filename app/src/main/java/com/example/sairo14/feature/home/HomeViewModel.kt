@@ -7,6 +7,7 @@ import com.example.sairo14.domain.model.HomeContent
 import com.example.sairo14.domain.usecase.GetHomeContentUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +24,7 @@ class HomeViewModel @Inject constructor(
     private val getHomeContent: GetHomeContentUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
+    private var loadJob: Job? = null
 
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -38,8 +40,10 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun loadHomeContent() {
-        viewModelScope.launch {
-            _uiState.value = HomeUiState.Loading
+        if (loadJob?.isActive == true) return
+
+        _uiState.value = HomeUiState.Loading
+        loadJob = viewModelScope.launch {
             _uiState.value = when (val result = getHomeContent()) {
                 is AppResult.Success -> result.value.toUiModel()
                 is AppResult.Failure -> HomeUiState.Error

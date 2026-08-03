@@ -14,7 +14,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
-import com.example.sairo14.feature.home.HomeScreen
+import com.example.sairo14.feature.home.HomeRoute as HomeScreenRoute
 import com.example.sairo14.feature.onboarding.OnboardingIntroRoute as OnboardingIntroScreenRoute
 
 private const val ForwardEnterDurationMillis = 300
@@ -71,7 +71,7 @@ fun SairoNavDisplay(
         },
         entryProvider = entryProvider {
             entry<HomeRoute> {
-                HomeScreen()
+                HomeScreenRoute()
             }
             entry<OnboardingIntroRoute> {
                 OnboardingIntroScreenRoute(

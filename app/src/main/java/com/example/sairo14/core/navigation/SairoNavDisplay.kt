@@ -100,7 +100,7 @@ fun SairoNavDisplay(
             entry<OnboardingPhotoSelectRoute> {
                 OnboardingPhotoSelectScreenRoute(
                     onSelectionComplete = { photoIds ->
-                        navigator.navigate(OnboardingLoadingRoute(photoIds))
+                        navigator.navigateSingleTop(OnboardingLoadingRoute(photoIds))
                     },
                 )
             }

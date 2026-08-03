@@ -46,7 +46,7 @@ class HomeViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             _uiState.value = when (val result = getHomeContent()) {
                 is AppResult.Success -> result.value.toUiModel()
-                is AppResult.Failure -> HomeUiState.Error
+                is AppResult.Failure -> HomeUiState.Error(result.error)
             }
         }
     }

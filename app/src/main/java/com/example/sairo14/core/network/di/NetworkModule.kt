@@ -12,6 +12,11 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import java.util.concurrent.TimeUnit
+
+private const val ConnectTimeoutSeconds = 10L
+private const val ReadWriteTimeoutSeconds = 20L
+private const val CallTimeoutSeconds = 30L
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -37,6 +42,10 @@ object NetworkModule {
 
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
+            .connectTimeout(ConnectTimeoutSeconds, TimeUnit.SECONDS)
+            .readTimeout(ReadWriteTimeoutSeconds, TimeUnit.SECONDS)
+            .writeTimeout(ReadWriteTimeoutSeconds, TimeUnit.SECONDS)
+            .callTimeout(CallTimeoutSeconds, TimeUnit.SECONDS)
             .build()
     }
 

@@ -40,7 +40,9 @@ Home은 이미 홈에 있으므로 `showHomeAction = false`로 홈 이동 버튼
 
 stateless 화면은 재사용하기 쉽지만, 호출한 Feature가 재시도 중 상태를 즉시 `Loading`으로 바꾸지 않으면 연속 탭으로 중복 요청이 생길 수 있다. Home은 진행 중 `Job`을 확인하고, 새 요청을 시작하기 전에 동기적으로 `Loading`을 설정해 이를 막는다.
 
-현재 Home의 `Error`는 실패 원인을 구분하지 않으므로 공통 네트워크 오류 문구를 표시한다. 실제 Retrofit Repository가 추가되면 `AppError`를 네트워크·시간 초과·서버·인증 오류로 확장하고, 네트워크 오류에만 이 화면을 사용해야 한다.
+[`AppError`](../../app/src/main/java/com/example/sairo14/domain/model/AppResult.kt)는 네트워크 연결 불가, 시간 초과, 서버 오류, 인증 오류, 응답 형식 오류를 구분한다. [`networkCall`](../../app/src/main/java/com/example/sairo14/data/remote/NetworkCall.kt)은 Retrofit·OkHttp 예외를 이 계약으로 변환하고, `CancellationException`은 다시 던진다. Home은 연결 불가와 시간 초과에만 공통 네트워크 오류 화면을 사용하며, 나머지는 일반 오류 UI를 표시한다.
+
+[`AndroidNetworkStatusRepository`](../../app/src/main/java/com/example/sairo14/core/network/AndroidNetworkStatusRepository.kt)는 `ConnectivityManager`의 검증된 인터넷 연결 상태를 `Flow`로 제공한다. 이 값은 실제 서버 요청의 성공을 보장하지 않으므로 요청을 미리 차단하지 않고, 연결 복구 안내 같은 보조 UI에만 사용한다.
 
 ## 추가 학습 및 대안
 

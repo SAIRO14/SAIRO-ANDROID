@@ -46,12 +46,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.component.SairoBackdropHost
 import com.example.sairo14.core.designsystem.component.SairoBackdropState
+import com.example.sairo14.core.designsystem.component.SairoButton
 import com.example.sairo14.core.designsystem.component.SairoHeader
 import com.example.sairo14.core.designsystem.component.SairoHeaderVariant
 import com.example.sairo14.core.designsystem.component.rememberSairoBackdropImagePainter
 import com.example.sairo14.core.designsystem.component.rememberSairoBackdropState
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.domain.model.isNetworkError
 import com.example.sairo14.feature.error.NetworkErrorRoute
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
@@ -123,12 +125,20 @@ fun HomeScreen(
             onSavedTripClick = onSavedTripClick,
         )
 
-        HomeUiState.Error -> NetworkErrorRoute(
-            modifier = modifier,
-            onRetryClick = onRetryClick,
-            onHomeClick = {},
-            showHomeAction = false,
-        )
+        is HomeUiState.Error -> if (uiState.error.isNetworkError()) {
+            NetworkErrorRoute(
+                modifier = modifier,
+                onRetryClick = onRetryClick,
+                onHomeClick = {},
+                showHomeAction = false,
+            )
+        } else {
+            HomeGenericErrorScreen(
+                modifier = modifier,
+                onFolderClick = onFolderClick,
+                onRetryClick = onRetryClick,
+            )
+        }
     }
 }
 
@@ -254,6 +264,40 @@ private fun HomeLoadingScreen(
             contentAlignment = Alignment.Center,
         ) {
             CircularProgressIndicator(color = SairoTheme.colors.accentBase)
+        }
+    }
+}
+
+@Composable
+private fun HomeGenericErrorScreen(
+    modifier: Modifier,
+    onFolderClick: () -> Unit,
+    onRetryClick: () -> Unit,
+) {
+    HomeContainer(
+        modifier = modifier,
+        onFolderClick = onFolderClick,
+    ) { _, headerHeight ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = headerHeight),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.home_load_error),
+                    color = SairoTheme.colors.textPrimary,
+                    style = SairoTextStyles.bodyLight18,
+                )
+                SairoButton(
+                    text = stringResource(R.string.home_retry),
+                    onClick = onRetryClick,
+                )
+            }
         }
     }
 }

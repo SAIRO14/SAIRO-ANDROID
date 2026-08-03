@@ -34,6 +34,7 @@ import com.example.sairo14.core.extension.sairoDropShadow
  * @param backPainter 뒤쪽 사진 카드에 표시할 이미지
  * @param frontPainter 앞쪽 사진 카드에 표시할 이미지
  * @param onClick 여행지 찾기 버튼을 눌렀을 때 호출할 동작
+ * @param buttonText 여행지 찾기 버튼에 표시할 문구
  * @param modifier CTA 묶음에 적용할 Modifier
  */
 @Composable
@@ -41,6 +42,7 @@ fun HomeDiscoveryCta(
     backPainter: Painter?,
     frontPainter: Painter?,
     onClick: () -> Unit,
+    buttonText: String,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(
@@ -102,7 +104,7 @@ fun HomeDiscoveryCta(
                     contentAlignment = Alignment.Center,
                 ) {
                     SairoButton(
-                        text = stringResource(R.string.home_find_trip),
+                        text = buttonText,
                         onClick = onClick,
                         modifier = Modifier
                             .size(ButtonWidth, ButtonHeight)
@@ -136,6 +138,7 @@ private fun HomeDiscoveryCtaPreview() {
             backPainter = androidx.compose.ui.res.painterResource(R.drawable.img_dummy_view),
             frontPainter = androidx.compose.ui.res.painterResource(R.drawable.img_dummy_view),
             onClick = {},
+            buttonText = stringResource(R.string.home_find_trip),
         )
     }
 }

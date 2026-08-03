@@ -3,27 +3,42 @@ package com.example.sairo14.feature.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.sairo14.R
@@ -36,6 +51,7 @@ import com.example.sairo14.core.designsystem.component.rememberSairoBackdropImag
 import com.example.sairo14.core.designsystem.component.rememberSairoBackdropState
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import kotlin.math.roundToInt
 
 /**
  * 홈 화면의 상태와 사용자 행동을 화면에 연결한다.
@@ -46,6 +62,7 @@ import com.example.sairo14.core.designsystem.theme.SairoTheme
  * @param viewModel 홈 화면의 중앙 이미지 상태를 소유하는 ViewModel
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
+ * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 호출할 동작
  */
 @Composable
 fun HomeRoute(
@@ -53,6 +70,7 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
+    onSavedTripClick: (String) -> Unit = {},
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
 
@@ -61,6 +79,7 @@ fun HomeRoute(
         uiState = uiState,
         onFindTripClick = onFindTripClick,
         onFolderClick = onFolderClick,
+        onSavedTripClick = onSavedTripClick,
         onRetryClick = viewModel::retry,
     )
 }
@@ -68,12 +87,13 @@ fun HomeRoute(
 /**
  * 홈 데이터의 로딩·콘텐츠·오류 상태에 맞는 화면을 표시한다.
  *
- * 콘텐츠 상태의 중앙 카드 묶음은 화면의 가용 가로폭을 기준으로 계산한다. 저장 여행지 목록의
- * 캔버스 표현은 후속 단계에서 [HomeUiState.Content.savedTrips]를 이용해 추가한다.
+ * 콘텐츠 상태의 중앙 카드 묶음은 화면의 가용 가로폭을 기준으로 계산한다. 저장 여행지가 있으면
+ * [HomeUiState.Content.savedTrips]를 네 개의 고정 슬롯을 가진 이동 가능한 캔버스로 표시한다.
  * @param modifier 화면 컨테이너에 적용할 Modifier
  * @param uiState 화면에 표시할 로딩·콘텐츠·오류 상태
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
+ * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 호출할 동작
  * @param onRetryClick 오류 화면의 재시도 버튼을 눌렀을 때 호출할 동작
  */
 @Composable
@@ -82,6 +102,7 @@ fun HomeScreen(
     uiState: HomeUiState = HomeUiState.Content(),
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
+    onSavedTripClick: (String) -> Unit = {},
     onRetryClick: () -> Unit = {},
 ) {
     when (uiState) {
@@ -95,6 +116,7 @@ fun HomeScreen(
             uiState = uiState,
             onFindTripClick = onFindTripClick,
             onFolderClick = onFolderClick,
+            onSavedTripClick = onSavedTripClick,
         )
 
         HomeUiState.Error -> HomeErrorScreen(
@@ -111,11 +133,12 @@ private fun HomeContentScreen(
     uiState: HomeUiState.Content,
     onFindTripClick: () -> Unit,
     onFolderClick: () -> Unit,
+    onSavedTripClick: (String) -> Unit,
 ) {
     HomeContainer(
         modifier = modifier,
         onFolderClick = onFolderClick,
-    ) { backdropState ->
+    ) { backdropState, headerHeight ->
         val backImagePainter = rememberSairoBackdropImagePainter(
             model = uiState.discoveryImages.backImageUrl ?: R.drawable.img_dummy_view,
             backdropState = backdropState,
@@ -125,8 +148,55 @@ private fun HomeContentScreen(
             backdropState = backdropState,
         )
 
-        Spacer(modifier = Modifier.height(HomeContentTopSpacing))
+        Box(
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            if (uiState.savedTrips.isNotEmpty()) {
+                HomePannableCanvas(
+                    backdropState = backdropState,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    HomeSavedTripsLayer(
+                        savedTrips = uiState.savedTrips,
+                        backdropState = backdropState,
+                        onSavedTripClick = onSavedTripClick,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    HomeDiscoveryContent(
+                        hasSavedTrips = true,
+                        headerHeight = headerHeight,
+                        backImagePainter = backImagePainter,
+                        frontImagePainter = frontImagePainter,
+                        onFindTripClick = onFindTripClick,
+                    )
+                }
+            } else {
+                HomeDiscoveryContent(
+                    hasSavedTrips = false,
+                    headerHeight = headerHeight,
+                    backImagePainter = backImagePainter,
+                    frontImagePainter = frontImagePainter,
+                    onFindTripClick = onFindTripClick,
+                )
+            }
+        }
+    }
+}
 
+@Composable
+private fun HomeDiscoveryContent(
+    hasSavedTrips: Boolean,
+    headerHeight: Dp,
+    backImagePainter: Painter,
+    frontImagePainter: Painter,
+    onFindTripClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = headerHeight + HomeContentTopSpacing),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -140,7 +210,9 @@ private fun HomeContentScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = stringResource(R.string.home_empty_title),
+                    text = stringResource(
+                        if (hasSavedTrips) R.string.home_populated_title else R.string.home_empty_title,
+                    ),
                     color = SairoTheme.colors.textPrimary,
                     style = SairoTextStyles.displayLight24,
                     textAlign = TextAlign.Center,
@@ -152,6 +224,9 @@ private fun HomeContentScreen(
                     backPainter = backImagePainter,
                     frontPainter = frontImagePainter,
                     onClick = onFindTripClick,
+                    buttonText = stringResource(
+                        if (hasSavedTrips) R.string.home_find_another_trip else R.string.home_find_trip,
+                    ),
                 )
             }
         }
@@ -166,11 +241,11 @@ private fun HomeLoadingScreen(
     HomeContainer(
         modifier = modifier,
         onFolderClick = onFolderClick,
-    ) { _ ->
+    ) { _, headerHeight ->
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+                .fillMaxSize()
+                .padding(top = headerHeight),
             contentAlignment = Alignment.Center,
         ) {
             CircularProgressIndicator(color = SairoTheme.colors.accentBase)
@@ -187,11 +262,11 @@ private fun HomeErrorScreen(
     HomeContainer(
         modifier = modifier,
         onFolderClick = onFolderClick,
-    ) { _ ->
+    ) { _, headerHeight ->
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+                .fillMaxSize()
+                .padding(top = headerHeight),
             contentAlignment = Alignment.Center,
         ) {
             Column(
@@ -216,10 +291,13 @@ private fun HomeErrorScreen(
 private fun HomeContainer(
     modifier: Modifier,
     onFolderClick: () -> Unit,
-    content: @Composable ColumnScope.(SairoBackdropState) -> Unit,
+    content: @Composable BoxScope.(SairoBackdropState, Dp) -> Unit,
 ) {
     val colors = SairoTheme.colors
     val backdropState = rememberSairoBackdropState(cpuBlurEnabled = true)
+    val density = LocalDensity.current
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val headerHeight = with(density) { headerHeightPx.toDp() }
 
     SairoBackdropHost(
         state = backdropState,
@@ -235,30 +313,143 @@ private fun HomeContainer(
             contentScale = ContentScale.FillBounds,
         )
 
-        Column(
+        Box(
             modifier = Modifier.fillMaxSize(),
         ) {
+            content(backdropState, headerHeight)
+
             SairoHeader(
                 variant = SairoHeaderVariant.Home,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .onSizeChanged { size -> headerHeightPx = size.height },
                 actionIcon = painterResource(R.drawable.ic_folder_outline),
                 actionContentDescription = stringResource(R.string.home_saved_places),
                 onActionClick = onFolderClick,
                 backdropState = backdropState,
             )
-            content(backdropState)
         }
     }
+}
+
+@Composable
+private fun HomePannableCanvas(
+    backdropState: SairoBackdropState,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val density = LocalDensity.current
+    var canvasOffset by remember { mutableStateOf(Offset.Zero) }
+
+    BoxWithConstraints(
+        modifier = modifier
+            .clipToBounds()
+    ) {
+        val horizontalDragLimit = with(density) {
+            (maxWidth * CanvasHorizontalDragRange).toPx()
+        }
+        val verticalDragLimit = with(density) {
+            (maxHeight * CanvasVerticalDragRange).toPx()
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(maxWidth, maxHeight) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        canvasOffset = Offset(
+                            x = (canvasOffset.x + dragAmount.x)
+                                .coerceIn(-horizontalDragLimit, horizontalDragLimit),
+                            y = (canvasOffset.y + dragAmount.y)
+                                .coerceIn(-verticalDragLimit, verticalDragLimit),
+                        )
+                        backdropState.invalidate()
+                    }
+                },
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .offset {
+                        IntOffset(
+                            x = canvasOffset.x.roundToInt(),
+                            y = canvasOffset.y.roundToInt(),
+                        )
+                    },
+                content = content,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeSavedTripsLayer(
+    savedTrips: List<HomeSavedTripUiModel>,
+    backdropState: SairoBackdropState,
+    onSavedTripClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier) {
+        savedTrips.take(SavedTripSlot.entries.size).forEachIndexed { index, savedTrip ->
+            val painter = rememberSairoBackdropImagePainter(
+                model = savedTrip.thumbnailImageUrl ?: R.drawable.img_dummy_view,
+                backdropState = backdropState,
+            )
+            val slot = SavedTripSlot.entries[index]
+
+            HomeSavedTripCard(
+                savedTrip = savedTrip,
+                painter = painter,
+                onClick = { onSavedTripClick(savedTrip.savedTripId) },
+                modifier = Modifier
+                    .align(slot.alignment)
+                    .offset(x = slot.offsetX, y = slot.offsetY),
+            )
+        }
+    }
+}
+
+private enum class SavedTripSlot(
+    val alignment: Alignment,
+    val offsetX: Dp,
+    val offsetY: Dp,
+) {
+    TopStart(Alignment.TopStart, (-75).dp, (-39).dp),
+    TopEnd(Alignment.TopEnd, 159.dp, (-3).dp),
+    BottomEnd(Alignment.BottomEnd, 22.dp, 116.dp),
+    BottomStart(Alignment.BottomStart, (-42).dp, 49.dp),
 }
 
 private val HomeHorizontalPadding = 24.dp
 private val HomeContentMaxWidth = 294.dp
 private val HomeContentTopSpacing = 55.dp
 private val HomeContentGap = 20.dp
+private const val CanvasHorizontalDragRange = 0.5f
+private const val CanvasVerticalDragRange = 0.25f
 
 @Preview(name = "Home Empty", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 private fun HomeScreenPreview() {
     SairoTheme {
         HomeScreen()
+    }
+}
+
+@Preview(name = "Home Saved Trips", showBackground = true, widthDp = 360, heightDp = 800)
+@Composable
+private fun HomeScreenSavedTripsPreview() {
+    SairoTheme {
+        HomeScreen(
+            uiState = HomeUiState.Content(
+                savedTrips = List(4) { index ->
+                    HomeSavedTripUiModel(
+                        savedTripId = "saved-trip-$index",
+                        courseId = "course-$index",
+                        regionName = if (index % 2 == 0) "전남 담양권" else "충북 보은권",
+                    )
+                },
+            ),
+        )
     }
 }

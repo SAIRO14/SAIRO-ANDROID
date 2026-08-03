@@ -281,7 +281,7 @@ private val HeaderIconSize = 24.dp
 private val HeaderContentMinHeight = 44.dp
 private val HeaderVerticalPadding = 6.dp
 private val HeaderHorizontalPadding = 6.dp
-private const val HeaderBackdropBlurRadius = 20
+private const val HeaderBackdropBlurRadius = 10
 
 @Preview(name = "Sairo Header / Home", showBackground = true, widthDp = 360)
 @Composable

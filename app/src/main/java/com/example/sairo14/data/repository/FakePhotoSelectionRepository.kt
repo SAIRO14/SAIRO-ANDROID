@@ -27,7 +27,7 @@ class FakePhotoSelectionRepository @Inject constructor() : PhotoSelectionReposit
             ),
             PhotoCandidate(
                 id = "photo-busan-night",
-                imageUrl = "https://images.unsplash.com/photo-1519608487953-e999c86e7454?auto=format&fit=crop&w=900&q=85",
+                imageUrl = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=85",
                 contentDescription = "도시의 밤 풍경",
             ),
             PhotoCandidate(

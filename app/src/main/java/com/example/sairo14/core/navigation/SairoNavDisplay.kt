@@ -71,10 +71,20 @@ fun SairoNavDisplay(
         },
         entryProvider = entryProvider {
             entry<HomeRoute> {
-                HomeScreenRoute()
+                HomeScreenRoute(
+                    onFindTripClick = {
+                        navigator.navigate(
+                            OnboardingIntroRoute(
+                                entryPoint = OnboardingIntroEntryPoint.Home,
+                            ),
+                        )
+                    },
+                )
             }
-            entry<OnboardingIntroRoute> {
+            entry<OnboardingIntroRoute> { route ->
                 OnboardingIntroScreenRoute(
+                    entryPoint = route.entryPoint,
+                    onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
                 )
             }

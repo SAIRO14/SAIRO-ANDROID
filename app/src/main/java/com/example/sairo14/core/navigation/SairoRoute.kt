@@ -11,6 +11,18 @@ sealed interface SairoRoute : NavKey
 @Serializable
 data object HomeRoute : SairoRoute
 
+/** 온보딩 인트로 화면의 진입 출처를 구분한다. */
+@Serializable
+enum class OnboardingIntroEntryPoint {
+    /** 앱 최초 실행 과정에서 표시하는 인트로다. */
+    AppStart,
+
+    /** Home의 여행지 탐색 CTA에서 다시 진입한 인트로다. */
+    Home,
+}
+
 /** 온보딩에서 여행지 찾기 서비스와 시작 행동을 소개하는 첫 화면을 식별한다. */
 @Serializable
-data object OnboardingIntroRoute : SairoRoute
+data class OnboardingIntroRoute(
+    val entryPoint: OnboardingIntroEntryPoint = OnboardingIntroEntryPoint.AppStart,
+) : SairoRoute

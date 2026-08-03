@@ -45,6 +45,7 @@ enum class SairoHeaderVariant {
  * @param variant Figma의 Home, Sub, SubFilled 또는 ActionOnly 헤더 변형
  * @param modifier 헤더에 적용할 Modifier
  * @param title Sub 변형에 표시할 제목
+ * @param titleColor Sub 변형 제목에 적용할 색상. 기본값은 기본 본문 색상이다
  * @param onBackClick Sub 변형의 뒤로가기 버튼을 클릭했을 때 호출할 동작
  * @param actionIcon 우측 액션에 표시할 아이콘. `null`이면 우측 액션을 표시하지 않는다
  * @param actionContentDescription 우측 액션 아이콘의 접근성 설명
@@ -58,6 +59,7 @@ fun SairoHeader(
     variant: SairoHeaderVariant,
     modifier: Modifier = Modifier,
     title: String? = null,
+    titleColor: Color = Color.Unspecified,
     onBackClick: (() -> Unit)? = null,
     actionIcon: Painter? = null,
     actionContentDescription: String? = null,
@@ -92,7 +94,10 @@ fun SairoHeader(
             )
             .background(backgroundColor)
             .statusBarsPadding()
-            .padding(vertical = HeaderVerticalPadding),
+            .padding(
+                horizontal = HeaderHorizontalPadding,
+                vertical = HeaderVerticalPadding,
+            ),
     ) {
         when (variant) {
             SairoHeaderVariant.Home -> HomeHeaderContents(
@@ -107,6 +112,7 @@ fun SairoHeader(
             SairoHeaderVariant.SubFilled,
             -> SubHeaderContents(
                 title = title.orEmpty(),
+                titleColor = titleColor,
                 enabled = enabled,
                 onBackClick = onBackClick,
                 actionIcon = actionIcon,
@@ -163,6 +169,7 @@ private fun HomeHeaderContents(
 @Composable
 private fun SubHeaderContents(
     title: String,
+    titleColor: Color,
     enabled: Boolean,
     onBackClick: (() -> Unit)?,
     actionIcon: Painter?,
@@ -190,7 +197,11 @@ private fun SubHeaderContents(
             )
             Text(
                 text = title,
-                color = SairoTheme.colors.textPrimary,
+                color = if (titleColor == Color.Unspecified) {
+                    SairoTheme.colors.textPrimary
+                } else {
+                    titleColor
+                },
                 style = SairoTextStyles.bodyLight18,
             )
         }
@@ -269,7 +280,7 @@ private val BackActionTouchSize = 36.dp
 private val HeaderIconSize = 24.dp
 private val HeaderContentMinHeight = 44.dp
 private val HeaderVerticalPadding = 6.dp
-private val HomeHeaderHorizontalInset = 16.dp
+private val HeaderHorizontalPadding = 6.dp
 private const val HeaderBackdropBlurRadius = 20
 
 @Preview(name = "Sairo Header / Home", showBackground = true, widthDp = 360)

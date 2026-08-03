@@ -16,6 +16,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import com.example.sairo14.feature.home.HomeRoute as HomeScreenRoute
 import com.example.sairo14.feature.onboarding.OnboardingIntroRoute as OnboardingIntroScreenRoute
+import com.example.sairo14.feature.onboarding.OnboardingPhotoSelectRoute as OnboardingPhotoSelectScreenRoute
 
 private const val ForwardEnterDurationMillis = 300
 private const val ForwardExitDurationMillis = 225
@@ -86,7 +87,13 @@ fun SairoNavDisplay(
                     entryPoint = route.entryPoint,
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
+                    onStartClick = {
+                        navigator.navigate(OnboardingPhotoSelectRoute)
+                    },
                 )
+            }
+            entry<OnboardingPhotoSelectRoute> {
+                OnboardingPhotoSelectScreenRoute()
             }
         },
     )

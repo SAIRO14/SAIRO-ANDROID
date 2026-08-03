@@ -22,7 +22,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -51,7 +53,9 @@ import com.example.sairo14.core.designsystem.component.rememberSairoBackdropImag
 import com.example.sairo14.core.designsystem.component.rememberSairoBackdropState
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 /**
  * 홈 화면의 상태와 사용자 행동을 화면에 연결한다.
@@ -339,7 +343,24 @@ private fun HomePannableCanvas(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val density = LocalDensity.current
+    val coroutineScope = rememberCoroutineScope()
     var canvasOffset by remember { mutableStateOf(Offset.Zero) }
+    val backdropInvalidationPending = remember(backdropState) { AtomicBoolean(false) }
+    val scheduleBackdropInvalidation = remember(
+        backdropState,
+        coroutineScope,
+        backdropInvalidationPending,
+    ) {
+        {
+            if (backdropInvalidationPending.compareAndSet(false, true)) {
+                coroutineScope.launch {
+                    withFrameNanos { }
+                    backdropState.invalidate()
+                    backdropInvalidationPending.set(false)
+                }
+            }
+        }
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -356,7 +377,9 @@ private fun HomePannableCanvas(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(maxWidth, maxHeight) {
-                    detectDragGestures { change, dragAmount ->
+                    detectDragGestures(
+                        onDragStart = { backdropState.invalidate() },
+                    ) { change, dragAmount ->
                         change.consume()
                         canvasOffset = Offset(
                             x = (canvasOffset.x + dragAmount.x)
@@ -364,7 +387,7 @@ private fun HomePannableCanvas(
                             y = (canvasOffset.y + dragAmount.y)
                                 .coerceIn(-verticalDragLimit, verticalDragLimit),
                         )
-                        backdropState.invalidate()
+                        scheduleBackdropInvalidation()
                     }
                 },
         ) {

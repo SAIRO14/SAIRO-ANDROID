@@ -3,6 +3,7 @@ package com.example.sairo14.core.navigation
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,13 +14,17 @@ import androidx.compose.runtime.Composable
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.metadata
 import androidx.navigation3.ui.NavDisplay
 import com.example.sairo14.feature.home.HomeRoute as HomeScreenRoute
 import com.example.sairo14.feature.onboarding.OnboardingIntroRoute as OnboardingIntroScreenRoute
+import com.example.sairo14.feature.onboarding.OnboardingLoadingRoute as OnboardingLoadingScreenRoute
 import com.example.sairo14.feature.onboarding.OnboardingPhotoSelectRoute as OnboardingPhotoSelectScreenRoute
+import com.example.sairo14.feature.onboarding.OnboardingResultScreen
 
 private const val ForwardEnterDurationMillis = 300
 private const val ForwardExitDurationMillis = 225
+private const val LoadingResultDissolveDurationMillis = 250
 
 private val ForwardEnterEasing = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 private val ForwardExitEasing = CubicBezierEasing(0.32f, 0f, 0.67f, 0f)
@@ -93,7 +98,41 @@ fun SairoNavDisplay(
                 )
             }
             entry<OnboardingPhotoSelectRoute> {
-                OnboardingPhotoSelectScreenRoute()
+                OnboardingPhotoSelectScreenRoute(
+                    onSelectionComplete = { photoIds ->
+                        navigator.navigateSingleTop(OnboardingLoadingRoute(photoIds))
+                    },
+                )
+            }
+            entry<OnboardingLoadingRoute> { route ->
+                OnboardingLoadingScreenRoute(
+                    selectedPhotoIds = route.selectedPhotoIds,
+                    onFinished = {
+                        navigator.replaceTop(OnboardingResultRoute)
+                    },
+                    onBackClick = navigator::navigateUp,
+                )
+            }
+            entry<OnboardingResultRoute>(
+                metadata = metadata {
+                    put(NavDisplay.TransitionKey) {
+                        fadeIn(
+                            animationSpec = tween(
+                                durationMillis = LoadingResultDissolveDurationMillis,
+                                easing = LinearEasing,
+                            ),
+                        ).togetherWith(
+                            fadeOut(
+                                animationSpec = tween(
+                                    durationMillis = LoadingResultDissolveDurationMillis,
+                                    easing = LinearEasing,
+                                ),
+                            ),
+                        )
+                    }
+                },
+            ) {
+                OnboardingResultScreen()
             }
         },
     )

@@ -27,6 +27,18 @@ class SairoNavigator(
     }
 
     /**
+     * 현재 목적지를 교체해 완료 화면에서 이전 중간 단계를 다시 표시하지 않는다.
+     * @param route 현재 최상단을 대체할 목적지
+     */
+    fun replaceTop(route: SairoRoute) {
+        if (backStack.isNotEmpty()) {
+            backStack[backStack.lastIndex] = route
+        } else {
+            backStack.add(route)
+        }
+    }
+
+    /**
      * 현재 목적지를 닫고 이전 목적지로 이동한다.
      *
      * 루트 목적지는 유지하므로, 앱 종료 여부는 Activity의 시스템 뒤로가기 정책이 결정한다.

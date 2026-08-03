@@ -377,9 +377,17 @@ private fun landingScale(
         durationMillis = CardLandingDurationMillis,
     )
     return if (progress < 0.5f) {
-        lerp(1f, LandingPressedScale, progress / 0.5f)
+        lerp(
+            start = 1f,
+            end = LandingPressedScale,
+            progress = CardLandingEasing.transform(progress / 0.5f),
+        )
     } else {
-        lerp(LandingPressedScale, 1f, (progress - 0.5f) / 0.5f)
+        lerp(
+            start = LandingPressedScale,
+            end = 1f,
+            progress = CardLandingEasing.transform((progress - 0.5f) / 0.5f),
+        )
     }
 }
 
@@ -414,6 +422,7 @@ private const val DotCount = 3
 private const val InactiveDotAlpha = 0.2f
 private const val LandingPressedScale = 0.98f
 private val CardEnterEasing = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
+private val CardLandingEasing = CubicBezierEasing(0.65f, 0f, 0.35f, 1f)
 private val TagEnterEasing = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 private val DeckWidth = 274.dp
 private val DeckHeight = 370.dp

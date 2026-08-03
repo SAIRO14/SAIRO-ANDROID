@@ -18,8 +18,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
@@ -67,10 +65,7 @@ fun HomeSavedTripCard(
             .noRippleClickable(
                 onClick = onClick,
                 role = Role.Button,
-            )
-            .semantics {
-                contentDescription = savedTrip.regionName
-            },
+            ),
     ) {
         if (painter != null) {
             Image(

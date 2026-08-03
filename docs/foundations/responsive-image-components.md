@@ -31,6 +31,8 @@ SairoImageCard(
 
 시스템 내비게이션 inset으로 폴더 영역이 커지면 Pager에 남는 높이가 줄어든다. 카드 너비는 화면 폭뿐 아니라, 상·하단 여유를 제외한 Pager 높이에서도 계산한다. 따라서 충분한 화면에서는 Figma 기준 최대 크기를 유지하고, 세로 공간이 부족한 기기에서만 카드 비율을 보존한 채 축소된다.
 
+다만 Pager의 가용 높이가 상·하단 여유보다 작으면 카드 너비가 0이 될 수 있다. 사진 선택 화면은 이 경우를 저높이 레이아웃으로 구분한다. 화면 전체를 세로 스크롤 가능하게 만들고 Pager에 최소 높이를 부여해, 가로 모드나 분할 화면에서도 카드와 클릭 영역이 사라지지 않게 한다.
+
 선택 보더가 있는 카드에서는 이미지 콘텐츠의 라운드를 보더 안쪽 라운드로 분리한다. 예를 들어 외곽 라운드가 24dp이고 보더가 3dp이면 이미지는 21dp 라운드로 클리핑한다. 보더의 안티앨리어싱 영역에 이미지가 비쳐 모서리 밖으로 튀어나와 보이는 현상을 막을 수 있다.
 
 ```kotlin
@@ -52,6 +54,14 @@ val cardWidth = minOf(
     availableCardHeight * cardAspectRatio,
     maximumCardWidth,
 )
+
+Column {
+    val pagerModifier = if (maxHeight < compactHeightThreshold) {
+        Modifier.heightIn(min = compactPagerMinimumHeight)
+    } else {
+        Modifier.weight(1f)
+    }
+}
 
 val outerShape = RoundedCornerShape(24.dp)
 val contentShape = RoundedCornerShape(21.dp)
@@ -93,6 +103,7 @@ flowchart LR
 - `Large`, `Medium`은 기본 크기와 시각 규격만 담당한다. 공통 컴포넌트 내부에서 화면 너비를 직접 읽으면 재사용성이 낮아진다.
 - 이미지 배경은 화면에 맞춰 가변해도 텍스트 크기와 버튼의 최소 터치 영역까지 같은 비율로 축소하지 않는다.
 - 그림자를 폴더 이미지에 직접 한 번만 적용하면 반투명 폴더 표면 안쪽까지 그림자가 비쳐 보일 수 있다. 이 경우 그림자·표면·외곽선의 레이어 순서를 분리하되, 같은 폴더 영역 컨테이너가 함께 소유한다.
+- `PageSize.Fixed(0.dp)`는 화면에 카드도 터치 영역도 만들지 않는다. 카드 너비에 임의의 최소값만 적용하기보다, Pager 자체에 양의 높이를 보장하는 저높이 대체 레이아웃이 필요하다.
 - `scale()`은 레이아웃이 측정한 크기를 바꾸지 않으므로, 이미지 크기 조절에는 `width()`와 `aspectRatio()`를 우선 사용한다. 시각 축소가 필요한 고정 규격 버튼은 별도 래퍼가 축소된 레이아웃 공간을 함께 예약해야 한다.
 
 ## 추가 학습 및 대안

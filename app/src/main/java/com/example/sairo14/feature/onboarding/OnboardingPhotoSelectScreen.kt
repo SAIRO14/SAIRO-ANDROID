@@ -1,6 +1,7 @@
 package com.example.sairo14.feature.onboarding
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
@@ -116,54 +118,75 @@ fun OnboardingPhotoSelectScreen(
     val colors = SairoTheme.colors
     val content = uiState as? OnboardingPhotoSelectUiState.Content
 
-    Column(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(colors.backgroundCanvas)
             .statusBarsPadding(),
     ) {
-        Spacer(modifier = Modifier.height(HeaderTopSpacing))
+        val isCompactHeight = maxHeight < PhotoSelectCompactHeightThreshold
 
-        PhotoSelectHeader(
-            modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
-        )
-
-        Spacer(modifier = Modifier.height(HeaderToPagerSpacing))
-
-        Box(
+        Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .zIndex(PhotoCandidatePagerLayer),
+                .fillMaxSize()
+                .then(
+                    if (isCompactHeight) {
+                        Modifier.verticalScroll(rememberScrollState())
+                    } else {
+                        Modifier
+                    },
+                ),
         ) {
-            when (uiState) {
-                OnboardingPhotoSelectUiState.Loading -> PhotoSelectLoadingContent()
-                OnboardingPhotoSelectUiState.Empty -> PhotoSelectMessageContent(
-                    text = stringResource(R.string.onboarding_photo_select_empty),
-                )
-
-                OnboardingPhotoSelectUiState.Error -> PhotoSelectErrorContent(
-                    onRetryClick = onRetryClick,
-                )
-
-                is OnboardingPhotoSelectUiState.Content -> PhotoCandidatePager(
-                    photos = uiState.photos,
-                    selectedPhotoIds = uiState.selectedPhotoIds,
-                    onPhotoClick = onPhotoClick,
-                    onVisiblePhotoChanged = onVisiblePhotoChanged,
-                )
+            val pagerContainerModifier = if (isCompactHeight) {
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = CompactPagerMinimumHeight)
+            } else {
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             }
-        }
 
-        PhotoSelectionTray(
-            selectedPhotos = content?.selectedPhotos.orEmpty(),
-            selectedPhotoIds = content?.selectedPhotoIds.orEmpty(),
-            viewedPhotoIds = content?.viewedPhotoIds.orEmpty(),
-            allPhotos = content?.photos.orEmpty(),
-            canComplete = content?.canComplete == true,
-            onPhotoRemoveClick = onPhotoRemoveClick,
-            onCompleteClick = onCompleteClick,
-        )
+            Spacer(modifier = Modifier.height(HeaderTopSpacing))
+
+            PhotoSelectHeader(
+                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+            )
+
+            Spacer(modifier = Modifier.height(HeaderToPagerSpacing))
+
+            Box(
+                modifier = pagerContainerModifier.zIndex(PhotoCandidatePagerLayer),
+            ) {
+                when (uiState) {
+                    OnboardingPhotoSelectUiState.Loading -> PhotoSelectLoadingContent()
+                    OnboardingPhotoSelectUiState.Empty -> PhotoSelectMessageContent(
+                        text = stringResource(R.string.onboarding_photo_select_empty),
+                    )
+
+                    OnboardingPhotoSelectUiState.Error -> PhotoSelectErrorContent(
+                        onRetryClick = onRetryClick,
+                    )
+
+                    is OnboardingPhotoSelectUiState.Content -> PhotoCandidatePager(
+                        photos = uiState.photos,
+                        selectedPhotoIds = uiState.selectedPhotoIds,
+                        onPhotoClick = onPhotoClick,
+                        onVisiblePhotoChanged = onVisiblePhotoChanged,
+                    )
+                }
+            }
+
+            PhotoSelectionTray(
+                selectedPhotos = content?.selectedPhotos.orEmpty(),
+                selectedPhotoIds = content?.selectedPhotoIds.orEmpty(),
+                viewedPhotoIds = content?.viewedPhotoIds.orEmpty(),
+                allPhotos = content?.photos.orEmpty(),
+                canComplete = content?.canComplete == true,
+                onPhotoRemoveClick = onPhotoRemoveClick,
+                onCompleteClick = onCompleteClick,
+            )
+        }
     }
 }
 
@@ -494,6 +517,8 @@ private val PhotoCardTopPadding = 12.dp
 private val PhotoCardBottomShadowClearance = 32.dp
 private val PhotoCardPageSpacing = 16.dp
 private const val PhotoCandidatePagerLayer = 1f
+private val PhotoSelectCompactHeightThreshold = 520.dp
+private val CompactPagerMinimumHeight = 200.dp
 private const val FolderWidthRatio = 375f / 360f
 private const val FolderAspectRatio = 375f / 230f
 private const val FolderVisibleHeightRatio = 219f / 230f

@@ -31,6 +31,8 @@ SairoImageCard(
 
 시스템 내비게이션 inset으로 폴더 영역이 커지면 Pager에 남는 높이가 줄어든다. 카드 너비는 화면 폭뿐 아니라, 상·하단 여유를 제외한 Pager 높이에서도 계산한다. 따라서 충분한 화면에서는 Figma 기준 최대 크기를 유지하고, 세로 공간이 부족한 기기에서만 카드 비율을 보존한 채 축소된다.
 
+선택 보더가 있는 카드에서는 이미지 콘텐츠의 라운드를 보더 안쪽 라운드로 분리한다. 예를 들어 외곽 라운드가 24dp이고 보더가 3dp이면 이미지는 21dp 라운드로 클리핑한다. 보더의 안티앨리어싱 영역에 이미지가 비쳐 모서리 밖으로 튀어나와 보이는 현상을 막을 수 있다.
+
 ```kotlin
 Box {
     // 부모는 surfaceRaised + navigationBarsPadding()
@@ -50,6 +52,14 @@ val cardWidth = minOf(
     availableCardHeight * cardAspectRatio,
     maximumCardWidth,
 )
+
+val outerShape = RoundedCornerShape(24.dp)
+val contentShape = RoundedCornerShape(21.dp)
+Box(Modifier.border(3.dp, brush, outerShape)) {
+    Box(Modifier.padding(3.dp).clip(contentShape)) {
+        Image(...)
+    }
+}
 ```
 
 홈의 중앙 CTA인 [`HomeDiscoveryCta.kt`](../../app/src/main/java/com/example/sairo14/feature/home/HomeDiscoveryCta.kt)는 `BoxWithConstraints`로 부모의 가용 너비를 읽고, Figma 기준 묶음 너비를 넘지 않는 비율을 계산한다. 카드·폴더·버튼의 너비와 CTA 높이는 같은 비율로 계산하고, 레이어의 위치는 `Alignment`와 `padding`으로 배치한다. 따라서 카드의 화면 좌표를 직접 지정하지 않아도 작은 화면에서 겹침 순서와 비율을 유지한다.

@@ -30,3 +30,13 @@ data class OnboardingIntroRoute(
 /** 온보딩에서 취향 사진을 선택하는 화면을 식별한다. */
 @Serializable
 data object OnboardingPhotoSelectRoute : SairoRoute
+
+/** 온보딩에서 선택한 사진을 분석하며 카드 스태킹 모션을 표시하는 화면을 식별한다. */
+@Serializable
+data class OnboardingLoadingRoute(
+    val selectedPhotoIds: List<String>,
+) : SairoRoute
+
+/** 온보딩 분석이 끝난 뒤 추천 결과가 표시될 자리를 식별한다. */
+@Serializable
+data object OnboardingResultRoute : SairoRoute

@@ -40,6 +40,7 @@ import com.example.sairo14.core.designsystem.component.rememberSairoBackdropImag
 import com.example.sairo14.core.designsystem.component.rememberSairoBackdropState
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.core.navigation.OnboardingIntroEntryPoint
 
 /**
  * 온보딩 소개 화면의 상태와 내비게이션 행동을 화면에 연결한다.
@@ -47,6 +48,8 @@ import com.example.sairo14.core.designsystem.theme.SairoTheme
  * ViewModel의 UI 상태와 사용자 이벤트는 이 Route에서 [OnboardingIntroScreen]으로 전달한다.
  * @param modifier 화면 컨테이너에 적용할 Modifier
  * @param viewModel 인트로 이미지 상태를 소유하는 ViewModel
+ * @param entryPoint 인트로 화면으로 이동한 출처
+ * @param onBackClick Home 진입 인트로의 뒤로가기 동작
  * @param onHomeClick 홈으로 이동해야 할 때 호출할 콜백
  * @param onStartClick 여행지 찾기를 시작해야 할 때 호출할 콜백
  */
@@ -54,6 +57,8 @@ import com.example.sairo14.core.designsystem.theme.SairoTheme
 fun OnboardingIntroRoute(
     modifier: Modifier = Modifier,
     viewModel: OnboardingIntroViewModel = hiltViewModel(),
+    entryPoint: OnboardingIntroEntryPoint = OnboardingIntroEntryPoint.AppStart,
+    onBackClick: () -> Unit = {},
     onHomeClick: () -> Unit,
     onStartClick: () -> Unit = {},
 ) {
@@ -62,6 +67,8 @@ fun OnboardingIntroRoute(
     OnboardingIntroScreen(
         modifier = modifier,
         uiState = uiState,
+        entryPoint = entryPoint,
+        onBackClick = onBackClick,
         onHomeClick = onHomeClick,
         onStartClick = onStartClick,
     )
@@ -74,6 +81,8 @@ fun OnboardingIntroRoute(
  * inset을 고려한다. 홈 이동과 시작 행동은 호출자가 소유한다.
  * @param modifier 온보딩 화면 컨테이너에 적용할 Modifier
  * @param uiState 서버에서 제공할 인트로 이미지 상태
+ * @param entryPoint 화면으로 이동한 출처에 따라 선택할 헤더 구성
+ * @param onBackClick Home 진입 인트로의 뒤로가기 동작
  * @param onHomeClick 우측 홈 버튼을 눌렀을 때 호출할 콜백
  * @param onStartClick 여행지 찾기 시작 CTA를 눌렀을 때 호출할 콜백
  */
@@ -81,6 +90,8 @@ fun OnboardingIntroRoute(
 fun OnboardingIntroScreen(
     modifier: Modifier = Modifier,
     uiState: OnboardingIntroUiState = OnboardingIntroUiState(),
+    entryPoint: OnboardingIntroEntryPoint = OnboardingIntroEntryPoint.AppStart,
+    onBackClick: () -> Unit = {},
     onHomeClick: () -> Unit = {},
     onStartClick: () -> Unit = {},
 ) {
@@ -135,14 +146,28 @@ fun OnboardingIntroScreen(
         Column(
             modifier = Modifier.fillMaxSize(),
         ) {
-            SairoHeader(
-                variant = SairoHeaderVariant.ActionOnly,
-                actionIcon = painterResource(R.drawable.ic_home),
-                actionContentDescription = stringResource(R.string.sairo_header_home),
-                iconTint = colors.textWhite,
-                onActionClick = onHomeClick,
-                backdropState = backdropState,
-            )
+            when (entryPoint) {
+                OnboardingIntroEntryPoint.AppStart -> SairoHeader(
+                    variant = SairoHeaderVariant.ActionOnly,
+                    actionIcon = painterResource(R.drawable.ic_home),
+                    actionContentDescription = stringResource(R.string.sairo_header_home),
+                    iconTint = colors.textWhite,
+                    onActionClick = onHomeClick,
+                    backdropState = backdropState,
+                )
+
+                OnboardingIntroEntryPoint.Home -> SairoHeader(
+                    variant = SairoHeaderVariant.Sub,
+                    title = stringResource(R.string.onboarding_intro_header_title),
+                    titleColor = colors.textWhite,
+                    onBackClick = onBackClick,
+                    actionIcon = painterResource(R.drawable.ic_home),
+                    actionContentDescription = stringResource(R.string.sairo_header_home),
+                    iconTint = colors.textWhite,
+                    onActionClick = onHomeClick,
+                    backdropState = backdropState,
+                )
+            }
 
             Spacer(modifier = Modifier.height(70.dp))
             //TODO : 임시로 넓혀둠 - shc

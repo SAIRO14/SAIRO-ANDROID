@@ -22,6 +22,7 @@ import com.example.sairo14.core.designsystem.component.SairoButton
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.navigation.HomeRoute
+import com.example.sairo14.core.navigation.OnboardingIntroEntryPoint
 import com.example.sairo14.core.navigation.OnboardingIntroRoute
 import com.example.sairo14.core.navigation.SairoNavDisplay
 import com.example.sairo14.core.navigation.SairoNavigator
@@ -50,7 +51,7 @@ private fun SairoNavigation(
         AppStartDestination.Home -> rememberNavBackStack(HomeRoute)
         AppStartDestination.OnboardingIntro -> rememberNavBackStack(
             HomeRoute,
-            OnboardingIntroRoute,
+            OnboardingIntroRoute(entryPoint = OnboardingIntroEntryPoint.AppStart),
         )
     }
     val navigator = remember(backStack) { SairoNavigator(backStack) }

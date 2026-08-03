@@ -19,6 +19,13 @@ class SairoNavigator(
         backStack.add(route)
     }
 
+    /** 현재 최상단 목적지와 다를 때만 새 목적지를 추가한다. */
+    fun navigateSingleTop(route: SairoRoute) {
+        if (backStack.lastOrNull() != route) {
+            backStack.add(route)
+        }
+    }
+
     /**
      * 현재 목적지를 닫고 이전 목적지로 이동한다.
      *

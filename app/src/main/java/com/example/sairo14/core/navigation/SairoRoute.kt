@@ -26,3 +26,7 @@ enum class OnboardingIntroEntryPoint {
 data class OnboardingIntroRoute(
     val entryPoint: OnboardingIntroEntryPoint = OnboardingIntroEntryPoint.AppStart,
 ) : SairoRoute
+
+/** 온보딩에서 취향 사진을 선택하는 화면을 식별한다. */
+@Serializable
+data object OnboardingPhotoSelectRoute : SairoRoute

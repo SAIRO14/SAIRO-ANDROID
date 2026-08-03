@@ -86,7 +86,10 @@ fun SairoImageCard(
         width = resolvedWidth,
         height = resolvedWidth / specification.aspectRatio,
     )
-    val shape = RoundedCornerShape(24.dp)
+    val shape = RoundedCornerShape(ImageCardCornerRadius)
+    val selectedContentShape = RoundedCornerShape(
+        ImageCardCornerRadius - SelectionBorderWidth,
+    )
     val colors = SairoTheme.colors
     val selectionBorderBrush = rememberSelectionBorderBrush(
         size = resolvedSize,
@@ -113,7 +116,7 @@ fun SairoImageCard(
             .then(
                 if (selected) {
                     Modifier.border(
-                        width = 3.dp,
+                        width = SelectionBorderWidth,
                         brush = selectionBorderBrush,
                         shape = shape,
                     )
@@ -136,39 +139,56 @@ fun SairoImageCard(
                 },
             ),
     ) {
-        if (painter != null) {
-            Image(
-                painter = painter,
-                contentDescription = contentDescription,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-        }
-
-        if (selected) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(100.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black),
-                        ),
-                    ),
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 24.dp, bottom = 24.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_check_circle_2),
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = colors.accentBase,
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (selected) {
+                        Modifier
+                            .padding(SelectionBorderWidth)
+                            .clip(selectedContentShape)
+                    } else {
+                        Modifier.clip(shape)
+                    },
+                ),
+        ) {
+            if (painter != null) {
+                Image(
+                    painter = painter,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                 )
+            }
+
+            if (selected) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black),
+                            ),
+                        ),
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(
+                            start = SelectionIconInset - SelectionBorderWidth,
+                            bottom = SelectionIconInset - SelectionBorderWidth,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_check_circle_2),
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = colors.accentBase,
+                    )
+                }
             }
         }
     }
@@ -191,6 +211,10 @@ private data class SairoImageCardSpecification(
     val defaultWidth: Dp,
     val aspectRatio: Float,
 )
+
+private val ImageCardCornerRadius = 24.dp
+private val SelectionBorderWidth = 3.dp
+private val SelectionIconInset = 24.dp
 
 @Composable
 private fun rememberSelectionBorderBrush(

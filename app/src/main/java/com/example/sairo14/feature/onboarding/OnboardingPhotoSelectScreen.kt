@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -29,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -131,7 +133,8 @@ fun OnboardingPhotoSelectScreen(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .zIndex(PhotoCandidatePagerLayer),
         ) {
             when (uiState) {
                 OnboardingPhotoSelectUiState.Loading -> PhotoSelectLoadingContent()
@@ -207,9 +210,12 @@ private fun PhotoCandidatePager(
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
     ) {
+        val availableCardHeight = (
+            maxHeight - PhotoCardTopPadding - PhotoCardBottomShadowClearance
+        ).coerceAtLeast(0.dp)
         val cardWidth = minOf(
             maxWidth * PhotoCardWidthRatio,
-            maxHeight * PhotoCardAspectRatio,
+            availableCardHeight * PhotoCardAspectRatio,
             PhotoCardMaximumWidth,
         )
         val pagerState = rememberPagerState(pageCount = { photos.size })
@@ -223,7 +229,12 @@ private fun PhotoCandidatePager(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = ScreenHorizontalPadding),
+            contentPadding = PaddingValues(
+                start = ScreenHorizontalPadding,
+                top = PhotoCardTopPadding,
+                end = ScreenHorizontalPadding,
+                bottom = PhotoCardBottomShadowClearance,
+            ),
             pageSpacing = PhotoCardPageSpacing,
             pageSize = PageSize.Fixed(cardWidth),
             verticalAlignment = Alignment.CenterVertically,
@@ -254,11 +265,15 @@ private fun PhotoSelectionTray(
     onCompleteClick: () -> Unit,
 ) {
     BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(SairoTheme.colors.surfaceRaised)
+            .navigationBarsPadding(),
     ) {
         val frameWidth = maxWidth * FolderWidthRatio
         val frameHeight = frameWidth / FolderAspectRatio
         val trayHeight = frameHeight * FolderVisibleHeightRatio
+        val folderBodyTopPadding = frameWidth * FolderBodyTopPaddingRatio
         val trayContentTopPadding = frameWidth * FolderContentTopPaddingRatio
         val countTopPadding = frameWidth * FolderCountTopPaddingRatio
 
@@ -267,6 +282,14 @@ private fun PhotoSelectionTray(
                 .fillMaxWidth()
                 .height(trayHeight),
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(folderBodyTopPadding)
+                    .background(SairoTheme.colors.backgroundCanvas),
+            )
+
+            // 폴더 그림자는 탭 상단의 캔버스와 본문 흰색 표면 위에 자연스럽게 이어서 표시한다.
             SairoFolderFrame(
                 variant = SairoFolderVariant.Large,
                 frameWidth = frameWidth,
@@ -276,6 +299,12 @@ private fun PhotoSelectionTray(
                         shape = FolderShadowShape,
                         shadowStyle = SairoShadowStyles.glowDefault,
                     ),
+            )
+
+            SairoFolderFrame(
+                variant = SairoFolderVariant.Large,
+                frameWidth = frameWidth,
+                modifier = Modifier.align(Alignment.TopCenter),
             )
 
             Text(
@@ -461,10 +490,14 @@ private val TitleToDescriptionSpacing = 2.dp
 private const val PhotoCardWidthRatio = 300f / 360f
 private const val PhotoCardAspectRatio = 3f / 4f
 private val PhotoCardMaximumWidth = 300.dp
+private val PhotoCardTopPadding = 12.dp
+private val PhotoCardBottomShadowClearance = 32.dp
 private val PhotoCardPageSpacing = 16.dp
+private const val PhotoCandidatePagerLayer = 1f
 private const val FolderWidthRatio = 375f / 360f
 private const val FolderAspectRatio = 375f / 230f
 private const val FolderVisibleHeightRatio = 219f / 230f
+private const val FolderBodyTopPaddingRatio = 37.75f / 375f
 private const val FolderContentTopPaddingRatio = 55f / 375f
 private const val FolderCountTopPaddingRatio = 16f / 375f
 private val FolderShadowShape = RectangleShape

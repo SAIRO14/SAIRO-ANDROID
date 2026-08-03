@@ -25,6 +25,33 @@ SairoImageCard(
 
 `SairoFolderFrame`도 `frameWidth`를 선택적으로 받아 폴더 리소스를 동일한 방식으로 그린다. 폴더 위 콘텐츠의 위치는 프레임 컴포넌트가 아니라 호출 화면의 `Box`가 관리한다.
 
+사진 선택 화면의 폴더 영역은 하나의 `Box`가 폴더 본문부터 시스템 내비게이션 영역까지 `surfaceRaised`로 유지한다. 탭이 있는 상단 높이만 `backgroundCanvas`로 다시 덮고, 그림자가 있는 폴더와 외곽선용 폴더를 순서대로 올린다. 이 순서로 폴더 위쪽은 캔버스와 자연스럽게 이어지고, 본문 아래의 흰색 표면은 화면 하단까지 끊기지 않는다.
+
+카드와 폴더는 형제 레이아웃이므로, 카드의 회전·그림자가 폴더와 만나는 경우에는 카드 영역에 `zIndex(1f)`를 부여한다. 크기와 위치는 바꾸지 않고 그리기 순서만 카드가 앞서도록 한다.
+
+시스템 내비게이션 inset으로 폴더 영역이 커지면 Pager에 남는 높이가 줄어든다. 카드 너비는 화면 폭뿐 아니라, 상·하단 여유를 제외한 Pager 높이에서도 계산한다. 따라서 충분한 화면에서는 Figma 기준 최대 크기를 유지하고, 세로 공간이 부족한 기기에서만 카드 비율을 보존한 채 축소된다.
+
+```kotlin
+Box {
+    // 부모는 surfaceRaised + navigationBarsPadding()
+    Box(Modifier.height(folderBodyTop).background(backgroundCanvas))
+    FolderFrame(modifier = Modifier.sairoDropShadow(...))
+    FolderFrame() // 외곽선과 그라데이션을 맨 위에 표시
+}
+
+Box(Modifier.zIndex(1f)) {
+    PhotoCandidatePager(...)
+}
+
+val availableCardHeight = (maxHeight - topPadding - bottomShadowClearance)
+    .coerceAtLeast(0.dp)
+val cardWidth = minOf(
+    maxWidth * cardWidthRatio,
+    availableCardHeight * cardAspectRatio,
+    maximumCardWidth,
+)
+```
+
 홈의 중앙 CTA인 [`HomeDiscoveryCta.kt`](../../app/src/main/java/com/example/sairo14/feature/home/HomeDiscoveryCta.kt)는 `BoxWithConstraints`로 부모의 가용 너비를 읽고, Figma 기준 묶음 너비를 넘지 않는 비율을 계산한다. 카드·폴더·버튼의 너비와 CTA 높이는 같은 비율로 계산하고, 레이어의 위치는 `Alignment`와 `padding`으로 배치한다. 따라서 카드의 화면 좌표를 직접 지정하지 않아도 작은 화면에서 겹침 순서와 비율을 유지한다.
 
 ```kotlin
@@ -55,6 +82,7 @@ flowchart LR
 
 - `Large`, `Medium`은 기본 크기와 시각 규격만 담당한다. 공통 컴포넌트 내부에서 화면 너비를 직접 읽으면 재사용성이 낮아진다.
 - 이미지 배경은 화면에 맞춰 가변해도 텍스트 크기와 버튼의 최소 터치 영역까지 같은 비율로 축소하지 않는다.
+- 그림자를 폴더 이미지에 직접 한 번만 적용하면 반투명 폴더 표면 안쪽까지 그림자가 비쳐 보일 수 있다. 이 경우 그림자·표면·외곽선의 레이어 순서를 분리하되, 같은 폴더 영역 컨테이너가 함께 소유한다.
 - `scale()`은 레이아웃이 측정한 크기를 바꾸지 않으므로, 이미지 크기 조절에는 `width()`와 `aspectRatio()`를 우선 사용한다. 시각 축소가 필요한 고정 규격 버튼은 별도 래퍼가 축소된 레이아웃 공간을 함께 예약해야 한다.
 
 ## 추가 학습 및 대안

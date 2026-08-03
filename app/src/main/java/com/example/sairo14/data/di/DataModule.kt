@@ -1,6 +1,8 @@
 package com.example.sairo14.data.di
 
 import com.example.sairo14.data.repository.DefaultOnboardingRepository
+import com.example.sairo14.data.repository.FakeHomeRepository
+import com.example.sairo14.domain.repository.HomeRepository
 import com.example.sairo14.domain.repository.OnboardingRepository
 import dagger.Binds
 import dagger.Module
@@ -18,4 +20,10 @@ abstract class DataModule {
     abstract fun bindOnboardingRepository(
         repository: DefaultOnboardingRepository,
     ): OnboardingRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindHomeRepository(
+        repository: FakeHomeRepository,
+    ): HomeRepository
 }

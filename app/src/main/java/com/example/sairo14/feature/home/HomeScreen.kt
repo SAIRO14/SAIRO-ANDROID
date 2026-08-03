@@ -4,12 +4,15 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,6 +28,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.component.SairoBackdropHost
+import com.example.sairo14.core.designsystem.component.SairoBackdropState
+import com.example.sairo14.core.designsystem.component.SairoButton
 import com.example.sairo14.core.designsystem.component.SairoHeader
 import com.example.sairo14.core.designsystem.component.SairoHeaderVariant
 import com.example.sairo14.core.designsystem.component.rememberSairoBackdropImagePainter
@@ -56,37 +61,165 @@ fun HomeRoute(
         uiState = uiState,
         onFindTripClick = onFindTripClick,
         onFolderClick = onFolderClick,
+        onRetryClick = viewModel::retry,
     )
 }
 
 /**
- * 저장한 여행지가 없는 홈의 중앙 탐색 CTA와 헤더를 표시한다.
+ * 홈 데이터의 로딩·콘텐츠·오류 상태에 맞는 화면을 표시한다.
  *
- * 중앙 카드 묶음의 크기와 내부 간격은 화면의 가용 가로폭을 기준으로 계산한다. 따라서
- * Figma 기준 프레임보다 좁은 화면에서도 카드 비율과 겹침 순서를 유지하며, 화면 이동 상태는
- * 이 빈 상태에서 소유하지 않는다.
+ * 콘텐츠 상태의 중앙 카드 묶음은 화면의 가용 가로폭을 기준으로 계산한다. 저장 여행지 목록의
+ * 캔버스 표현은 후속 단계에서 [HomeUiState.Content.savedTrips]를 이용해 추가한다.
  * @param modifier 화면 컨테이너에 적용할 Modifier
- * @param uiState 화면에 표시할 이미지 URL 상태
+ * @param uiState 화면에 표시할 로딩·콘텐츠·오류 상태
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
+ * @param onRetryClick 오류 화면의 재시도 버튼을 눌렀을 때 호출할 동작
  */
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    uiState: HomeUiState = HomeUiState(),
+    uiState: HomeUiState = HomeUiState.Content(),
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
+    onRetryClick: () -> Unit = {},
+) {
+    when (uiState) {
+        HomeUiState.Loading -> HomeLoadingScreen(
+            modifier = modifier,
+            onFolderClick = onFolderClick,
+        )
+
+        is HomeUiState.Content -> HomeContentScreen(
+            modifier = modifier,
+            uiState = uiState,
+            onFindTripClick = onFindTripClick,
+            onFolderClick = onFolderClick,
+        )
+
+        HomeUiState.Error -> HomeErrorScreen(
+            modifier = modifier,
+            onFolderClick = onFolderClick,
+            onRetryClick = onRetryClick,
+        )
+    }
+}
+
+@Composable
+private fun HomeContentScreen(
+    modifier: Modifier,
+    uiState: HomeUiState.Content,
+    onFindTripClick: () -> Unit,
+    onFolderClick: () -> Unit,
+) {
+    HomeContainer(
+        modifier = modifier,
+        onFolderClick = onFolderClick,
+    ) { backdropState ->
+        val backImagePainter = rememberSairoBackdropImagePainter(
+            model = uiState.discoveryImages.backImageUrl ?: R.drawable.img_dummy_view,
+            backdropState = backdropState,
+        )
+        val frontImagePainter = rememberSairoBackdropImagePainter(
+            model = uiState.discoveryImages.frontImageUrl ?: R.drawable.img_dummy_view,
+            backdropState = backdropState,
+        )
+
+        Spacer(modifier = Modifier.height(HomeContentTopSpacing))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = HomeHorizontalPadding),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = HomeContentMaxWidth),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = stringResource(R.string.home_empty_title),
+                    color = SairoTheme.colors.textPrimary,
+                    style = SairoTextStyles.displayLight24,
+                    textAlign = TextAlign.Center,
+                )
+
+                Spacer(modifier = Modifier.height(HomeContentGap))
+
+                HomeDiscoveryCta(
+                    backPainter = backImagePainter,
+                    frontPainter = frontImagePainter,
+                    onClick = onFindTripClick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeLoadingScreen(
+    modifier: Modifier,
+    onFolderClick: () -> Unit,
+) {
+    HomeContainer(
+        modifier = modifier,
+        onFolderClick = onFolderClick,
+    ) { _ ->
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(color = SairoTheme.colors.accentBase)
+        }
+    }
+}
+
+@Composable
+private fun HomeErrorScreen(
+    modifier: Modifier,
+    onFolderClick: () -> Unit,
+    onRetryClick: () -> Unit,
+) {
+    HomeContainer(
+        modifier = modifier,
+        onFolderClick = onFolderClick,
+    ) { _ ->
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.home_load_error),
+                    color = SairoTheme.colors.textPrimary,
+                    style = SairoTextStyles.bodyLight18,
+                )
+                SairoButton(
+                    text = stringResource(R.string.home_retry),
+                    onClick = onRetryClick,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeContainer(
+    modifier: Modifier,
+    onFolderClick: () -> Unit,
+    content: @Composable ColumnScope.(SairoBackdropState) -> Unit,
 ) {
     val colors = SairoTheme.colors
     val backdropState = rememberSairoBackdropState(cpuBlurEnabled = true)
-    val backImagePainter = rememberSairoBackdropImagePainter(
-        model = uiState.backImageUrl ?: R.drawable.img_dummy_view,
-        backdropState = backdropState,
-    )
-    val frontImagePainter = rememberSairoBackdropImagePainter(
-        model = uiState.frontImageUrl ?: R.drawable.img_dummy_view,
-        backdropState = backdropState,
-    )
 
     SairoBackdropHost(
         state = backdropState,
@@ -112,37 +245,7 @@ fun HomeScreen(
                 onActionClick = onFolderClick,
                 backdropState = backdropState,
             )
-
-            Spacer(modifier = Modifier.height(HomeContentTopSpacing))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = HomeHorizontalPadding),
-                contentAlignment = Alignment.TopCenter,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = HomeContentMaxWidth),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_empty_title),
-                        color = colors.textPrimary,
-                        style = SairoTextStyles.displayLight24,
-                        textAlign = TextAlign.Center,
-                    )
-
-                    Spacer(modifier = Modifier.height(HomeContentGap))
-
-                    HomeDiscoveryCta(
-                        backPainter = backImagePainter,
-                        frontPainter = frontImagePainter,
-                        onClick = onFindTripClick,
-                    )
-                }
-            }
+            content(backdropState)
         }
     }
 }

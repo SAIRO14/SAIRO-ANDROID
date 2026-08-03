@@ -27,6 +27,16 @@ Repository 인터페이스를 Domain에 두고 Fake 구현과 Retrofit 구현을
 
 Fake Repository는 Data 계층에 두되, UI 전용 DTO를 직접 반환하지 않는다. 아래 흐름처럼 Domain 계약을 구현한다.
 
+현재 홈은 [`HomeUiState.kt`](../../app/src/main/java/com/example/sairo14/feature/home/HomeUiState.kt)에서 이 경계를 먼저 정의한다. `Content`는 중앙 탐색 이미지와 저장 여행지 카드의 UI 요약 목록을 함께 가지며, 목록이 비어 있으면 현재의 빈 Home 화면을 표시한다. Repository가 연결되기 전에는 `HomeViewModel`이 빈 `Content`를 제공하고, 이후에는 UseCase 결과를 `Loading`·`Content`·`Error`로 변환한다.
+
+```kotlin
+when (uiState) {
+    HomeUiState.Loading -> HomeLoadingScreen()
+    is HomeUiState.Content -> HomeContentScreen(uiState)
+    HomeUiState.Error -> HomeErrorScreen(onRetryClick)
+}
+```
+
 ```mermaid
 flowchart LR
     DS[AnonymousIdentityDataStore] --> UC[UseCase]

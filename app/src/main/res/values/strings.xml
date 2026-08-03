@@ -48,6 +48,13 @@
     <string name="onboarding_photo_select_empty">선택할 사진이 아직 없어요.</string>
     <string name="onboarding_photo_select_error">사진을 불러오지 못했어요.</string>
     <string name="onboarding_photo_select_retry">다시 시도</string>
+    <string name="onboarding_loading_title">선택한 장면의 공통된\n분위기를 모으고 있어요</string>
+    <string name="onboarding_loading_tag_quiet">조용한</string>
+    <string name="onboarding_loading_tag_warm">따뜻한</string>
+    <string name="onboarding_loading_tag_secluded">한적한</string>
+    <string name="onboarding_loading_dot">·</string>
+    <string name="onboarding_loading_error">선택한 사진을 준비하지 못했어요.</string>
+    <string name="onboarding_loading_reselect">사진 다시 선택하기</string>
     <string name="home_empty_title">내 취향에 맞는\n장소를 발견해 보세요</string>
     <string name="home_populated_title">내 취향에 맞는\n또 다른 장소를 발견해 보세요</string>
     <string name="home_find_trip">여행지 찾기</string>

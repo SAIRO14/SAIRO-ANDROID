@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -92,7 +92,7 @@ fun SairoHeader(
             )
             .background(backgroundColor)
             .statusBarsPadding()
-            .height(HeaderNavigationHeight),
+            .padding(vertical = HeaderVerticalPadding),
     ) {
         when (variant) {
             SairoHeaderVariant.Home -> HomeHeaderContents(
@@ -134,7 +134,11 @@ private fun HomeHeaderContents(
     onActionClick: (() -> Unit)?,
     iconTint: Color,
 ) {
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = HeaderContentMinHeight),
+    ) {
         HeaderAction(
             painter = painterResource(R.drawable.ic_logo_black),
             contentDescription = stringResource(R.string.sairo_header_logo),
@@ -166,7 +170,11 @@ private fun SubHeaderContents(
     onActionClick: (() -> Unit)?,
     iconTint: Color,
 ) {
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = HeaderContentMinHeight),
+    ) {
         Row(
             modifier = Modifier.align(Alignment.CenterStart),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -207,7 +215,11 @@ private fun ActionOnlyHeaderContents(
     onActionClick: (() -> Unit)?,
     iconTint: Color,
 ) {
-    Box(modifier = Modifier.fillMaxWidth()) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = HeaderContentMinHeight),
+    ) {
         actionIcon?.let { painter ->
             HeaderAction(
                 painter = painter,
@@ -252,10 +264,12 @@ private fun HeaderAction(
     )
 }
 
-private val HeaderNavigationHeight = 56.dp
 private val HeaderActionTouchSize = 44.dp
 private val BackActionTouchSize = 36.dp
 private val HeaderIconSize = 24.dp
+private val HeaderContentMinHeight = 44.dp
+private val HeaderVerticalPadding = 6.dp
+private val HomeHeaderHorizontalInset = 16.dp
 private const val HeaderBackdropBlurRadius = 20
 
 @Preview(name = "Sairo Header / Home", showBackground = true, widthDp = 360)

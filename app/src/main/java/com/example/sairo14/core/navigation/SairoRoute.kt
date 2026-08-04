@@ -11,6 +11,10 @@ sealed interface SairoRoute : NavKey
 @Serializable
 data object HomeRoute : SairoRoute
 
+/** 현재 사용자가 저장한 여행지 목록을 식별한다. */
+@Serializable
+data object SavedTripsRoute : SairoRoute
+
 /** 온보딩 인트로 화면의 진입 출처를 구분한다. */
 @Serializable
 enum class OnboardingIntroEntryPoint {

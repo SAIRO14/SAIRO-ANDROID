@@ -4,10 +4,12 @@ import com.example.sairo14.data.repository.DefaultOnboardingRepository
 import com.example.sairo14.data.repository.FakeHomeRepository
 import com.example.sairo14.data.repository.FakeOnboardingRecommendationRepository
 import com.example.sairo14.data.repository.FakePhotoSelectionRepository
+import com.example.sairo14.data.repository.FakeSavedTripRepository
 import com.example.sairo14.domain.repository.HomeRepository
 import com.example.sairo14.domain.repository.OnboardingRepository
 import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import com.example.sairo14.domain.repository.PhotoSelectionRepository
+import com.example.sairo14.domain.repository.SavedTripRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -30,6 +32,12 @@ abstract class DataModule {
     abstract fun bindHomeRepository(
         repository: FakeHomeRepository,
     ): HomeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSavedTripRepository(
+        repository: FakeSavedTripRepository,
+    ): SavedTripRepository
 
     @Binds
     @Singleton

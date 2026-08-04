@@ -32,6 +32,13 @@ class DefaultOnboardingRepository @Inject constructor(
             preferencesDataStore.markOnboardingCompleted()
         }
 
+    override suspend fun markOnboardingIncomplete(): AppResult<Unit> =
+        runDataStoreOperation(
+            action = "온보딩 완료 상태를 해제하지 못했습니다.",
+        ) {
+            preferencesDataStore.markOnboardingIncomplete()
+        }
+
     private suspend fun <T> runDataStoreOperation(
         action: String,
         block: suspend () -> T,

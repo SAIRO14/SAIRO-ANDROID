@@ -55,6 +55,13 @@
     <string name="onboarding_loading_dot">·</string>
     <string name="onboarding_loading_error">선택한 사진을 준비하지 못했어요.</string>
     <string name="onboarding_loading_reselect">사진 다시 선택하기</string>
+    <string name="onboarding_result_header_title">추천 결과</string>
+    <string name="onboarding_result_title">당신과 닮은 지역</string>
+    <string name="onboarding_result_description">사진의 분위기를 바탕으로 찾았어요.</string>
+    <string name="onboarding_result_insufficient_description">닮은 지역이 아직 많지 않았어요.\n다른 사진으로 새로운 지역을 찾아보세요.</string>
+    <string name="onboarding_result_request_again">새로 추천받기</string>
+    <string name="onboarding_result_error">추천 결과를 불러오지 못했어요.</string>
+    <string name="onboarding_result_retry">다시 시도</string>
     <string name="home_empty_title">내 취향에 맞는\n장소를 발견해 보세요</string>
     <string name="home_populated_title">내 취향에 맞는\n또 다른 장소를 발견해 보세요</string>
     <string name="home_find_trip">여행지 찾기</string>

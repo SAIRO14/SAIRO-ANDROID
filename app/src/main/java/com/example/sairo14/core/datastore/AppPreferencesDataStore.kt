@@ -25,7 +25,7 @@ private val Context.appPreferencesDataStore by preferencesDataStore(
 )
 
 /**
- * 온보딩 완료 여부를 저장하고 손상 시 기본 상태로 복구한다.
+ * 온보딩 완료 여부를 저장·해제하고 손상 시 기본 상태로 복구한다.
  *
  * 이 DataStore는 온보딩 상태만 소유한다. 익명 사용자 식별자는 파일 손상 범위를 분리하기 위해
  * [AnonymousIdentityDataStore]에서 별도로 관리한다.
@@ -43,6 +43,12 @@ class AppPreferencesDataStore @Inject constructor(
     suspend fun markOnboardingCompleted() {
         dataStore.edit { preferences ->
             preferences[HAS_COMPLETED_ONBOARDING] = true
+        }
+    }
+
+    suspend fun markOnboardingIncomplete() {
+        dataStore.edit { preferences ->
+            preferences[HAS_COMPLETED_ONBOARDING] = false
         }
     }
 

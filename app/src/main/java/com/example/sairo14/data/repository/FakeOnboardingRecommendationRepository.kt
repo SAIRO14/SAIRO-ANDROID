@@ -12,9 +12,23 @@ class FakeOnboardingRecommendationRepository @Inject constructor() : OnboardingR
 
     override suspend fun getRecommendations(
         selectedPhotoIds: List<String>,
-    ): AppResult<List<OnboardingRecommendation>> = AppResult.Success(sampleRecommendations)
+    ): AppResult<List<OnboardingRecommendation>> = AppResult.Success(oneRecommendation)
 
     private companion object {
+
+        val emptyRecommendations = emptyList<OnboardingRecommendation>()
+        val oneRecommendation = listOf<OnboardingRecommendation>(
+            OnboardingRecommendation(
+                id = "recommendation-boeun",
+                regionName = "충북 보은권",
+                description = "고요한 자연과 전통의 분위기",
+                imageUrls = listOf(
+                    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
+                    "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
+                ),
+                placeNames = listOf("말티재 전망대", "세조길 숲 산책"),
+            )
+        )
         val sampleRecommendations = listOf(
             OnboardingRecommendation(
                 id = "recommendation-boeun",

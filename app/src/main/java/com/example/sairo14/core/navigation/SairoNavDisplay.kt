@@ -21,6 +21,7 @@ import com.example.sairo14.feature.onboarding.OnboardingIntroRoute as Onboarding
 import com.example.sairo14.feature.onboarding.OnboardingLoadingRoute as OnboardingLoadingScreenRoute
 import com.example.sairo14.feature.onboarding.OnboardingPhotoSelectRoute as OnboardingPhotoSelectScreenRoute
 import com.example.sairo14.feature.onboarding.OnboardingResultRoute as OnboardingResultScreenRoute
+import com.example.sairo14.feature.savedtrip.SavedTripsRoute as SavedTripsScreenRoute
 
 private const val ForwardEnterDurationMillis = 300
 private const val ForwardExitDurationMillis = 225
@@ -78,6 +79,22 @@ fun SairoNavDisplay(
         entryProvider = entryProvider {
             entry<HomeRoute> {
                 HomeScreenRoute(
+                    onFindTripClick = {
+                        navigator.navigateSingleTop(
+                            OnboardingIntroRoute(
+                                entryPoint = OnboardingIntroEntryPoint.Home,
+                            ),
+                        )
+                    },
+                    onFolderClick = {
+                        navigator.navigateSingleTop(SavedTripsRoute)
+                    },
+                )
+            }
+            entry<SavedTripsRoute> {
+                SavedTripsScreenRoute(
+                    onBackClick = navigator::navigateUp,
+                    onHomeClick = navigator::popToHome,
                     onFindTripClick = {
                         navigator.navigateSingleTop(
                             OnboardingIntroRoute(

@@ -20,7 +20,7 @@ import com.example.sairo14.feature.home.HomeRoute as HomeScreenRoute
 import com.example.sairo14.feature.onboarding.OnboardingIntroRoute as OnboardingIntroScreenRoute
 import com.example.sairo14.feature.onboarding.OnboardingLoadingRoute as OnboardingLoadingScreenRoute
 import com.example.sairo14.feature.onboarding.OnboardingPhotoSelectRoute as OnboardingPhotoSelectScreenRoute
-import com.example.sairo14.feature.onboarding.OnboardingResultScreen
+import com.example.sairo14.feature.onboarding.OnboardingResultRoute as OnboardingResultScreenRoute
 
 private const val ForwardEnterDurationMillis = 300
 private const val ForwardExitDurationMillis = 225
@@ -108,7 +108,7 @@ fun SairoNavDisplay(
                 OnboardingLoadingScreenRoute(
                     selectedPhotoIds = route.selectedPhotoIds,
                     onFinished = {
-                        navigator.replaceTop(OnboardingResultRoute)
+                        navigator.replaceTop(OnboardingResultRoute(route.selectedPhotoIds))
                     },
                     onBackClick = navigator::navigateUp,
                 )
@@ -131,8 +131,13 @@ fun SairoNavDisplay(
                         )
                     }
                 },
-            ) {
-                OnboardingResultScreen()
+            ) { route ->
+                OnboardingResultScreenRoute(
+                    selectedPhotoIds = route.selectedPhotoIds,
+                    onBackClick = navigator::navigateUp,
+                    onHomeClick = navigator::popToHome,
+                    onRequestAgainClick = navigator::navigateUp,
+                )
             }
         },
     )

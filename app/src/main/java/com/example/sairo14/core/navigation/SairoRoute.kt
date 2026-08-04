@@ -37,6 +37,8 @@ data class OnboardingLoadingRoute(
     val selectedPhotoIds: List<String>,
 ) : SairoRoute
 
-/** 온보딩 분석이 끝난 뒤 추천 결과가 표시될 자리를 식별한다. */
+/** 온보딩 분석이 끝난 뒤 선택 사진에 따른 추천 결과를 식별한다. */
 @Serializable
-data object OnboardingResultRoute : SairoRoute
+data class OnboardingResultRoute(
+    val selectedPhotoIds: List<String>,
+) : SairoRoute

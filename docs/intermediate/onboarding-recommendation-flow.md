@@ -16,6 +16,7 @@
 
 - Domain 모델: [`OnboardingRecommendation.kt`](../../app/src/main/java/com/example/sairo14/domain/model/OnboardingRecommendation.kt)
 - Repository 계약: [`OnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/OnboardingRecommendationRepository.kt)
+- 완료 상태 정책: [`UpdateOnboardingCompletionUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/UpdateOnboardingCompletionUseCase.kt)
 - Fake 구현: [`FakeOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/FakeOnboardingRecommendationRepository.kt)
 - 화면 상태와 ViewModel: [`OnboardingResultUiState.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/OnboardingResultUiState.kt), [`OnboardingResultViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/OnboardingResultViewModel.kt)
 - 결과 화면: [`OnboardingResultScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/OnboardingResultScreen.kt)
@@ -49,7 +50,7 @@ flowchart LR
 
 1. 사진 선택 화면이 선택 ID를 로딩 Route로 전달한다.
 2. 로딩 완료 뒤 `OnboardingResultRoute(selectedPhotoIds)`가 기존 로딩 Route를 교체한다.
-3. ViewModel은 온보딩 완료 상태를 저장하고 추천 Repository를 조회한다.
+3. ViewModel은 추천 Repository를 먼저 조회하고, `UpdateOnboardingCompletionUseCase`에 결과를 전달한다. UseCase는 결과가 1개 이상이면 완료 상태를 저장하고, 0개면 완료 상태를 해제한다.
 4. 결과가 2개 이상이면 카드 목록만 스크롤한다.
 5. 결과가 0개 또는 1개면 하단 안내와 재추천 버튼을 고정한다. 카드가 있는 경우에도 작은 화면에서는 목록 하단 여백으로 버튼과 겹치지 않는다.
 6. 재추천·뒤로가기는 기존 사진 선택 화면으로 돌아가고, 홈 버튼은 홈 목적지까지 백스택을 정리한다.
@@ -57,7 +58,7 @@ flowchart LR
 ## 트레이드오프와 주의점
 
 - 현재 북마크는 화면 안의 `isSaved`만 전환한다. 실제 저장 여행 기능이 도입되면 코스 API 문서에서 제안한 `SavedTripRepository`에 연결해야 하며, 화면 상태만 바꾸는 로직은 낙관적 업데이트와 실패 복구로 교체한다.
-- 완료 상태 저장이 실패하면 추천 결과를 표시하지 않고 오류·재시도를 제공한다. 앱을 다시 열 때 온보딩이 반복되는 불일치를 막기 위한 정책이다.
+- 완료 상태 저장 또는 해제가 실패하면 추천 결과를 표시하지 않고 오류·재시도를 제공한다. 다음 앱 시작 시의 진입 화면과 결과 수의 정책이 어긋나지 않도록 보장한다.
 - Fake Repository는 기본적으로 다수 추천을 반환한다. 0개·1개·오류는 ViewModel 테스트와 Preview에서 별도로 주입해 검증한다.
 - 결과 조회가 실제 네트워크에서 길어지면 로딩 화면에서 요청을 미리 시작하는 최적화를 검토할 수 있다. 현재는 Route가 입력을 보존하고 결과 ViewModel이 조회하므로 구현 경계가 단순하다.
 

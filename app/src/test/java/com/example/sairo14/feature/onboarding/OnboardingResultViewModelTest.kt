@@ -6,7 +6,7 @@ import com.example.sairo14.domain.model.OnboardingRecommendation
 import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import com.example.sairo14.domain.repository.OnboardingRepository
 import com.example.sairo14.domain.usecase.GetOnboardingRecommendationsUseCase
-import com.example.sairo14.domain.usecase.MarkOnboardingCompletedUseCase
+import com.example.sairo14.domain.usecase.UpdateOnboardingCompletionUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -35,14 +35,19 @@ class OnboardingResultViewModelTest {
     }
 
     @Test
-    fun `추천 결과가 없으면 정상 콘텐츠 상태로 유지한다`() = runTest(dispatcher) {
-        val viewModel = createViewModel(recommendations = emptyList())
+    fun `추천 결과가 없으면 온보딩 완료 상태를 해제하고 정상 콘텐츠 상태로 유지한다`() = runTest(dispatcher) {
+        val onboardingRepository = ResultOnboardingRepository(completed = true)
+        val viewModel = createViewModel(
+            recommendations = emptyList(),
+            onboardingRepository = onboardingRepository,
+        )
 
         viewModel.load(selectedPhotoIds)
         advanceUntilIdle()
 
         val content = viewModel.uiState.value as OnboardingResultUiState.Content
         assertTrue(content.recommendations.isEmpty())
+        assertTrue(!onboardingRepository.completed)
     }
 
     @Test
@@ -50,10 +55,10 @@ class OnboardingResultViewModelTest {
         val recommendations = listOf(recommendation(id = "boeun"), recommendation(id = "gangneung"))
         val onboardingRepository = ResultOnboardingRepository()
         val viewModel = OnboardingResultViewModel(
-            markOnboardingCompleted = MarkOnboardingCompletedUseCase(onboardingRepository),
             getOnboardingRecommendations = GetOnboardingRecommendationsUseCase(
                 ResultRecommendationRepository(AppResult.Success(recommendations)),
             ),
+            updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(onboardingRepository),
         )
 
         viewModel.load(selectedPhotoIds)
@@ -78,36 +83,45 @@ class OnboardingResultViewModelTest {
 
     @Test
     fun `추천 조회가 실패하면 오류 상태를 표시한다`() = runTest(dispatcher) {
+        val onboardingRepository = ResultOnboardingRepository()
         val viewModel = OnboardingResultViewModel(
-            markOnboardingCompleted = MarkOnboardingCompletedUseCase(ResultOnboardingRepository()),
             getOnboardingRecommendations = GetOnboardingRecommendationsUseCase(
                 ResultRecommendationRepository(AppResult.Failure(AppError.Unknown)),
             ),
+            updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(onboardingRepository),
         )
 
         viewModel.load(selectedPhotoIds)
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value is OnboardingResultUiState.Error)
+        assertTrue(!onboardingRepository.completed)
     }
 
     private fun createViewModel(
         recommendations: List<OnboardingRecommendation>,
+        onboardingRepository: ResultOnboardingRepository = ResultOnboardingRepository(),
     ): OnboardingResultViewModel = OnboardingResultViewModel(
-        markOnboardingCompleted = MarkOnboardingCompletedUseCase(ResultOnboardingRepository()),
         getOnboardingRecommendations = GetOnboardingRecommendationsUseCase(
             ResultRecommendationRepository(AppResult.Success(recommendations)),
         ),
+        updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(onboardingRepository),
     )
 
-    private class ResultOnboardingRepository : OnboardingRepository {
-        var completed = false
+    private class ResultOnboardingRepository(
+        var completed: Boolean = false,
+    ) : OnboardingRepository {
 
         override suspend fun getHasCompletedOnboarding(): AppResult<Boolean> =
             AppResult.Success(completed)
 
         override suspend fun markOnboardingCompleted(): AppResult<Unit> {
             completed = true
+            return AppResult.Success(Unit)
+        }
+
+        override suspend fun markOnboardingIncomplete(): AppResult<Unit> {
+            completed = false
             return AppResult.Success(Unit)
         }
     }

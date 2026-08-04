@@ -10,4 +10,7 @@ interface OnboardingRepository {
 
     /** 온보딩 완료 상태를 영구 저장한다. */
     suspend fun markOnboardingCompleted(): AppResult<Unit>
+
+    /** 온보딩 완료 상태를 해제해 다음 앱 시작 시 온보딩을 다시 표시한다. */
+    suspend fun markOnboardingIncomplete(): AppResult<Unit>
 }

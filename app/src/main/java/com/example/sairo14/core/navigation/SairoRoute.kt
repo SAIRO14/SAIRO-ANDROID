@@ -15,6 +15,12 @@ data object HomeRoute : SairoRoute
 @Serializable
 data object SavedTripsRoute : SairoRoute
 
+/** 코스 ID에 해당하는 일차별 지도와 장소 목록 화면을 식별한다. */
+@Serializable
+data class TravelDetailRoute(
+    val courseId: String,
+) : SairoRoute
+
 /** 온보딩 인트로 화면의 진입 출처를 구분한다. */
 @Serializable
 enum class OnboardingIntroEntryPoint {

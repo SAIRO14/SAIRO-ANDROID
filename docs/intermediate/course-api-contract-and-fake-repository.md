@@ -29,6 +29,8 @@ Fake Repository는 Data 계층에 두되, UI 전용 DTO를 직접 반환하지 �
 
 여행 상세 화면은 [`CourseRepository.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/CourseRepository.kt) 계약과 [`FakeCourseRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/FakeCourseRepository.kt) 구현을 연결한다. [`Course.kt`](../../app/src/main/java/com/example/sairo14/domain/model/Course.kt)의 `CourseDay`와 `CoursePlace`는 일차별 목록 순서와 지도 좌표를 함께 보존한다. 실제 API가 준비되면 동일한 `CourseRepository` 구현만 Retrofit 구현으로 교체하면 된다.
 
+현재 [`TravelDetailViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt)는 `Course`를 `TravelDetailCourseUiModel`로 변환한다. 선택한 일차 번호를 하나의 `TravelDetailUiState.Content`에 두므로, [`TravelDetailScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailScreen.kt)의 지도 핀과 장소 타임라인은 항상 같은 장소 순서를 사용한다. Domain의 `CoursePlace`를 Composable에 직접 전달하지 않아 이후 DTO·도메인 모델 변경의 영향이 Feature의 변환 지점에 머문다.
+
 ```kotlin
 when (uiState) {
     HomeUiState.Loading -> HomeLoadingScreen()

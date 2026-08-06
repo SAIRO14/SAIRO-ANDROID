@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -167,6 +168,7 @@ internal fun TravelDetailSheet(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
+                    .navigationBarsPadding()
                     .padding(
                         start = SheetHorizontalPadding,
                         end = SheetHorizontalPadding,
@@ -186,7 +188,9 @@ private fun SheetHeader(
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
+    Box(
+        modifier = modifier.height(SheetHeaderHeight),
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -204,8 +208,9 @@ private fun SheetHeader(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .align(Alignment.TopStart)
                 .padding(horizontal = SheetHorizontalPadding)
-                .padding(bottom = SheetHeaderBottomPadding),
+                .padding(top = SheetActionTopPadding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(SheetActionGap),
         ) {
@@ -235,12 +240,13 @@ private fun SheetHeader(
 private const val DefaultSheetAnchorFraction = 0.39f
 private val CollapsedSheetVisibleHeight = 160.dp
 private val SheetCornerRadius = 20.dp
+private val SheetHeaderHeight = 63.dp
 private val SheetHandleAreaHeight = 24.dp
 private val SheetHandleWidth = 36.dp
 private val SheetHandleHeight = 4.dp
 private val SheetHandleShape = RoundedCornerShape(999.dp)
 private val SheetHorizontalPadding = 16.dp
-private val SheetHeaderBottomPadding = 8.dp
+private val SheetActionTopPadding = 13.dp
 private val SheetActionGap = 4.dp
 private val SheetActionIconSize = 24.dp
 private val SheetActionTouchTargetSize = 48.dp

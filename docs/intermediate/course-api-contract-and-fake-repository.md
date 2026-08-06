@@ -27,7 +27,7 @@ Repository 인터페이스를 Domain에 두고 Fake 구현과 Retrofit 구현을
 
 Fake Repository는 Data 계층에 두되, UI 전용 DTO를 직접 반환하지 않는다. 아래 흐름처럼 Domain 계약을 구현한다.
 
-현재 홈은 [`HomeRepository.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/HomeRepository.kt) 계약과 [`FakeHomeRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/FakeHomeRepository.kt) 구현을 연결해 이 경계를 적용한다. `HomeViewModel`은 UseCase 결과를 UI 전용 `Content`로 변환하고, 저장 목록이 비어 있으면 빈 Home 화면을 표시한다. 실제 API가 준비되면 동일한 `HomeRepository` 구현만 교체하면 된다.
+여행 상세 화면은 [`CourseRepository.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/CourseRepository.kt) 계약과 [`FakeCourseRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/FakeCourseRepository.kt) 구현을 연결한다. [`Course.kt`](../../app/src/main/java/com/example/sairo14/domain/model/Course.kt)의 `CourseDay`와 `CoursePlace`는 일차별 목록 순서와 지도 좌표를 함께 보존한다. 실제 API가 준비되면 동일한 `CourseRepository` 구현만 Retrofit 구현으로 교체하면 된다.
 
 ```kotlin
 when (uiState) {
@@ -211,7 +211,7 @@ Fake Repository는 성공 데이터만 반환하는 단순 목업이 아니라, 
 3. 상세한 HTTP·DataStore 예외를 ViewModel까지 올리지 않는다. Data 계층이 Domain 오류로 변환하고 Timber에 원인을 기록한다.
 4. ViewModel은 `Loading`, 콘텐츠, `Error`를 불변 UI state로 분리하고 재시도 이벤트를 제공한다.
 
-현재 `AppError`는 DataStore 중심의 `StorageUnavailable`, `StorageCorrupted`, `Unknown`만 가진다. 코스 기능을 구현할 때는 서버·도메인 실패를 구분할 수 있도록 아래처럼 확장하는 방안을 검토한다.
+현재 `AppError`에는 존재하지 않는 코스 조회를 표현하는 `ResourceNotFound`가 추가되어 있다. 실제 서버 연동 때는 네트워크와 잘못된 요청을 구분할 수 있도록 아래처럼 확장하는 방안을 검토한다.
 
 ```kotlin
 sealed interface AppError {

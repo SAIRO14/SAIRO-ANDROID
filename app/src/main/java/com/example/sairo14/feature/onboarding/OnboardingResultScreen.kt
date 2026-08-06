@@ -467,6 +467,7 @@ private fun OnboardingResultEmptyPreview() {
 private val previewRecommendations = listOf(
     OnboardingRecommendation(
         id = "preview-boeun",
+        courseId = "course-boeun",
         regionName = "충북 보은권",
         description = "고요한 자연과 전통의 분위기",
         imageUrls = emptyList(),
@@ -474,6 +475,7 @@ private val previewRecommendations = listOf(
     ),
     OnboardingRecommendation(
         id = "preview-gangneung",
+        courseId = "course-gangneung",
         regionName = "강원 강릉권",
         description = "바다와 골목이 어우러진 느긋한 풍경",
         imageUrls = emptyList(),

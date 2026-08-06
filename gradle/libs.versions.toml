@@ -20,6 +20,7 @@ okhttp = "5.3.0"
 serialization = "1.8.1"
 cloudy = "0.7.1"
 coroutines = "1.11.0"
+kakaoMaps = "2.14.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -56,6 +57,7 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 cloudy = { group = "com.github.skydoves", name = "cloudy", version.ref = "cloudy" }
+kakao-maps = { group = "com.kakao.maps.open", name = "android", version.ref = "kakaoMaps" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

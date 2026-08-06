@@ -73,4 +73,5 @@
     <string name="saved_trips_empty_description">저장된 여행지가 없어요.\n마음이 가는 장면을 찾아보세요.</string>
     <string name="saved_trips_load_error">저장된 여행지를 불러오지 못했어요.</string>
     <string name="saved_trips_retry">다시 시도</string>
+    <string name="travel_detail_share">여행 공유</string>
 </resources>

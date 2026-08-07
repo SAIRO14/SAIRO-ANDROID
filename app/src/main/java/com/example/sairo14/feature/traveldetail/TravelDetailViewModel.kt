@@ -7,6 +7,7 @@ import com.example.sairo14.domain.model.Course
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,18 +29,25 @@ class TravelDetailViewModel @Inject constructor(
     val uiState: StateFlow<TravelDetailUiState> = _uiState.asStateFlow()
 
     private var courseId: String? = null
+    private var loadJob: Job? = null
+    private var loadRequestId = 0L
 
-    /** Route가 전달한 코스 ID의 상세 정보를 한 번 조회한다. */
+    /** Route가 전달한 코스 ID의 상세 정보를 조회하고 가장 최신 요청의 결과만 표시한다. */
     fun load(courseId: String, force: Boolean = false) {
         if (!force && this.courseId == courseId) return
 
         this.courseId = courseId
-        viewModelScope.launch {
+        val requestId = ++loadRequestId
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.value = TravelDetailUiState.Loading
 
-            _uiState.value = when (val result = getCourseDetail(courseId)) {
+            val nextState = when (val result = getCourseDetail(courseId)) {
                 is AppResult.Success -> result.value.toUiState()
                 is AppResult.Failure -> TravelDetailUiState.Error
+            }
+            if (requestId == loadRequestId) {
+                _uiState.value = nextState
             }
         }
     }

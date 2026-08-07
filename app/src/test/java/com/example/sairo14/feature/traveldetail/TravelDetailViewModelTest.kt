@@ -8,11 +8,14 @@ import com.example.sairo14.domain.model.CoursePlace
 import com.example.sairo14.domain.model.MapCoordinate
 import com.example.sairo14.domain.repository.CourseRepository
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -114,6 +117,21 @@ class TravelDetailViewModelTest {
         assertTrue(viewModel.uiState.value is TravelDetailUiState.Error)
     }
 
+    @Test
+    fun `늦게 끝난 이전 코스 조회가 최신 조회 결과를 덮지 않는다`() = runTest(dispatcher) {
+        val viewModel = TravelDetailViewModel(
+            getCourseDetail = GetCourseDetailUseCase(OutOfOrderCourseRepository()),
+        )
+
+        viewModel.load("first")
+        runCurrent()
+        viewModel.load("second")
+        advanceUntilIdle()
+
+        val content = viewModel.uiState.value as TravelDetailUiState.Content
+        assertEquals("second", content.course.courseId)
+    }
+
     private fun createViewModel(result: AppResult<Course>): TravelDetailViewModel =
         TravelDetailViewModel(
             getCourseDetail = GetCourseDetailUseCase(CourseResultRepository(result)),
@@ -123,6 +141,21 @@ class TravelDetailViewModelTest {
         private val result: AppResult<Course>,
     ) : CourseRepository {
         override suspend fun getCourse(courseId: String): AppResult<Course> = result
+    }
+
+    private class OutOfOrderCourseRepository : CourseRepository {
+        override suspend fun getCourse(courseId: String): AppResult<Course> = when (courseId) {
+            "first" -> {
+                try {
+                    delay(1_000)
+                } catch (_: CancellationException) {
+                    // 취소를 무시하는 잘못된 외부 구현도 최신 상태를 덮지 못해야 한다.
+                }
+                AppResult.Success(course().copy(courseId = "first"))
+            }
+
+            else -> AppResult.Success(course().copy(courseId = "second"))
+        }
     }
 
     private companion object {

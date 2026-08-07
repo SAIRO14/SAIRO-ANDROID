@@ -213,6 +213,8 @@ Fake Repository는 성공 데이터만 반환하는 단순 목업이 아니라, 
 3. 상세한 HTTP·DataStore 예외를 ViewModel까지 올리지 않는다. Data 계층이 Domain 오류로 변환하고 Timber에 원인을 기록한다.
 4. ViewModel은 `Loading`, 콘텐츠, `Error`를 불변 UI state로 분리하고 재시도 이벤트를 제공한다.
 
+상세 화면에서 코스 ID가 연속으로 바뀌거나 재시도가 겹칠 수 있다. [`TravelDetailViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt)는 이전 조회 Job을 취소하고 요청 ID를 비교해, 취소를 지키지 않는 외부 구현의 늦은 결과도 최신 UI 상태를 덮지 못하게 한다. 이 요청 ID는 화면 동시성 제어용이며 Domain 모델이나 Repository 계약에는 포함하지 않는다.
+
 현재 `AppError`에는 존재하지 않는 코스 조회를 표현하는 `ResourceNotFound`가 추가되어 있다. 실제 서버 연동 때는 네트워크와 잘못된 요청을 구분할 수 있도록 아래처럼 확장하는 방안을 검토한다.
 
 ```kotlin

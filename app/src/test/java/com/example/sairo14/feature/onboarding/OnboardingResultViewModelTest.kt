@@ -7,6 +7,8 @@ import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import com.example.sairo14.domain.repository.OnboardingRepository
 import com.example.sairo14.domain.usecase.GetOnboardingRecommendationsUseCase
 import com.example.sairo14.domain.usecase.UpdateOnboardingCompletionUseCase
+import com.example.sairo14.feature.onboarding.result.OnboardingResultUiState
+import com.example.sairo14.feature.onboarding.result.OnboardingResultViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher

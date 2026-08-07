@@ -1,4 +1,4 @@
-package com.example.sairo14.feature.onboarding
+package com.example.sairo14.feature.onboarding.loading
 
 import androidx.compose.runtime.Immutable
 

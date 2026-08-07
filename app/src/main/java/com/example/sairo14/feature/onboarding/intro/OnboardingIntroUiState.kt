@@ -1,4 +1,4 @@
-package com.example.sairo14.feature.onboarding
+package com.example.sairo14.feature.onboarding.intro
 
 /** 온보딩 인트로 화면에 표시할 서버 이미지 상태를 나타낸다. */
 data class OnboardingIntroUiState(

@@ -2,6 +2,9 @@ package com.example.sairo14.feature.onboarding
 
 import com.example.sairo14.data.repository.FakePhotoSelectionRepository
 import com.example.sairo14.domain.usecase.GetPhotoCandidatesUseCase
+import com.example.sairo14.feature.onboarding.loading.OnboardingLoadingPhotoUiModel
+import com.example.sairo14.feature.onboarding.loading.OnboardingLoadingUiState
+import com.example.sairo14.feature.onboarding.loading.OnboardingLoadingViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher

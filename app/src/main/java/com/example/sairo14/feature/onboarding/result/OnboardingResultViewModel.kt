@@ -1,4 +1,4 @@
-package com.example.sairo14.feature.onboarding
+package com.example.sairo14.feature.onboarding.result
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

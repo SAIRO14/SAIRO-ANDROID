@@ -21,9 +21,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven(url = "https://devrepo.kakao.com/nexus/repository/kakaomap-releases/")
     }
 }
 
 rootProject.name = "sairo14"
 include(":app")
- 

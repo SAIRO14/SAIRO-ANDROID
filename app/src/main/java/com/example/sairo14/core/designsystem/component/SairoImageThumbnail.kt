@@ -3,7 +3,6 @@ package com.example.sairo14.core.designsystem.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
@@ -23,6 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.core.extension.noRippleClickable
 
 /**
  * 삭제 동작을 제공하는 작은 이미지 썸네일을 표시한다.
@@ -80,10 +80,8 @@ fun SairoImageThumbnail(
                 .align(Alignment.TopEnd)
                 .offset(x = 7.dp, y = (-7).dp)
                 .size(RemoveButtonTouchSize)
-                .clickable(
-                    enabled = enabled,
-                    interactionSource = null,
-                    indication = null,
+                .noRippleClickable(
+                    isEnabled = enabled,
                     role = Role.Button,
                     onClick = onRemoveClick,
                 ),

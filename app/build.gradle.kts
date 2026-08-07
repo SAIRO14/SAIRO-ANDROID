@@ -19,6 +19,10 @@ val baseUrl = localProperties.getProperty("BASEURL", "")
     .replace("\\", "\\\\")
     .replace("\"", "\\\"")
 
+val kakaoNativeAppKey = localProperties.getProperty("KAKAO_NATIVE_APP_KEY", "")
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+
 android {
     namespace = "com.example.sairo14"
     compileSdk {
@@ -35,6 +39,7 @@ android {
         versionName = "1.0"
 
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
+        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -82,6 +87,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     implementation(libs.cloudy)
+    implementation(libs.kakao.maps)
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization)
     implementation(platform(libs.okhttp.bom))

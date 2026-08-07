@@ -6,11 +6,12 @@
 
 ## 도입 이유
 
-주요 CTA를 화면마다 직접 구현하면 버튼 크기나 비활성 색상이 달라지기 쉽고, 디자인 변경 때 모든 화면을 찾아 수정해야 한다. `SairoButton`은 Figma의 L/M/S, 기본/눌림/비활성, Primary/Outline 조합을 한 곳에서 관리한다.
+주요 CTA를 화면마다 직접 구현하면 버튼 크기나 비활성 색상이 달라지기 쉽고, 디자인 변경 때 모든 화면을 찾아 수정해야 한다. `SairoButton`은 Figma의 L/M/S, 기본/비활성, Primary/Outline 조합을 한 곳에서 관리한다.
 
 ## 프로젝트 적용
 
 - 관련 파일: [`SairoButton.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoButton.kt)
+- 관련 파일: [`ModifierExt.kt`](../../app/src/main/java/com/example/sairo14/core/extension/ModifierExt.kt)
 
 화면은 필요한 크기와 스타일만 선택하고, 문구와 동작을 전달한다.
 
@@ -24,6 +25,9 @@ SairoButton(
 ```
 
 색상은 원시 색상이 아닌 `SairoTheme.colors`의 `actionDefault`, `actionOutlineBorder` 같은 시맨틱 토큰을 사용한다. 글자 크기는 `SairoTextStyles.headRegular20`과 `headRegular18`을 사용해 Figma의 타입 스케일과 맞춘다.
+
+클릭 가능한 공통 컴포넌트는 `Modifier.noRippleClickable()`을 사용한다. 이 확장 함수는 클릭과
+접근성 역할은 유지하고, 터치 시 ripple·눌림 색상 같은 일시적 시각 효과를 표시하지 않는다.
 
 정보 표시용 태그는 [`SairoTag.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoTag.kt)에서 제공한다. Figma에는 Medium/Lemon과 Small의 Lemon·Gray·White만 정의되어 있으므로, `size`와 `color`를 독립된 인자로 받지 않고 지원되는 네 가지 조합을 `SairoTagVariant`로 표현한다.
 
@@ -43,13 +47,16 @@ SairoButton(
 
 ## 흐름과 영향 범위
 
-`enabled = false`이면 비활성 배경과 글자색이 적용되고 클릭 이벤트가 차단된다. 활성 버튼은 `MutableInteractionSource`에서 실제 터치 눌림 상태를 관찰해 Primary는 `actionPressed`, Outline은 `actionOutlineBackgroundPressed`로 바뀐다. 따라서 화면이 일시적인 눌림 상태를 별도로 저장할 필요가 없다.
+`enabled = false`이면 비활성 배경과 글자색이 적용되고 클릭 이벤트가 차단된다. 활성 버튼과 카드의
+클릭은 `noRippleClickable`이 처리하므로 화면은 일시적인 눌림 상태를 저장하지 않는다. 선택 여부처럼
+사용자에게 지속적으로 보여야 하는 상태만 ViewModel 또는 호출 화면이 소유한다.
 
 ## 트레이드오프와 주의점
 
 - 버튼은 내용 크기에 맞춰지므로 전체 너비 CTA가 필요하면 호출부에서 `Modifier.fillMaxWidth()`를 전달해야 한다.
 - `Small`은 Figma 규격상 40dp 높이다. 작은 버튼은 충분한 주변 여백을 두고, 중요한 동작에는 Large 또는 Medium을 우선 사용해 터치하기 쉽게 만든다.
-- 눌림 색상을 화면 상태로 직접 전달하지 않는다. 실제 입력과 분리되면 키보드·터치 상호작용의 상태가 어긋날 수 있다.
+- ripple을 제거하면 즉각적인 터치 피드백이 줄어든다. 선택 상태·로딩·화면 이동처럼 동작 결과를
+  분명하게 보여 주고, 아이콘 전용 동작에는 접근성 역할과 설명을 제공해야 한다.
 - 태그 variant를 하나의 enum으로 제한하면 잘못된 조합을 컴파일 단계에서 막을 수 있지만, Figma가 Medium/Gray 같은 새 조합을 추가하면 enum과 프리뷰를 함께 보완해야 한다.
 - `SairoImageCard`는 클릭 이벤트를 받지 않는다. 카드 선택 방식(탭, 여러 장 선택, 필수 선택 여부)은 화면 흐름마다 다를 수 있으므로, 해당 정책이 확정된 화면에서 클릭 처리와 `selected` 상태를 연결한다.
 

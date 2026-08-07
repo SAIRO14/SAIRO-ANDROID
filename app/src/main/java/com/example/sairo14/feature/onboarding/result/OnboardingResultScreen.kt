@@ -63,7 +63,8 @@ import com.example.sairo14.domain.model.OnboardingRecommendation
  * 온보딩 결과의 상태와 내비게이션 행동을 화면에 연결한다.
  *
  * 선택 사진 ID는 Route가 소유하고, 결과 조회·재시도·북마크 표시 상태는 [OnboardingResultViewModel]이
- * 관리한다. 홈 이동과 사진 재선택 이동은 호출자가 소유한다.
+ * 관리한다. 홈 이동, 사진 재선택 이동, 추천 코스 상세 이동은 호출자가 소유한다.
+ * @param onRecommendationClick 추천 폴더 카드를 눌렀을 때 코스 ID와 함께 호출할 동작
  */
 @Composable
 fun OnboardingResultRoute(
@@ -71,6 +72,7 @@ fun OnboardingResultRoute(
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
     onRequestAgainClick: () -> Unit,
+    onRecommendationClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: OnboardingResultViewModel = hiltViewModel(),
 ) {
@@ -87,6 +89,7 @@ fun OnboardingResultRoute(
         onRequestAgainClick = onRequestAgainClick,
         onRetryClick = viewModel::retry,
         onBookmarkClick = viewModel::toggleSaved,
+        onRecommendationClick = onRecommendationClick,
         modifier = modifier,
     )
 }
@@ -96,6 +99,7 @@ fun OnboardingResultRoute(
  *
  * 추천이 2개 이상이면 카드 목록만 스크롤하고, 0개 또는 1개면 재추천 영역을 화면 하단에 고정한다.
  * 카드와 버튼의 실제 동작은 호출자가 전달한 콜백으로 처리한다.
+ * @param onRecommendationClick 추천 폴더 카드를 눌렀을 때 코스 ID와 함께 호출할 동작
  */
 @Composable
 fun OnboardingResultScreen(
@@ -105,6 +109,7 @@ fun OnboardingResultScreen(
     onRequestAgainClick: () -> Unit,
     onRetryClick: () -> Unit,
     onBookmarkClick: (String) -> Unit,
+    onRecommendationClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     OnboardingResultContainer(
@@ -130,6 +135,7 @@ fun OnboardingResultScreen(
                 headerHeight = headerHeight,
                 onRequestAgainClick = onRequestAgainClick,
                 onBookmarkClick = onBookmarkClick,
+                onRecommendationClick = onRecommendationClick,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -189,6 +195,7 @@ private fun ResultContent(
     headerHeight: Dp,
     onRequestAgainClick: () -> Unit,
     onBookmarkClick: (String) -> Unit,
+    onRecommendationClick: (String) -> Unit,
     modifier: Modifier,
 ) {
     val isInsufficient = recommendations.size <= InsufficientRecommendationCount
@@ -224,6 +231,7 @@ private fun ResultContent(
                         recommendation = recommendation,
                         backdropState = backdropState,
                         onBookmarkClick = onBookmarkClick,
+                        onClick = { onRecommendationClick(recommendation.courseId) },
                     )
                     if (index < recommendations.lastIndex) {
                         Spacer(modifier = Modifier.height(CardSpacing))
@@ -292,6 +300,7 @@ private fun RecommendationCard(
     recommendation: OnboardingRecommendation,
     backdropState: SairoBackdropState,
     onBookmarkClick: (String) -> Unit,
+    onClick: () -> Unit,
 ) {
     val imagePainters = recommendation.imageUrls.take(MaxCardImageCount).map { imageUrl ->
         rememberSairoBackdropImagePainter(
@@ -312,13 +321,12 @@ private fun RecommendationCard(
             description = recommendation.description,
             placeNames = recommendation.placeNames,
             saved = recommendation.isSaved,
-            onClick = {},
+            onClick = onClick,
             onBookmarkClick = { onBookmarkClick(recommendation.id) },
             modifier = Modifier
                 .fillMaxWidth()
                 .widthIn(max = ResultCardMaxWidth),
             imageContentDescription = recommendation.regionName,
-            cardEnabled = false,
         )
     }
 }
@@ -430,6 +438,7 @@ private fun OnboardingResultMultiplePreview() {
             onRequestAgainClick = {},
             onRetryClick = {},
             onBookmarkClick = {},
+            onRecommendationClick = {},
         )
     }
 }
@@ -445,6 +454,7 @@ private fun OnboardingResultInsufficientPreview() {
             onRequestAgainClick = {},
             onRetryClick = {},
             onBookmarkClick = {},
+            onRecommendationClick = {},
         )
     }
 }
@@ -460,6 +470,7 @@ private fun OnboardingResultEmptyPreview() {
             onRequestAgainClick = {},
             onRetryClick = {},
             onBookmarkClick = {},
+            onRecommendationClick = {},
         )
     }
 }
@@ -467,6 +478,7 @@ private fun OnboardingResultEmptyPreview() {
 private val previewRecommendations = listOf(
     OnboardingRecommendation(
         id = "preview-boeun",
+        courseId = "course-boeun",
         regionName = "충북 보은권",
         description = "고요한 자연과 전통의 분위기",
         imageUrls = emptyList(),
@@ -474,6 +486,7 @@ private val previewRecommendations = listOf(
     ),
     OnboardingRecommendation(
         id = "preview-gangneung",
+        courseId = "course-gangneung",
         regionName = "강원 강릉권",
         description = "바다와 골목이 어우러진 느긋한 풍경",
         imageUrls = emptyList(),

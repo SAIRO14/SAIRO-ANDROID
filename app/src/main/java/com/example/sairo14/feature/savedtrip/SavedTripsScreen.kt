@@ -59,6 +59,7 @@ import com.example.sairo14.core.designsystem.theme.SairoTheme
  * @param onBackClick 뒤로가기 헤더 액션을 눌렀을 때 호출할 동작
  * @param onHomeClick 홈 헤더 액션을 눌렀을 때 호출할 동작
  * @param onFindTripClick 빈 상태의 여행지 탐색 CTA를 눌렀을 때 호출할 동작
+ * @param onTripClick 폴더 카드의 코스를 눌렀을 때 호출할 동작
  * @param modifier 화면 컨테이너에 적용할 Modifier
  * @param viewModel 저장 목록 조회 상태를 소유하는 ViewModel
  */
@@ -67,6 +68,7 @@ fun SavedTripsRoute(
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
     onFindTripClick: () -> Unit,
+    onTripClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SavedTripsViewModel = hiltViewModel(),
 ) {
@@ -79,6 +81,7 @@ fun SavedTripsRoute(
         onFindTripClick = onFindTripClick,
         onRetryClick = viewModel::retry,
         onBookmarkClick = viewModel::removeSavedTrip,
+        onTripClick = onTripClick,
         modifier = modifier,
     )
 }
@@ -87,13 +90,14 @@ fun SavedTripsRoute(
  * 저장된 여행지의 폴더 카드 목록 또는 빈·로딩·오류 상태를 표시한다.
  *
  * 헤더 높이와 시스템 inset을 기준으로 본문을 배치한다. 카드의 저장 상태와 북마크 해제 진행 상태는
- * 호출자가 전달한 [uiState]로 결정하며, 카드 본문 이동은 아직 제공하지 않는다.
+ * 호출자가 전달한 [uiState]로 결정하며, 카드 본문 이동과 북마크 해제는 별도 콜백으로 전달한다.
  * @param uiState 화면에 표시할 목록 조회 상태
  * @param onBackClick 뒤로가기 헤더 액션을 눌렀을 때 호출할 동작
  * @param onHomeClick 홈 헤더 액션을 눌렀을 때 호출할 동작
  * @param onFindTripClick 빈 상태의 여행지 탐색 CTA를 눌렀을 때 호출할 동작
  * @param onRetryClick 오류 상태의 재시도 CTA를 눌렀을 때 호출할 동작
  * @param onBookmarkClick 카드 북마커를 눌렀을 때 호출할 동작
+ * @param onTripClick 폴더 카드의 코스를 눌렀을 때 호출할 동작
  * @param modifier 화면 컨테이너에 적용할 Modifier
  */
 @Composable
@@ -104,6 +108,7 @@ fun SavedTripsScreen(
     onFindTripClick: () -> Unit,
     onRetryClick: () -> Unit,
     onBookmarkClick: (String) -> Unit,
+    onTripClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SavedTripsContainer(
@@ -123,6 +128,7 @@ fun SavedTripsScreen(
                 backdropState = backdropState,
                 headerHeight = headerHeight,
                 onBookmarkClick = onBookmarkClick,
+                onTripClick = onTripClick,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -194,6 +200,7 @@ private fun SavedTripsList(
     backdropState: SairoBackdropState,
     headerHeight: Dp,
     onBookmarkClick: (String) -> Unit,
+    onTripClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navigationBarPadding = WindowInsets.navigationBars
@@ -219,6 +226,7 @@ private fun SavedTripsList(
                 backdropState = backdropState,
                 isBookmarkRemoving = trip.savedTripId in removingSavedTripIds,
                 onBookmarkClick = { onBookmarkClick(trip.savedTripId) },
+                onClick = { onTripClick(trip.courseId) },
             )
         }
     }
@@ -230,6 +238,7 @@ private fun SavedTripCard(
     backdropState: SairoBackdropState,
     isBookmarkRemoving: Boolean,
     onBookmarkClick: () -> Unit,
+    onClick: () -> Unit,
 ) {
     val imagePainters = trip.imageUrls.take(MaxCardImageCount).map { imageUrl ->
         rememberSairoBackdropImagePainter(
@@ -248,13 +257,12 @@ private fun SavedTripCard(
             description = trip.description,
             placeNames = trip.placeNames,
             saved = true,
-            onClick = {},
+            onClick = onClick,
             onBookmarkClick = onBookmarkClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .widthIn(max = SavedTripCardMaxWidth),
             imageContentDescription = trip.regionName,
-            cardEnabled = false,
             bookmarkEnabled = !isBookmarkRemoving,
         )
     }
@@ -376,6 +384,7 @@ private fun SavedTripsContentPreview() {
             onFindTripClick = {},
             onRetryClick = {},
             onBookmarkClick = {},
+            onTripClick = {},
         )
     }
 }
@@ -391,6 +400,7 @@ private fun SavedTripsEmptyPreview() {
             onFindTripClick = {},
             onRetryClick = {},
             onBookmarkClick = {},
+            onTripClick = {},
         )
     }
 }

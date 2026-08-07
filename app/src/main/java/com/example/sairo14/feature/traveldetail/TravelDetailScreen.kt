@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -21,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -104,11 +104,13 @@ fun TravelDetailScreen(
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val screenModifier = modifier.navigationBarsPadding()
+
     when (uiState) {
         TravelDetailUiState.Loading -> TravelDetailLoading(
             onBackClick = onBackClick,
             onHomeClick = onHomeClick,
-            modifier = modifier,
+            modifier = screenModifier,
         )
 
         is TravelDetailUiState.Content -> TravelDetailContent(
@@ -118,14 +120,14 @@ fun TravelDetailScreen(
             onShareClick = onShareClick,
             onDayClick = onDayClick,
             onSaveClick = onSaveClick,
-            modifier = modifier,
+            modifier = screenModifier,
         )
 
         TravelDetailUiState.Error -> TravelDetailError(
             onBackClick = onBackClick,
             onHomeClick = onHomeClick,
             onRetryClick = onRetryClick,
-            modifier = modifier,
+            modifier = screenModifier,
         )
     }
 }

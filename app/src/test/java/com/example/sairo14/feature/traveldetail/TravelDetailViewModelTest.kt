@@ -46,6 +46,7 @@ class TravelDetailViewModelTest {
         assertEquals(1, content.selectedDayNumber)
         assertEquals("첫째 장소", content.selectedDay?.places?.first()?.name)
         assertEquals("first", content.selectedPlaceId)
+        assertEquals(0L, content.cameraFocusRequestId)
     }
 
     @Test
@@ -60,6 +61,7 @@ class TravelDetailViewModelTest {
         assertEquals(2, content.selectedDayNumber)
         assertEquals("둘째 장소", content.selectedDay?.places?.single()?.name)
         assertEquals("second", content.selectedPlaceId)
+        assertEquals(1L, content.cameraFocusRequestId)
     }
 
     @Test
@@ -74,6 +76,20 @@ class TravelDetailViewModelTest {
         assertEquals("second", content.selectedPlaceId)
         assertEquals("둘째 장소", content.selectedPlace?.name)
         assertEquals(37.0, content.selectedPlace?.latitude)
+        assertEquals(1L, content.cameraFocusRequestId)
+    }
+
+    @Test
+    fun `이미 선택된 장소를 다시 선택해도 새 카메라 이동 요청을 만든다`() = runTest(dispatcher) {
+        val viewModel = createViewModel(AppResult.Success(course()))
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+
+        viewModel.selectPlace("first")
+
+        val content = viewModel.uiState.value as TravelDetailUiState.Content
+        assertEquals("first", content.selectedPlaceId)
+        assertEquals(1L, content.cameraFocusRequestId)
     }
 
     @Test

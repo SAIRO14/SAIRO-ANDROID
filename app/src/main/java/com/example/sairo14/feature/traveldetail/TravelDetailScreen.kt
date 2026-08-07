@@ -167,6 +167,7 @@ private fun TravelDetailContent(
         SairoKakaoMap(
             markers = markers,
             cameraTarget = cameraTarget,
+            cameraRequestId = content.cameraFocusRequestId,
             viewportPadding = SairoMapViewportPadding(
                 top = headerHeight + daySelectorHeight,
                 bottom = sheetVisibleHeight,

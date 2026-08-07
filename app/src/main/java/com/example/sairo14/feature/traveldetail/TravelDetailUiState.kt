@@ -14,6 +14,7 @@ sealed interface TravelDetailUiState {
         val course: TravelDetailCourseUiModel,
         val selectedDayNumber: Int,
         val selectedPlaceId: String? = null,
+        val cameraFocusRequestId: Long = 0L,
         val isSaved: Boolean = false,
     ) : TravelDetailUiState {
         val selectedDay: TravelDetailDayUiModel?

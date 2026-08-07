@@ -22,8 +22,10 @@ Feature가 SDK 객체를 직접 소유하면 일차 변경, 바텀시트 위치,
 
 `SairoKakaoMap`은 `SairoMapMarker`와 `SairoMapCameraTarget`만 받으므로 `CoursePlace` 또는
 Repository를 직접 참조하지 않는다. 화면은 선택한 일차의 장소를 ID·순서·위경도로 변환해 전달하고,
-ViewModel은 선택한 장소 ID를 UI 상태로 소유한다. MapView가 준비되면 전용 LabelLayer에 순서 핀을
-생성하고, 선택된 장소 좌표로 카메라를 이동한다. 선택이 없을 때만 첫 번째 핀을 기본 중심으로 사용한다.
+ViewModel은 선택한 장소 ID와 카메라 요청 ID를 UI 상태로 소유한다. MapView가 준비되면 전용
+LabelLayer에 순서 핀을 생성하고, 선택된 장소 좌표로 카메라를 이동한다. 같은 장소를 다시 눌러도
+요청 ID가 바뀌므로, 사용자가 지도를 이동한 뒤 해당 장소를 다시 중심으로 맞출 수 있다. 선택이 없을
+때만 첫 번째 핀을 기본 중심으로 사용한다.
 
 ## 흐름과 영향 범위
 

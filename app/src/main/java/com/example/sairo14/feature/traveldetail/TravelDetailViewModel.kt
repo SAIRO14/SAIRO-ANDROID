@@ -59,6 +59,7 @@ class TravelDetailViewModel @Inject constructor(
             content.copy(
                 selectedDayNumber = dayNumber,
                 selectedPlaceId = selectedDay.places.firstOrNull()?.placeId,
+                cameraFocusRequestId = content.cameraFocusRequestId + 1,
             )
         }
     }
@@ -69,7 +70,10 @@ class TravelDetailViewModel @Inject constructor(
             val content = state as? TravelDetailUiState.Content ?: return@update state
 
             if (content.selectedDay?.places?.any { place -> place.placeId == placeId } == true) {
-                content.copy(selectedPlaceId = placeId)
+                content.copy(
+                    selectedPlaceId = placeId,
+                    cameraFocusRequestId = content.cameraFocusRequestId + 1,
+                )
             } else {
                 content
             }

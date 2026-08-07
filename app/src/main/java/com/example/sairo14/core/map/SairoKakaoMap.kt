@@ -35,6 +35,7 @@ import kotlin.math.roundToInt
  * @param markers 지도에 순서대로 표시할 마커 목록
  * @param viewportPadding 지도 위에 겹친 UI를 피하기 위한 뷰포트 여백
  * @param cameraTarget 카메라 중심으로 이동할 장소 좌표. null이면 첫 번째 마커를 사용한다
+ * @param cameraRequestId 같은 좌표를 다시 중심으로 이동시키기 위한 화면의 카메라 요청 식별자
  * @param modifier MapView 컨테이너에 적용할 Modifier
  * @param zoomLevel 카메라를 대상 좌표에 맞출 때 적용할 확대 수준
  * @param onMapError 지도 인증·시작 중 발생한 오류를 전달하는 콜백
@@ -44,6 +45,7 @@ fun SairoKakaoMap(
     markers: List<SairoMapMarker>,
     viewportPadding: SairoMapViewportPadding,
     cameraTarget: SairoMapCameraTarget? = null,
+    cameraRequestId: Long = InitialCameraRequestId,
     modifier: Modifier = Modifier,
     zoomLevel: Int = DefaultZoomLevel,
     onMapError: (Exception) -> Unit = {},
@@ -124,6 +126,7 @@ fun SairoKakaoMap(
                 markers = markers,
                 viewportPadding = viewportPaddingPx,
                 cameraTarget = cameraTarget,
+                cameraRequestId = cameraRequestId,
                 zoomLevel = zoomLevel,
             )
         },
@@ -141,10 +144,12 @@ private class SairoKakaoMapController(
     private var requestedMarkers: List<SairoMapMarker> = emptyList()
     private var requestedViewportPadding = SairoMapViewportPaddingPx()
     private var requestedCameraTarget: SairoMapCameraTarget? = null
+    private var requestedCameraRequestId = InitialCameraRequestId
     private var requestedZoomLevel = DefaultZoomLevel
     private var appliedMarkers: List<SairoMapMarker>? = null
     private var appliedViewportPadding: SairoMapViewportPaddingPx? = null
     private var appliedCameraTarget: SairoMapCameraTarget? = null
+    private var appliedCameraRequestId: Long? = null
     private var appliedZoomLevel: Int? = null
 
     fun attach(kakaoMap: KakaoMap) {
@@ -158,6 +163,7 @@ private class SairoKakaoMapController(
         appliedMarkers = null
         appliedViewportPadding = null
         appliedCameraTarget = null
+        appliedCameraRequestId = null
         appliedZoomLevel = null
         applyRequestedState()
     }
@@ -168,6 +174,7 @@ private class SairoKakaoMapController(
         appliedMarkers = null
         appliedViewportPadding = null
         appliedCameraTarget = null
+        appliedCameraRequestId = null
         appliedZoomLevel = null
     }
 
@@ -175,11 +182,13 @@ private class SairoKakaoMapController(
         markers: List<SairoMapMarker>,
         viewportPadding: SairoMapViewportPaddingPx,
         cameraTarget: SairoMapCameraTarget?,
+        cameraRequestId: Long,
         zoomLevel: Int,
     ) {
         requestedMarkers = markers.sortedBy(SairoMapMarker::order)
         requestedViewportPadding = viewportPadding
         requestedCameraTarget = cameraTarget
+        requestedCameraRequestId = cameraRequestId
         requestedZoomLevel = zoomLevel
         applyRequestedState()
     }
@@ -225,10 +234,15 @@ private class SairoKakaoMapController(
         val cameraTarget = requestedCameraTarget ?: requestedMarkers.firstOrNull()?.toCameraTarget()
         if (cameraTarget == null) {
             appliedCameraTarget = null
+            appliedCameraRequestId = requestedCameraRequestId
             appliedZoomLevel = null
             return
         }
-        if (cameraTarget != appliedCameraTarget || requestedZoomLevel != appliedZoomLevel) {
+        if (
+            cameraTarget != appliedCameraTarget ||
+            requestedCameraRequestId != appliedCameraRequestId ||
+            requestedZoomLevel != appliedZoomLevel
+        ) {
             map.moveCamera(
                 CameraUpdateFactory.newCenterPosition(
                     LatLng.from(cameraTarget.latitude, cameraTarget.longitude),
@@ -236,6 +250,7 @@ private class SairoKakaoMapController(
                 ),
             )
             appliedCameraTarget = cameraTarget
+            appliedCameraRequestId = requestedCameraRequestId
             appliedZoomLevel = requestedZoomLevel
         }
     }
@@ -250,6 +265,7 @@ private data class SairoMapViewportPaddingPx(
 
 private const val MarkerLayerId = "sairo-travel-course-markers"
 private const val DefaultZoomLevel = 12
+private const val InitialCameraRequestId = 0L
 private const val MarkerAnchorHorizontal = 0.5f
 private const val MarkerAnchorVertical = 0.78f
 

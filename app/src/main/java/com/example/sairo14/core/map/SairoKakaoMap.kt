@@ -3,11 +3,16 @@ package com.example.sairo14.core.map
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -31,7 +36,8 @@ import kotlin.math.roundToInt
  *
  * 지도 SDK 수명주기는 이 Composable이 [LocalLifecycleOwner]에 맞춰 관리한다. 화면은 Domain 장소를
  * [SairoMapMarker]로 변환하고, 헤더·시트가 가린 영역은 [viewportPadding]으로 전달한다. 명시적인
- * [cameraTarget]이 없을 때만 첫 번째 마커를 카메라 중심으로 사용한다.
+ * [cameraTarget]이 없을 때만 첫 번째 마커를 카메라 중심으로 사용한다. [viewportPadding]은 실제
+ * MapView 크기에 맞춰 제한한 뒤 SDK에 전달한다.
  * @param markers 지도에 순서대로 표시할 마커 목록
  * @param viewportPadding 지도 위에 겹친 UI를 피하기 위한 뷰포트 여백
  * @param cameraTarget 카메라 중심으로 이동할 장소 좌표. null이면 첫 번째 마커를 사용한다
@@ -62,6 +68,11 @@ fun SairoKakaoMap(
             bottom = viewportPadding.bottom.roundToPx(),
         )
     }
+    var mapViewSize by remember { mutableStateOf(IntSize.Zero) }
+    val clampedViewportPaddingPx = viewportPaddingPx.clampToViewport(
+        viewportWidth = mapViewSize.width,
+        viewportHeight = mapViewSize.height,
+    )
     val mapController = remember(context.applicationContext) {
         SairoKakaoMapController(
             context = context.applicationContext,
@@ -91,7 +102,7 @@ fun SairoKakaoMap(
     }
 
     AndroidView(
-        modifier = modifier,
+        modifier = modifier.onSizeChanged { size -> mapViewSize = size },
         factory = {
             if (KakaoMapSdk.isInitialized()) {
                 mapView.start(
@@ -121,7 +132,7 @@ fun SairoKakaoMap(
         update = {
             mapController.update(
                 markers = markers,
-                viewportPadding = viewportPaddingPx,
+                viewportPadding = clampedViewportPaddingPx,
                 cameraTarget = cameraTarget,
                 cameraRequestId = cameraRequestId,
                 zoomLevel = zoomLevel,
@@ -252,13 +263,6 @@ private class SairoKakaoMapController(
         }
     }
 }
-
-private data class SairoMapViewportPaddingPx(
-    val left: Int = 0,
-    val top: Int = 0,
-    val right: Int = 0,
-    val bottom: Int = 0,
-)
 
 private const val MarkerLayerId = "sairo-travel-course-markers"
 private const val DefaultZoomLevel = 12

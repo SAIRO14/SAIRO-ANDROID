@@ -37,7 +37,7 @@ data class SairoMapCameraTarget(
 /** 지도 위에 겹치는 UI를 피해 카메라 중심과 지도 요소를 배치할 뷰포트 여백을 표현한다.
  *
  * 여백은 호출자가 헤더와 드래그 시트의 실제 측정값으로 계산한다. 카카오 지도 SDK가 요구하는 px
- * 변환은 [SairoKakaoMap]이 담당한다.
+ * 변환과 실제 지도 크기를 넘지 않는 px 여백 보정은 [SairoKakaoMap]이 담당한다.
  * @param left 지도 왼쪽에 확보할 여백
  * @param top 지도 위쪽에 확보할 여백
  * @param right 지도 오른쪽에 확보할 여백

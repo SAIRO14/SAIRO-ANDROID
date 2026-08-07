@@ -1,6 +1,5 @@
 package com.example.sairo14.core.designsystem.component
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,6 +18,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.core.extension.noRippleClickable
 
 /**
  * 저장 여부를 나타내고 저장 상태 변경 동작을 전달하는 북마커를 표시한다.
@@ -48,10 +48,8 @@ fun SairoBookmarker(
     Box(
         modifier = modifier
             .size(touchTargetSize)
-            .clickable(
-                enabled = enabled,
-                interactionSource = null,
-                indication = null,
+            .noRippleClickable(
+                isEnabled = enabled,
                 role = Role.Button,
                 onClick = onClick,
             )

@@ -22,7 +22,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,8 +37,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.component.SairoBookmarker
@@ -48,6 +47,7 @@ import com.example.sairo14.core.designsystem.component.SairoTagVariant
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
 import com.example.sairo14.core.extension.sairoDropShadow
+import com.example.sairo14.core.extension.noRippleClickable
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
@@ -201,7 +201,15 @@ private fun SheetHeader(
                 variant = SairoTagVariant.MediumLemon,
             )
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = onShareClick) {
+            Box(
+                modifier = Modifier
+                    .size(SheetActionTouchTargetSize)
+                    .noRippleClickable(
+                        onClick = onShareClick,
+                        role = Role.Button,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_share),
                     contentDescription = stringResource(R.string.travel_detail_share),

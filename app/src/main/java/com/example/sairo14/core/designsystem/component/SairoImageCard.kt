@@ -3,7 +3,6 @@ package com.example.sairo14.core.designsystem.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +39,7 @@ import androidx.compose.ui.unit.DpSize
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.core.extension.noRippleClickable
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
 import com.example.sairo14.core.extension.sairoDropShadow
 import kotlin.math.abs
@@ -129,10 +129,8 @@ fun SairoImageCard(
             .semantics { this.selected = selected }
             .then(
                 if (onClick != null) {
-                    Modifier.clickable(
-                        enabled = enabled,
-                        interactionSource = null,
-                        indication = null,
+                    Modifier.noRippleClickable(
+                        isEnabled = enabled,
                         role = Role.Button,
                         onClick = onClick,
                     )

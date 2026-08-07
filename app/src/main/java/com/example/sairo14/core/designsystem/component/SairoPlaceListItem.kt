@@ -1,7 +1,6 @@
 package com.example.sairo14.core.designsystem.component
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.core.extension.noRippleClickable
 
 /** 여행 상세 바텀시트 장소 행의 Figma 정보 배치를 정의한다. */
 enum class SairoPlaceListItemVariant {
@@ -55,7 +55,7 @@ fun SairoPlaceListItem(
     imageContentDescription: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
-    val itemModifier = if (onClick == null) modifier else modifier.clickable(onClick = onClick)
+    val itemModifier = if (onClick == null) modifier else modifier.noRippleClickable(onClick = onClick)
 
     when (variant) {
         SairoPlaceListItemVariant.Simple -> SairoSimplePlaceListItem(

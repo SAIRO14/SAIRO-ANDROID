@@ -13,10 +13,14 @@ sealed interface TravelDetailUiState {
     data class Content(
         val course: TravelDetailCourseUiModel,
         val selectedDayNumber: Int,
+        val selectedPlaceId: String? = null,
         val isSaved: Boolean = false,
     ) : TravelDetailUiState {
         val selectedDay: TravelDetailDayUiModel?
             get() = course.days.firstOrNull { day -> day.dayNumber == selectedDayNumber }
+
+        val selectedPlace: TravelDetailPlaceUiModel?
+            get() = selectedDay?.places?.firstOrNull { place -> place.placeId == selectedPlaceId }
     }
 
     /** 코스 상세 정보를 읽지 못해 재시도가 필요한 상태다. */

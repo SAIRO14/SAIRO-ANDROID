@@ -37,6 +37,7 @@ import com.example.sairo14.core.designsystem.component.SairoPlaceListItemVariant
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.map.SairoKakaoMap
+import com.example.sairo14.core.map.SairoMapCameraTarget
 import com.example.sairo14.core.map.SairoMapMarker
 import com.example.sairo14.core.map.SairoMapViewportPadding
 
@@ -73,6 +74,7 @@ fun TravelDetailRoute(
         onHomeClick = onHomeClick,
         onShareClick = onShareClick,
         onDayClick = viewModel::selectDay,
+        onPlaceClick = viewModel::selectPlace,
         onSaveClick = viewModel::toggleSaved,
         onRetryClick = viewModel::retry,
         modifier = modifier,
@@ -89,6 +91,7 @@ fun TravelDetailRoute(
  * @param onHomeClick 헤더 홈 이동 동작
  * @param onShareClick 공유 아이콘 동작
  * @param onDayClick 일차 칩을 선택했을 때 호출할 동작
+ * @param onPlaceClick 장소 행을 선택했을 때 호출할 동작
  * @param onSaveClick 저장 아이콘을 눌렀을 때 호출할 동작
  * @param onRetryClick 오류 상태의 재시도 동작
  * @param modifier 화면 컨테이너에 적용할 Modifier
@@ -100,6 +103,7 @@ fun TravelDetailScreen(
     onHomeClick: () -> Unit,
     onShareClick: () -> Unit,
     onDayClick: (Int) -> Unit,
+    onPlaceClick: (String) -> Unit,
     onSaveClick: () -> Unit,
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -119,6 +123,7 @@ fun TravelDetailScreen(
             onHomeClick = onHomeClick,
             onShareClick = onShareClick,
             onDayClick = onDayClick,
+            onPlaceClick = onPlaceClick,
             onSaveClick = onSaveClick,
             modifier = screenModifier,
         )
@@ -139,6 +144,7 @@ private fun TravelDetailContent(
     onHomeClick: () -> Unit,
     onShareClick: () -> Unit,
     onDayClick: (Int) -> Unit,
+    onPlaceClick: (String) -> Unit,
     onSaveClick: () -> Unit,
     modifier: Modifier,
 ) {
@@ -151,6 +157,7 @@ private fun TravelDetailContent(
     val sheetVisibleHeight = with(density) { sheetVisibleHeightPx.toDp() }
     val selectedDay = content.selectedDay
     val markers = selectedDay.orEmptyMarkers()
+    val cameraTarget = content.selectedPlace?.toMapCameraTarget()
 
     Box(
         modifier = modifier
@@ -159,6 +166,7 @@ private fun TravelDetailContent(
     ) {
         SairoKakaoMap(
             markers = markers,
+            cameraTarget = cameraTarget,
             viewportPadding = SairoMapViewportPadding(
                 top = headerHeight + daySelectorHeight,
                 bottom = sheetVisibleHeight,
@@ -218,6 +226,7 @@ private fun TravelDetailContent(
                             R.string.travel_detail_place_image,
                             place.name,
                         ),
+                        onClick = { onPlaceClick(place.placeId) },
                     )
                 }
             }
@@ -348,6 +357,9 @@ private fun TravelDetailDayUiModel?.orEmptyMarkers(): List<SairoMapMarker> =
             longitude = place.longitude,
         )
     }.orEmpty()
+
+private fun TravelDetailPlaceUiModel.toMapCameraTarget(): SairoMapCameraTarget =
+    SairoMapCameraTarget(latitude = latitude, longitude = longitude)
 
 private val ScreenHorizontalPadding = 16.dp
 private val DaySelectorTopSpacing = 12.dp

@@ -45,6 +45,7 @@ class TravelDetailViewModelTest {
         val content = viewModel.uiState.value as TravelDetailUiState.Content
         assertEquals(1, content.selectedDayNumber)
         assertEquals("첫째 장소", content.selectedDay?.places?.first()?.name)
+        assertEquals("first", content.selectedPlaceId)
     }
 
     @Test
@@ -58,6 +59,21 @@ class TravelDetailViewModelTest {
         val content = viewModel.uiState.value as TravelDetailUiState.Content
         assertEquals(2, content.selectedDayNumber)
         assertEquals("둘째 장소", content.selectedDay?.places?.single()?.name)
+        assertEquals("second", content.selectedPlaceId)
+    }
+
+    @Test
+    fun `장소를 선택하면 지도 중심에 사용할 장소를 변경한다`() = runTest(dispatcher) {
+        val viewModel = createViewModel(AppResult.Success(courseWithTwoPlaces()))
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+
+        viewModel.selectPlace("second")
+
+        val content = viewModel.uiState.value as TravelDetailUiState.Content
+        assertEquals("second", content.selectedPlaceId)
+        assertEquals("둘째 장소", content.selectedPlace?.name)
+        assertEquals(37.0, content.selectedPlace?.latitude)
     }
 
     @Test
@@ -109,12 +125,26 @@ class TravelDetailViewModelTest {
             ),
         )
 
-        fun place(id: String, name: String) = CoursePlace(
+        fun place(id: String, name: String, latitude: Double = 36.0) = CoursePlace(
             placeId = id,
             name = name,
             imageUrl = null,
             tags = emptyList(),
-            coordinate = MapCoordinate(latitude = 36.0, longitude = 127.0),
+            coordinate = MapCoordinate(latitude = latitude, longitude = 127.0),
+        )
+
+        fun courseWithTwoPlaces() = Course(
+            courseId = "course-boeun",
+            regionName = "충북 보은권",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        place("first", "첫째 장소"),
+                        place("second", "둘째 장소", latitude = 37.0),
+                    ),
+                ),
+            ),
         )
     }
 }

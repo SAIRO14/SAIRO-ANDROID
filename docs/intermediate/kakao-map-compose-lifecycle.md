@@ -20,25 +20,26 @@ Feature가 SDK 객체를 직접 소유하면 일차 변경, 바텀시트 위치,
 - 번호 핀 Bitmap 생성: [`SairoMapMarkerBitmapFactory.kt`](../../app/src/main/java/com/example/sairo14/core/map/SairoMapMarkerBitmapFactory.kt)
 - 코스 좌표 Domain 모델: [`Course.kt`](../../app/src/main/java/com/example/sairo14/domain/model/Course.kt)
 
-`SairoKakaoMap`은 `SairoMapMarker`만 받으므로 `CoursePlace` 또는 Repository를 직접 참조하지
-않는다. 화면은 선택한 일차의 장소를 ID·순서·위경도로 변환해 전달한다. MapView가 준비되면 전용
-LabelLayer에 순서 핀을 생성하고, 첫 번째 핀으로 카메라를 이동한다.
+`SairoKakaoMap`은 `SairoMapMarker`와 `SairoMapCameraTarget`만 받으므로 `CoursePlace` 또는
+Repository를 직접 참조하지 않는다. 화면은 선택한 일차의 장소를 ID·순서·위경도로 변환해 전달하고,
+ViewModel은 선택한 장소 ID를 UI 상태로 소유한다. MapView가 준비되면 전용 LabelLayer에 순서 핀을
+생성하고, 선택된 장소 좌표로 카메라를 이동한다. 선택이 없을 때만 첫 번째 핀을 기본 중심으로 사용한다.
 
 ## 흐름과 영향 범위
 
 ```mermaid
 flowchart LR
     D["CoursePlace"] --> F["Travel detail feature"]
-    F --> M["SairoMapMarker"]
+    F --> M["SairoMapMarker / SairoMapCameraTarget"]
     F --> P["측정된 헤더·시트 여백"]
     M --> K["SairoKakaoMap"]
     P --> K
     K --> V["MapView / LabelLayer"]
-    V --> C["첫 번째 핀 중심 카메라"]
+    V --> C["선택 장소 중심 카메라"]
 ```
 
 시트가 지도 하단을 가리면 Feature가 측정한 높이를 `SairoMapViewportPadding.bottom`으로 넘긴다.
-어댑터는 이를 px로 변환해 카카오 지도에 적용한다. 따라서 첫 번째 핀의 지리 좌표는 가려진 전체
+어댑터는 이를 px로 변환해 카카오 지도에 적용한다. 따라서 선택한 장소의 지리 좌표는 가려진 전체
 MapView가 아니라 실제 보이는 지도 영역의 중심에 배치된다.
 
 ## 트레이드오프와 주의점
@@ -48,7 +49,10 @@ MapView가 아니라 실제 보이는 지도 영역의 중심에 배치된다.
 - 지도 핀은 Bitmap으로 캐시한다. 같은 순서 번호를 재사용하면 생성 비용은 줄지만, 핀 색상이나 글꼴을
   테마별로 바꾸려면 캐시 키에 해당 상태를 추가해야 한다.
 - 뷰포트 padding을 드래그 중 매 프레임 갱신하면 지도 렌더링 비용이 커질 수 있다. 상세 화면은 시트
-  anchor 변화 또는 의미 있는 offset 변화에 맞춰 전달 빈도를 제한하는 편이 좋다.
+  위치 변화 또는 의미 있는 offset 변화에 맞춰 전달 빈도를 제한하는 편이 좋다.
+- 장소 선택은 서버 상태를 바꾸지 않는 화면 상호작용이므로 UseCase를 추가하지 않고 ViewModel이
+  `selectedPlaceId`를 UI 상태로 관리한다. 서버 저장·추천 갱신 같은 도메인 행위가 생길 때만 UseCase를
+  추가한다.
 - 카카오 지도 인증 실패는 코스 조회 실패와 별개다. 상세 화면은 목록을 유지하면서 지도 오류를 별도로
   안내해야 한다.
 

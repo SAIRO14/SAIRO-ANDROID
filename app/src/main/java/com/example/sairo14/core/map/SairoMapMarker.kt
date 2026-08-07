@@ -21,6 +21,19 @@ data class SairoMapMarker(
     val longitude: Double,
 )
 
+/** 카카오 지도의 카메라가 중심으로 둘 좌표를 표현한다.
+ *
+ * 화면은 선택된 장소의 UI 모델을 이 값으로 변환하고, 지도 어댑터는 변경된 값에만 카메라 이동을
+ * 적용한다.
+ * @param latitude WGS84 북위 좌표
+ * @param longitude WGS84 동경 좌표
+ */
+@Immutable
+data class SairoMapCameraTarget(
+    val latitude: Double,
+    val longitude: Double,
+)
+
 /** 지도 위에 겹치는 UI를 피해 카메라 중심과 지도 요소를 배치할 뷰포트 여백을 표현한다.
  *
  * 여백은 호출자가 헤더와 드래그 시트의 실제 측정값으로 계산한다. 카카오 지도 SDK가 요구하는 px

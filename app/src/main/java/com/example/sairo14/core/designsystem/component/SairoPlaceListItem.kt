@@ -1,6 +1,7 @@
 package com.example.sairo14.core.designsystem.component
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,13 +36,14 @@ enum class SairoPlaceListItemVariant {
  *
  * [SairoPlaceListItemVariant.Simple]은 56dp 썸네일과 정보를 가로로 배치하고,
  * [SairoPlaceListItemVariant.Detailed]는 제목·태그·이미지를 세로로 배치한다. 장소 정보와
- * 이미지의 소유·변경은 호출자에게 있으며, 이 컴포넌트는 정보를 표시만 한다.
+ * 이미지의 소유·변경은 호출자에게 있으며, 선택 동작은 [onClick]으로 호출자에게 전달한다.
  * @param title 장소 순서와 이름을 포함한 제목
  * @param tags 운영 시간·휴무일처럼 장소에 표시할 태그 문구 목록
  * @param painter 장소 이미지를 표시할 Painter
  * @param modifier 장소 행에 적용할 Modifier
  * @param variant Figma의 Simple 또는 Detailed 정보 배치
  * @param imageContentDescription 장소 이미지의 접근성 설명
+ * @param onClick 장소 행을 눌렀을 때 호출할 동작. null이면 선택할 수 없다
  */
 @Composable
 fun SairoPlaceListItem(
@@ -51,13 +53,16 @@ fun SairoPlaceListItem(
     modifier: Modifier = Modifier,
     variant: SairoPlaceListItemVariant = SairoPlaceListItemVariant.Simple,
     imageContentDescription: String? = null,
+    onClick: (() -> Unit)? = null,
 ) {
+    val itemModifier = if (onClick == null) modifier else modifier.clickable(onClick = onClick)
+
     when (variant) {
         SairoPlaceListItemVariant.Simple -> SairoSimplePlaceListItem(
             title = title,
             tags = tags,
             painter = painter,
-            modifier = modifier,
+            modifier = itemModifier,
             imageContentDescription = imageContentDescription,
         )
 
@@ -65,7 +70,7 @@ fun SairoPlaceListItem(
             title = title,
             tags = tags,
             painter = painter,
-            modifier = modifier,
+            modifier = itemModifier,
             imageContentDescription = imageContentDescription,
         )
     }

@@ -16,8 +16,8 @@ import kotlinx.coroutines.launch
 /**
  * 여행 상세 화면의 코스·일차·저장 표시 상태를 관리한다.
  *
- * 코스 조회 결과는 [TravelDetailUiState]의 UI 모델로 변환하며, 일차 선택에 따라 지도와 타임라인이
- * 같은 장소 목록을 사용하도록 한다. 공유와 화면 이동은 호출자가 소유한다.
+ * 코스 조회 결과는 [TravelDetailUiState]의 UI 모델로 변환하며, 일차·장소 선택에 따라 지도와
+ * 타임라인이 같은 장소 목록을 사용하도록 한다. 공유와 화면 이동은 호출자가 소유한다.
  */
 @HiltViewModel
 class TravelDetailViewModel @Inject constructor(
@@ -54,10 +54,24 @@ class TravelDetailViewModel @Inject constructor(
         _uiState.update { state ->
             val content = state as? TravelDetailUiState.Content ?: return@update state
 
-            if (content.course.days.none { day -> day.dayNumber == dayNumber }) {
-                content
+            val selectedDay = content.course.days.firstOrNull { day -> day.dayNumber == dayNumber }
+                ?: return@update content
+            content.copy(
+                selectedDayNumber = dayNumber,
+                selectedPlaceId = selectedDay.places.firstOrNull()?.placeId,
+            )
+        }
+    }
+
+    /** 선택한 일차에 포함된 장소를 지도 카메라의 중심으로 지정한다. */
+    fun selectPlace(placeId: String) {
+        _uiState.update { state ->
+            val content = state as? TravelDetailUiState.Content ?: return@update state
+
+            if (content.selectedDay?.places?.any { place -> place.placeId == placeId } == true) {
+                content.copy(selectedPlaceId = placeId)
             } else {
-                content.copy(selectedDayNumber = dayNumber)
+                content
             }
         }
     }
@@ -93,4 +107,5 @@ private fun Course.toUiState(): TravelDetailUiState =
             },
         ),
         selectedDayNumber = days.firstOrNull()?.dayNumber ?: 1,
+        selectedPlaceId = days.firstOrNull()?.places?.firstOrNull()?.placeId,
     )

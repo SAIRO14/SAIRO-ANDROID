@@ -48,12 +48,12 @@ flowchart LR
     VM --> UI["추천 결과 화면"]
 ```
 
-1. 사진 선택 화면이 선택 ID를 로딩 Route로 전달한다.
-2. 로딩 완료 뒤 `OnboardingResultRoute(selectedPhotoIds)`가 기존 로딩 Route를 교체한다.
+1. 사진 선택 화면이 탐색 세션 ID와 선택 ID를 로딩 Route로 전달한다.
+2. 로딩 완료 뒤 `OnboardingResultRoute(searchSessionId, selectedPhotoIds)`가 기존 로딩 Route를 교체한다.
 3. ViewModel은 추천 Repository를 먼저 조회하고, `UpdateOnboardingCompletionUseCase`에 결과를 전달한다. UseCase는 결과가 1개 이상이면 완료 상태를 저장하고, 0개면 완료 상태를 해제한다.
 4. 결과가 2개 이상이면 카드 목록만 스크롤한다.
 5. 결과가 0개 또는 1개면 하단 안내와 재추천 버튼을 고정한다. 카드가 있는 경우에도 작은 화면에서는 목록 하단 여백으로 버튼과 겹치지 않는다.
-6. 재추천·뒤로가기는 기존 사진 선택 화면으로 돌아가고, 홈 버튼은 홈 목적지까지 백스택을 정리한다.
+6. 뒤로가기는 기존 사진 선택 화면으로 돌아가 선택 상태를 유지한다. 반면 재추천은 기존 사진 선택·결과 목적지를 제거하고 새 탐색 세션의 사진 선택 화면을 추가한다. 홈 버튼은 홈 목적지까지 백스택을 정리한다.
 
 ## 트레이드오프와 주의점
 

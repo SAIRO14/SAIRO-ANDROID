@@ -1,10 +1,12 @@
 package com.example.sairo14.data.di
 
 import com.example.sairo14.data.repository.DefaultOnboardingRepository
+import com.example.sairo14.data.repository.FakeCourseRepository
 import com.example.sairo14.data.repository.FakeHomeRepository
 import com.example.sairo14.data.repository.FakeOnboardingRecommendationRepository
 import com.example.sairo14.data.repository.FakePhotoSelectionRepository
 import com.example.sairo14.data.repository.FakeSavedTripRepository
+import com.example.sairo14.domain.repository.CourseRepository
 import com.example.sairo14.domain.repository.HomeRepository
 import com.example.sairo14.domain.repository.OnboardingRepository
 import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
@@ -32,6 +34,12 @@ abstract class DataModule {
     abstract fun bindHomeRepository(
         repository: FakeHomeRepository,
     ): HomeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCourseRepository(
+        repository: FakeCourseRepository,
+    ): CourseRepository
 
     @Binds
     @Singleton

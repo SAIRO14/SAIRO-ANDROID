@@ -15,6 +15,9 @@ sealed interface AppResult<out T> {
 
 /** 앱이 기술 구현을 알지 않고 처리할 수 있는 데이터 접근 오류를 정의한다. */
 sealed interface AppError {
+    /** 요청한 코스나 여행지를 찾을 수 없는 상태다. */
+    data object ResourceNotFound : AppError
+
     /** 로컬 저장소 또는 네트워크에 일시적으로 접근할 수 없는 상태다. */
     data object StorageUnavailable : AppError
 

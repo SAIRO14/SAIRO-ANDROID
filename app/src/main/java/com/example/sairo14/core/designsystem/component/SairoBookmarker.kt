@@ -1,6 +1,5 @@
 package com.example.sairo14.core.designsystem.component
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,6 +18,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.core.extension.noRippleClickable
 
 /**
  * 저장 여부를 나타내고 저장 상태 변경 동작을 전달하는 북마커를 표시한다.
@@ -27,7 +27,9 @@ import com.example.sairo14.core.designsystem.theme.SairoTheme
  * @param saved 현재 저장 여부
  * @param onClick 북마커를 클릭했을 때 호출할 동작
  * @param modifier 북마커에 적용할 Modifier
- * @param size 북마커의 가로·세로 크기. 기본값은 24dp다.
+ * @param size 북마커 아이콘의 가로·세로 크기. 기본값은 24dp다.
+ * @param touchTargetSize 클릭 영역의 가로·세로 크기. 아이콘 크기와 분리해 접근 가능한
+ * 터치 영역을 유지할 때 사용한다.
  * @param enabled `false`이면 클릭 이벤트를 전달하지 않는지 여부
  */
 @Composable
@@ -36,6 +38,7 @@ fun SairoBookmarker(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     size: Dp = 24.dp,
+    touchTargetSize: Dp = size,
     enabled: Boolean = true,
 ) {
     val scaleFactor = size.value / BookmarkTouchSize.value
@@ -44,11 +47,9 @@ fun SairoBookmarker(
 
     Box(
         modifier = modifier
-            .size(size)
-            .clickable(
-                enabled = enabled,
-                interactionSource = null,
-                indication = null,
+            .size(touchTargetSize)
+            .noRippleClickable(
+                isEnabled = enabled,
                 role = Role.Button,
                 onClick = onClick,
             )

@@ -20,6 +20,7 @@ class FakeOnboardingRecommendationRepository @Inject constructor() : OnboardingR
         val oneRecommendation = listOf<OnboardingRecommendation>(
             OnboardingRecommendation(
                 id = "recommendation-boeun",
+                courseId = "course-boeun",
                 regionName = "충북 보은권",
                 description = "고요한 자연과 전통의 분위기",
                 imageUrls = listOf(
@@ -32,6 +33,7 @@ class FakeOnboardingRecommendationRepository @Inject constructor() : OnboardingR
         val sampleRecommendations = listOf(
             OnboardingRecommendation(
                 id = "recommendation-boeun",
+                courseId = "course-boeun",
                 regionName = "충북 보은권",
                 description = "고요한 자연과 전통의 분위기",
                 imageUrls = listOf(
@@ -42,6 +44,7 @@ class FakeOnboardingRecommendationRepository @Inject constructor() : OnboardingR
             ),
             OnboardingRecommendation(
                 id = "recommendation-gangneung",
+                courseId = "course-gangneung",
                 regionName = "강원 강릉권",
                 description = "바다와 골목이 어우러진 느긋한 풍경",
                 imageUrls = listOf(
@@ -52,6 +55,7 @@ class FakeOnboardingRecommendationRepository @Inject constructor() : OnboardingR
             ),
             OnboardingRecommendation(
                 id = "recommendation-jeju",
+                courseId = "course-jeju",
                 regionName = "제주 서부권",
                 description = "빛과 바람을 따라 걷는 한적한 하루",
                 imageUrls = listOf(

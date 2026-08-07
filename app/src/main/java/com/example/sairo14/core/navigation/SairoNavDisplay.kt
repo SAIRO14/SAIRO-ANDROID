@@ -22,6 +22,7 @@ import com.example.sairo14.feature.onboarding.OnboardingLoadingRoute as Onboardi
 import com.example.sairo14.feature.onboarding.OnboardingPhotoSelectRoute as OnboardingPhotoSelectScreenRoute
 import com.example.sairo14.feature.onboarding.OnboardingResultRoute as OnboardingResultScreenRoute
 import com.example.sairo14.feature.savedtrip.SavedTripsRoute as SavedTripsScreenRoute
+import com.example.sairo14.feature.traveldetail.TravelDetailRoute as TravelDetailScreenRoute
 
 private const val ForwardEnterDurationMillis = 300
 private const val ForwardExitDurationMillis = 225
@@ -89,6 +90,9 @@ fun SairoNavDisplay(
                     onFolderClick = {
                         navigator.navigateSingleTop(SavedTripsRoute)
                     },
+                    onSavedTripClick = { courseId ->
+                        navigator.navigateSingleTop(TravelDetailRoute(courseId))
+                    },
                 )
             }
             entry<SavedTripsRoute> {
@@ -101,6 +105,9 @@ fun SairoNavDisplay(
                                 entryPoint = OnboardingIntroEntryPoint.Home,
                             ),
                         )
+                    },
+                    onTripClick = { courseId ->
+                        navigator.navigateSingleTop(TravelDetailRoute(courseId))
                     },
                 )
             }
@@ -154,6 +161,17 @@ fun SairoNavDisplay(
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
                     onRequestAgainClick = navigator::navigateUp,
+                    onRecommendationClick = { courseId ->
+                        navigator.navigateSingleTop(TravelDetailRoute(courseId))
+                    },
+                )
+            }
+            entry<TravelDetailRoute> { route ->
+                TravelDetailScreenRoute(
+                    courseId = route.courseId,
+                    onBackClick = navigator::navigateUp,
+                    onHomeClick = navigator::popToHome,
+                    onShareClick = {},
                 )
             }
         },

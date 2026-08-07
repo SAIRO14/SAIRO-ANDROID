@@ -2,7 +2,6 @@ package com.example.sairo14.core.designsystem.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
@@ -34,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
+import com.example.sairo14.core.extension.noRippleClickable
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
@@ -88,10 +88,8 @@ fun SairoPlaceFolderCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(FolderCardAspectRatio)
-                .clickable(
-                    enabled = cardEnabled,
-                    interactionSource = null,
-                    indication = null,
+                .noRippleClickable(
+                    isEnabled = cardEnabled,
                     role = Role.Button,
                     onClick = onClick,
                 ),

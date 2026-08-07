@@ -2,6 +2,7 @@ package com.example.sairo14.app
 
 import android.app.Application
 import com.example.sairo14.BuildConfig
+import com.kakao.vectormap.KakaoMapSdk
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 
@@ -17,6 +18,14 @@ class SairoApplication : Application() {
 
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
+        }
+
+        if (BuildConfig.KAKAO_NATIVE_APP_KEY.isBlank()) {
+            if (BuildConfig.DEBUG) {
+                Timber.w("KAKAO_NATIVE_APP_KEY가 없어 카카오 지도를 초기화하지 않습니다.")
+            }
+        } else {
+            KakaoMapSdk.init(this, BuildConfig.KAKAO_NATIVE_APP_KEY)
         }
     }
 }

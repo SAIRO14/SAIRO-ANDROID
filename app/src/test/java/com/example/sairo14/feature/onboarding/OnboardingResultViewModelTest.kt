@@ -145,6 +145,7 @@ class OnboardingResultViewModelTest {
 
         fun recommendation(id: String) = OnboardingRecommendation(
             id = id,
+            courseId = "course-$id",
             regionName = "충북 보은권",
             description = "고요한 자연과 전통의 분위기",
             imageUrls = emptyList(),

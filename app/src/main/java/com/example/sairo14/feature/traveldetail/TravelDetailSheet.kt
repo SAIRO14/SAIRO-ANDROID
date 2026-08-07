@@ -1,10 +1,9 @@
 package com.example.sairo14.feature.traveldetail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.AnchoredDraggableState
-import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -27,9 +25,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,29 +48,20 @@ import com.example.sairo14.core.designsystem.component.SairoTagVariant
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
 import com.example.sairo14.core.extension.sairoDropShadow
-import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-/** 여행 상세 시트가 멈출 수 있는 세 위치다. */
-internal enum class TravelDetailSheetValue {
-    Expanded,
-    Default,
-    Collapsed,
-}
-
 /**
- * 여행 코스와 장소 목록을 세 단계로 펼칠 수 있는 상세 시트를 표시한다.
+ * 여행 코스와 장소 목록을 자유롭게 펼칠 수 있는 상세 시트를 표시한다.
  *
- * 드래그는 상단 손잡이와 액션 영역에서만 처리하며, [content]는 별도로 스크롤된다. 시트가
- * 지도 위를 가리는 높이는 [onVisibleHeightChanged]로 외부에 전달해 지도 뷰포트에 반영할 수 있다.
+ * 드래그는 상단 손잡이와 액션 영역에서만 처리하며, 손을 놓으면 현재 위치에 그대로 머문다.
+ * [content]는 별도로 스크롤되며, 시트가 지도 위를 가리는 높이는 [onVisibleHeightChanged]로 외부에
+ * 전달해 지도 뷰포트에 반영할 수 있다.
  * @param regionName 여행 지역 태그에 표시할 문구
  * @param isSaved 현재 여행 저장 여부
  * @param onShareClick 공유 아이콘을 눌렀을 때 호출할 동작
  * @param onSaveClick 저장 아이콘을 눌렀을 때 호출할 동작
  * @param expandedTopInset 시트가 완전히 펼쳐졌을 때 화면 위에서 남길 영역
  * @param modifier 시트 컨테이너에 적용할 Modifier
- * @param initialValue 처음 표시할 시트 위치
- * @param onSheetValueChanged 시트가 새 위치에 멈췄을 때 호출할 콜백
  * @param onVisibleHeightChanged 현재 화면에 보이는 시트 높이를 전달하는 콜백
  * @param content 시트 본문에 표시할 코스 목록 콘텐츠
  */
@@ -82,12 +73,10 @@ internal fun TravelDetailSheet(
     onSaveClick: () -> Unit,
     expandedTopInset: Dp,
     modifier: Modifier = Modifier,
-    initialValue: TravelDetailSheetValue = TravelDetailSheetValue.Default,
-    onSheetValueChanged: (TravelDetailSheetValue) -> Unit = {},
     onVisibleHeightChanged: (Dp) -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val sheetState = remember { AnchoredDraggableState(initialValue) }
+    var sheetOffsetPx by remember { mutableFloatStateOf(Float.NaN) }
 
     BoxWithConstraints(
         modifier = modifier
@@ -97,44 +86,38 @@ internal fun TravelDetailSheet(
         val density = LocalDensity.current
         val containerHeight = maxHeight
         val expandedOffset = expandedTopInset.coerceIn(0.dp, containerHeight)
-        val collapsedOffset = (containerHeight - CollapsedSheetVisibleHeight)
+        val collapsedOffset = (containerHeight - SheetHeaderHeight)
             .coerceAtLeast(expandedOffset)
         val defaultOffset = expandedOffset +
-            (collapsedOffset - expandedOffset) * DefaultSheetAnchorFraction
-        val anchors = remember(expandedOffset, defaultOffset, collapsedOffset, density) {
-            DraggableAnchors {
-                TravelDetailSheetValue.Expanded at with(density) { expandedOffset.toPx() }
-                TravelDetailSheetValue.Default at with(density) { defaultOffset.toPx() }
-                TravelDetailSheetValue.Collapsed at with(density) { collapsedOffset.toPx() }
-            }
+            (collapsedOffset - expandedOffset) * DefaultSheetOffsetFraction
+        val expandedOffsetPx = with(density) { expandedOffset.toPx() }
+        val collapsedOffsetPx = with(density) { collapsedOffset.toPx() }
+        val defaultOffsetPx = with(density) { defaultOffset.toPx() }
+
+        LaunchedEffect(expandedOffsetPx, collapsedOffsetPx, defaultOffsetPx) {
+            sheetOffsetPx = sheetOffsetPx
+                .takeUnless(Float::isNaN)
+                ?.coerceIn(expandedOffsetPx, collapsedOffsetPx)
+                ?: defaultOffsetPx
         }
 
-        SideEffect {
-            sheetState.updateAnchors(anchors)
+        val dragState = rememberDraggableState { delta ->
+            val currentOffset = sheetOffsetPx.takeUnless(Float::isNaN) ?: defaultOffsetPx
+            sheetOffsetPx = (currentOffset + delta).coerceIn(expandedOffsetPx, collapsedOffsetPx)
         }
 
-        LaunchedEffect(sheetState) {
-            snapshotFlow { sheetState.settledValue }
-                .distinctUntilChanged()
-                .collect(onSheetValueChanged)
-        }
-        LaunchedEffect(sheetState, containerHeight) {
+        LaunchedEffect(containerHeight, defaultOffsetPx) {
             snapshotFlow {
-                val offset = sheetState.offset
-                if (offset.isNaN()) {
-                    0.dp
-                } else {
-                    with(density) {
-                        (containerHeight.toPx() - offset).coerceAtLeast(0f).toDp()
-                    }
+                val offset = sheetOffsetPx.takeUnless(Float::isNaN) ?: defaultOffsetPx
+                with(density) {
+                    (containerHeight.toPx() - offset).coerceAtLeast(0f).toDp()
                 }
             }
                 .distinctUntilChanged()
                 .collect(onVisibleHeightChanged)
         }
 
-        val sheetOffset = sheetState.offset.takeUnless(Float::isNaN)
-            ?: with(density) { defaultOffset.toPx() }
+        val sheetOffset = sheetOffsetPx.takeUnless(Float::isNaN) ?: defaultOffsetPx
         val sheetShape = RoundedCornerShape(
             topStart = SheetCornerRadius,
             topEnd = SheetCornerRadius,
@@ -142,7 +125,7 @@ internal fun TravelDetailSheet(
 
         Column(
             modifier = Modifier
-                .offset { IntOffset(x = 0, y = sheetOffset.roundToInt()) }
+                .offset(y = with(density) { sheetOffset.toDp() })
                 .fillMaxWidth()
                 .height(containerHeight)
                 .sairoDropShadow(
@@ -159,8 +142,8 @@ internal fun TravelDetailSheet(
                 onSaveClick = onSaveClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .anchoredDraggable(
-                        state = sheetState,
+                    .draggable(
+                        state = dragState,
                         orientation = Orientation.Vertical,
                     ),
             )
@@ -168,7 +151,6 @@ internal fun TravelDetailSheet(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
-                    .navigationBarsPadding()
                     .padding(
                         start = SheetHorizontalPadding,
                         end = SheetHorizontalPadding,
@@ -237,8 +219,7 @@ private fun SheetHeader(
     }
 }
 
-private const val DefaultSheetAnchorFraction = 0.39f
-private val CollapsedSheetVisibleHeight = 160.dp
+private const val DefaultSheetOffsetFraction = 0.39f
 private val SheetCornerRadius = 20.dp
 private val SheetHeaderHeight = 63.dp
 private val SheetHandleAreaHeight = 24.dp

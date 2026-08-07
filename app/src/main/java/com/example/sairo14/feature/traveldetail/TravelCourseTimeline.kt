@@ -48,12 +48,21 @@ internal fun TravelCourseTimeline(
                     .drawBehind {
                         if (!isLastItem) {
                             val markerCenterX = TimelineMarkerSize.toPx() / 2f
-                            drawLine(
-                                color = lineColor,
-                                start = Offset(x = markerCenterX, y = TimelineMarkerSize.toPx()),
-                                end = Offset(x = markerCenterX, y = size.height),
-                                strokeWidth = TimelineLineWidth.toPx(),
-                            )
+                            val lineEndY = size.height
+                            val dashLength = TimelineDashLength.toPx()
+                            val dashGap = TimelineDashGap.toPx()
+                            var dashStartY = TimelineMarkerSize.toPx()
+
+                            while (dashStartY < lineEndY) {
+                                val dashEndY = (dashStartY + dashLength).coerceAtMost(lineEndY)
+                                drawLine(
+                                    color = lineColor,
+                                    start = Offset(x = markerCenterX, y = dashStartY),
+                                    end = Offset(x = markerCenterX, y = dashEndY),
+                                    strokeWidth = TimelineLineWidth.toPx(),
+                                )
+                                dashStartY += dashLength + dashGap
+                            }
                         }
                     },
             ) {
@@ -85,5 +94,7 @@ internal fun TravelCourseTimeline(
 
 private val TimelineMarkerSize = 20.dp
 private val TimelineLineWidth = 1.dp
+private val TimelineDashLength = 4.dp
+private val TimelineDashGap = 4.dp
 private val TimelineContentGap = 8.dp
 private val TimelineItemGap = 24.dp

@@ -17,10 +17,10 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.metadata
 import androidx.navigation3.ui.NavDisplay
 import com.example.sairo14.feature.home.HomeRoute as HomeScreenRoute
-import com.example.sairo14.feature.onboarding.OnboardingIntroRoute as OnboardingIntroScreenRoute
-import com.example.sairo14.feature.onboarding.OnboardingLoadingRoute as OnboardingLoadingScreenRoute
-import com.example.sairo14.feature.onboarding.OnboardingPhotoSelectRoute as OnboardingPhotoSelectScreenRoute
-import com.example.sairo14.feature.onboarding.OnboardingResultRoute as OnboardingResultScreenRoute
+import com.example.sairo14.feature.onboarding.intro.OnboardingIntroRoute as OnboardingIntroScreenRoute
+import com.example.sairo14.feature.onboarding.loading.OnboardingLoadingRoute as OnboardingLoadingScreenRoute
+import com.example.sairo14.feature.onboarding.select.OnboardingPhotoSelectRoute as OnboardingPhotoSelectScreenRoute
+import com.example.sairo14.feature.onboarding.result.OnboardingResultRoute as OnboardingResultScreenRoute
 import com.example.sairo14.feature.savedtrip.SavedTripsRoute as SavedTripsScreenRoute
 import com.example.sairo14.feature.traveldetail.TravelDetailRoute as TravelDetailScreenRoute
 

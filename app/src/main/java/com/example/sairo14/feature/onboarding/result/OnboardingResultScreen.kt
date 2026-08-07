@@ -1,4 +1,4 @@
-package com.example.sairo14.feature.onboarding
+package com.example.sairo14.feature.onboarding.result
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

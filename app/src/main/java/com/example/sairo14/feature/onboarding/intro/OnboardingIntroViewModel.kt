@@ -1,4 +1,4 @@
-package com.example.sairo14.feature.onboarding
+package com.example.sairo14.feature.onboarding.intro
 
 import androidx.lifecycle.ViewModel
 import com.example.sairo14.core.navigation.SairoNavigator

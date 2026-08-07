@@ -4,8 +4,8 @@
 
 Compose 화면에서 Android View 기반 SDK를 표시할 때는 `AndroidView`로 View를 감싸고, Compose
 Lifecycle과 SDK 고유의 시작·일시정지·종료 호출을 함께 관리해야 한다. 카카오 지도는 `MapView`를
-시작한 뒤 `resume`, `pause`, `finish` 순서로 수명주기를 제어하며, 지도 위 UI와 카메라 중심은
-viewport padding으로 조정한다.
+시작한 뒤 수동 종료 설정을 적용하고, `resume`, `pause`, `finish` 순서로 수명주기를 제어한다. 지도
+위 UI와 카메라 중심은 viewport padding으로 조정한다.
 
 ## 도입 이유
 

@@ -68,11 +68,7 @@ fun SairoKakaoMap(
             onMapError = { error -> latestOnMapError.value(error) },
         )
     }
-    val mapView = remember(context) {
-        MapView(context).apply {
-            setFinishManually(true)
-        }
-    }
+    val mapView = remember(context) { MapView(context) }
 
     DisposableEffect(lifecycle, mapView) {
         val lifecycleObserver = LifecycleEventObserver { _, event ->
@@ -114,6 +110,7 @@ fun SairoKakaoMap(
                         }
                     },
                 )
+                mapView.setFinishManually(true)
             } else {
                 mapController.reportError(
                     IllegalStateException("카카오 지도 SDK가 초기화되지 않았습니다."),

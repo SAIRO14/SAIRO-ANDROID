@@ -50,6 +50,24 @@ class SairoNavigator(
     }
 
     /**
+     * 현재 온보딩 인트로부터 새 여행지 탐색 세션을 시작한다.
+     *
+     * 인트로 뒤에 남아 있는 사진 선택·분석·결과 목적지를 닫고 새 세션 Route를 추가한다. 일반
+     * 뒤로가기는 이 메서드를 호출하지 않으므로, 기존 사진 선택 상태는 백스택에 남아 있는 동안 유지된다.
+     * @param searchSessionId 새 탐색과 이전 탐색의 NavEntry 상태를 구분하는 고유 식별자
+     */
+    fun startNewOnboardingSearch(searchSessionId: String) {
+        val introIndex = backStack.indexOfLast { route -> route is OnboardingIntroRoute }
+
+        if (introIndex < 0) return
+
+        while (backStack.lastIndex > introIndex) {
+            backStack.removeAt(backStack.lastIndex)
+        }
+        backStack.add(OnboardingPhotoSelectRoute(searchSessionId))
+    }
+
+    /**
      * 백스택에서 가장 가까운 홈 목적지까지 현재 화면들을 닫는다.
      *
      * 홈 목적지가 없는 백스택은 변경하지 않는다.

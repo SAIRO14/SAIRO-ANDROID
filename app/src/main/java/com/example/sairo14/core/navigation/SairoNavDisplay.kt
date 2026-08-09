@@ -11,10 +11,12 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.metadata
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.sairo14.feature.home.HomeRoute as HomeScreenRoute
 import com.example.sairo14.feature.onboarding.intro.OnboardingIntroRoute as OnboardingIntroScreenRoute
@@ -23,6 +25,7 @@ import com.example.sairo14.feature.onboarding.select.OnboardingPhotoSelectRoute 
 import com.example.sairo14.feature.onboarding.result.OnboardingResultRoute as OnboardingResultScreenRoute
 import com.example.sairo14.feature.savedtrip.SavedTripsRoute as SavedTripsScreenRoute
 import com.example.sairo14.feature.traveldetail.TravelDetailRoute as TravelDetailScreenRoute
+import java.util.UUID
 
 private const val ForwardEnterDurationMillis = 300
 private const val ForwardExitDurationMillis = 225
@@ -46,6 +49,10 @@ fun SairoNavDisplay(
 ) {
     NavDisplay(
         backStack = backStack,
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator(),
+        ),
         onBack = navigator::navigateUp,
         transitionSpec = {
             (
@@ -117,14 +124,19 @@ fun SairoNavDisplay(
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
                     onStartClick = {
-                        navigator.navigate(OnboardingPhotoSelectRoute)
+                        navigator.startNewOnboardingSearch(newOnboardingSearchSessionId())
                     },
                 )
             }
-            entry<OnboardingPhotoSelectRoute> {
+            entry<OnboardingPhotoSelectRoute> { route ->
                 OnboardingPhotoSelectScreenRoute(
                     onSelectionComplete = { photoIds ->
-                        navigator.navigateSingleTop(OnboardingLoadingRoute(photoIds))
+                        navigator.navigateSingleTop(
+                            OnboardingLoadingRoute(
+                                searchSessionId = route.searchSessionId,
+                                selectedPhotoIds = photoIds,
+                            ),
+                        )
                     },
                 )
             }
@@ -132,7 +144,12 @@ fun SairoNavDisplay(
                 OnboardingLoadingScreenRoute(
                     selectedPhotoIds = route.selectedPhotoIds,
                     onFinished = {
-                        navigator.replaceTop(OnboardingResultRoute(route.selectedPhotoIds))
+                        navigator.replaceTop(
+                            OnboardingResultRoute(
+                                searchSessionId = route.searchSessionId,
+                                selectedPhotoIds = route.selectedPhotoIds,
+                            ),
+                        )
                     },
                     onBackClick = navigator::navigateUp,
                 )
@@ -160,7 +177,9 @@ fun SairoNavDisplay(
                     selectedPhotoIds = route.selectedPhotoIds,
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
-                    onRequestAgainClick = navigator::navigateUp,
+                    onRequestAgainClick = {
+                        navigator.startNewOnboardingSearch(newOnboardingSearchSessionId())
+                    },
                     onRecommendationClick = { courseId ->
                         navigator.navigateSingleTop(TravelDetailRoute(courseId))
                     },
@@ -177,3 +196,6 @@ fun SairoNavDisplay(
         },
     )
 }
+
+/** 새로운 온보딩 탐색 Route의 상태 수명을 구분할 식별자를 만든다. */
+private fun newOnboardingSearchSessionId(): String = UUID.randomUUID().toString()

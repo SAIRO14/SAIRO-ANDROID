@@ -37,18 +37,22 @@ data class OnboardingIntroRoute(
     val entryPoint: OnboardingIntroEntryPoint = OnboardingIntroEntryPoint.AppStart,
 ) : SairoRoute
 
-/** 온보딩에서 취향 사진을 선택하는 화면을 식별한다. */
+/** 온보딩 탐색 세션에서 취향 사진을 선택하는 화면을 식별한다. */
 @Serializable
-data object OnboardingPhotoSelectRoute : SairoRoute
+data class OnboardingPhotoSelectRoute(
+    val searchSessionId: String,
+) : SairoRoute
 
-/** 온보딩에서 선택한 사진을 분석하며 카드 스태킹 모션을 표시하는 화면을 식별한다. */
+/** 온보딩 탐색 세션에서 선택한 사진을 분석하며 카드 스태킹 모션을 표시하는 화면을 식별한다. */
 @Serializable
 data class OnboardingLoadingRoute(
+    val searchSessionId: String,
     val selectedPhotoIds: List<String>,
 ) : SairoRoute
 
-/** 온보딩 분석이 끝난 뒤 선택 사진에 따른 추천 결과를 식별한다. */
+/** 온보딩 탐색 세션의 선택 사진에 따른 추천 결과를 식별한다. */
 @Serializable
 data class OnboardingResultRoute(
+    val searchSessionId: String,
     val selectedPhotoIds: List<String>,
 ) : SairoRoute

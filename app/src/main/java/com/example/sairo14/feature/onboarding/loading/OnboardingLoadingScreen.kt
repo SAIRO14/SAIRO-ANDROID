@@ -246,6 +246,7 @@ private fun LoadingInformation(
             color = SairoTheme.colors.textPrimary,
             style = SairoTextStyles.displayLight24,
             textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 2.dp)
         )
 
         //불필요한 로딩 dot
@@ -256,6 +257,7 @@ private fun LoadingInformation(
         } else {
             Spacer(modifier = Modifier.height(TitleToTagsSpacing))
         }*/
+        Spacer(modifier = Modifier.height(18.dp))
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(TagSpacing),

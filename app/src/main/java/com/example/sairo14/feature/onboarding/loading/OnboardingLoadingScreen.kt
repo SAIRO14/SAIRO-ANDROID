@@ -248,12 +248,14 @@ private fun LoadingInformation(
             textAlign = TextAlign.Center,
         )
 
+        //불필요한 로딩 dot
+        /*
         if (showDots) {
             LoadingDots()
             Spacer(modifier = Modifier.height(DotsToTagsSpacing))
         } else {
             Spacer(modifier = Modifier.height(TitleToTagsSpacing))
-        }
+        }*/
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(TagSpacing),

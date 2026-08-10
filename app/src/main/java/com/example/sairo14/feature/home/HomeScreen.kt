@@ -44,7 +44,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.sairo14.R
-import com.example.sairo14.core.designsystem.component.SairoBackdropHost
 import com.example.sairo14.core.designsystem.component.SairoBackdropState
 import com.example.sairo14.core.designsystem.component.SairoButton
 import com.example.sairo14.core.designsystem.component.SairoHeader
@@ -53,6 +52,7 @@ import com.example.sairo14.core.designsystem.component.rememberSairoBackdropImag
 import com.example.sairo14.core.designsystem.component.rememberSairoBackdropState
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.skydoves.cloudy.sky
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -303,36 +303,37 @@ private fun HomeContainer(
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeight = with(density) { headerHeightPx.toDp() }
 
-    SairoBackdropHost(
-        state = backdropState,
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(colors.backgroundCanvas)
             .clipToBounds(),
     ) {
-        Image(
-            painter = painterResource(R.drawable.img_bg_shadow_default),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds,
-        )
-
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .sky(backdropState.sky),
         ) {
-            content(backdropState, headerHeight)
-
-            SairoHeader(
-                variant = SairoHeaderVariant.Home,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .onSizeChanged { size -> headerHeightPx = size.height },
-                actionIcon = painterResource(R.drawable.ic_folder_outline),
-                actionContentDescription = stringResource(R.string.home_saved_places),
-                onActionClick = onFolderClick,
-                backdropState = backdropState,
+            Image(
+                painter = painterResource(R.drawable.img_bg_shadow_default),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds,
             )
+
+            content(backdropState, headerHeight)
         }
+
+        SairoHeader(
+            variant = SairoHeaderVariant.Home,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .onSizeChanged { size -> headerHeightPx = size.height },
+            actionIcon = painterResource(R.drawable.ic_folder_outline),
+            actionContentDescription = stringResource(R.string.home_saved_places),
+            onActionClick = onFolderClick,
+            backdropState = backdropState,
+        )
     }
 }
 

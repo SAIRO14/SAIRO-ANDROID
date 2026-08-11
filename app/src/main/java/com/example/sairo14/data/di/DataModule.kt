@@ -4,8 +4,8 @@ import com.example.sairo14.data.repository.DefaultOnboardingRepository
 import com.example.sairo14.data.repository.FakeCourseRepository
 import com.example.sairo14.data.repository.FakeHomeRepository
 import com.example.sairo14.data.repository.FakeOnboardingRecommendationRepository
-import com.example.sairo14.data.repository.FakePhotoSelectionRepository
 import com.example.sairo14.data.repository.FakeSavedTripRepository
+import com.example.sairo14.data.repository.RemotePhotoSelectionRepository
 import com.example.sairo14.domain.repository.CourseRepository
 import com.example.sairo14.domain.repository.HomeRepository
 import com.example.sairo14.domain.repository.OnboardingRepository
@@ -50,7 +50,7 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindPhotoSelectionRepository(
-        repository: FakePhotoSelectionRepository,
+        repository: RemotePhotoSelectionRepository,
     ): PhotoSelectionRepository
 
     @Binds

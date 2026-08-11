@@ -50,6 +50,10 @@ class OnboardingLoadingViewModelTest {
             selectedPhotos.map(OnboardingAnimationPhoto::id),
             content.photos.map(OnboardingLoadingPhotoUiModel::id),
         )
+        assertEquals(
+            selectedPhotos.map(OnboardingAnimationPhoto::imageUrl),
+            content.photos.map(OnboardingLoadingPhotoUiModel::imageUrl),
+        )
     }
 
     @Test

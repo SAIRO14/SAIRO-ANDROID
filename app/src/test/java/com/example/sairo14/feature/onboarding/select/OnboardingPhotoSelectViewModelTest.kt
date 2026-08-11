@@ -59,43 +59,74 @@ class OnboardingPhotoSelectViewModelTest {
     }
 
     @Test
-    fun `완료 효과는 선택한 사진 ID를 선택 순서대로 전달한다`() = runTest(dispatcher) {
+    fun `사진 후보 마흔 장을 Pager에 전달할 콘텐츠 상태로 유지한다`() = runTest(dispatcher) {
+        val candidates = List(40) { index -> photoCandidate(index + 1) }
+        val viewModel = createViewModel(candidates)
+
+        advanceUntilIdle()
+
+        assertEquals(candidates, viewModel.content().photos.map(OnboardingPhotoUiModel::toPhotoCandidate))
+    }
+
+    @Test
+    fun `완료 효과는 전체 선택 ID와 앞 다섯 장의 애니메이션 사진을 순서대로 전달한다`() = runTest(dispatcher) {
         val viewModel = createViewModel()
         advanceUntilIdle()
-        val selectedIds = photoCandidates.take(5).map(PhotoCandidate::id).reversed()
+        val selectedIds = photoCandidates.take(6).map(PhotoCandidate::id).reversed()
         selectedIds.forEach(viewModel::togglePhotoSelection)
         val completion = async(start = CoroutineStart.UNDISPATCHED) { viewModel.effect.first() }
 
         viewModel.completeSelection()
 
+        val effect = completion.await() as OnboardingPhotoSelectEffect.SelectionCompleted
         assertEquals(
             selectedIds,
-            (completion.await() as OnboardingPhotoSelectEffect.SelectionCompleted).photoIds,
+            effect.photoIds,
+        )
+        assertEquals(
+            selectedIds.take(5),
+            effect.animationPhotos.map(OnboardingPhotoUiModel::id),
+        )
+        assertEquals(
+            selectedIds.take(5).map { id -> "https://example.com/$id.jpg" },
+            effect.animationPhotos.map(OnboardingPhotoUiModel::imageUrl),
         )
     }
 
-    private fun createViewModel(): OnboardingPhotoSelectViewModel =
+    private fun createViewModel(
+        candidates: List<PhotoCandidate> = photoCandidates,
+    ): OnboardingPhotoSelectViewModel =
         OnboardingPhotoSelectViewModel(
             getPhotoCandidates = GetPhotoCandidatesUseCase(
-                photoSelectionRepository = StaticPhotoSelectionRepository(),
+                photoSelectionRepository = StaticPhotoSelectionRepository(candidates),
             ),
         )
 
     private fun OnboardingPhotoSelectViewModel.content(): OnboardingPhotoSelectUiState.Content =
         uiState.value as OnboardingPhotoSelectUiState.Content
 
-    private class StaticPhotoSelectionRepository : PhotoSelectionRepository {
+    private class StaticPhotoSelectionRepository(
+        private val candidates: List<PhotoCandidate>,
+    ) : PhotoSelectionRepository {
         override suspend fun getPhotoCandidates(limit: Int): AppResult<List<PhotoCandidate>> =
-            AppResult.Success(photoCandidates)
+            AppResult.Success(candidates)
     }
 
     private companion object {
-        val photoCandidates = List(11) { index ->
+        val photoCandidates = List(11) { index -> photoCandidate(index + 1) }
+
+        fun photoCandidate(index: Int): PhotoCandidate =
             PhotoCandidate(
-                id = "photo-${index + 1}",
-                imageUrl = "https://example.com/photo-${index + 1}.jpg",
+                id = "photo-$index",
+                imageUrl = "https://example.com/photo-$index.jpg",
                 contentDescription = null,
             )
-        }
     }
 }
+
+private fun OnboardingPhotoUiModel.toPhotoCandidate(): PhotoCandidate =
+    PhotoCandidate(
+        id = id,
+        imageUrl = imageUrl,
+        contentDescription = contentDescription,
+    )

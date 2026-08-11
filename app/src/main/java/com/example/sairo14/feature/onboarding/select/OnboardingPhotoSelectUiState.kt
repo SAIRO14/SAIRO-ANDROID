@@ -38,4 +38,4 @@ data class OnboardingPhotoUiModel(
     val contentDescription: String?,
 )
 
-const val MinimumSelectionCount = 5
+const val MinimumSelectionCount = 3

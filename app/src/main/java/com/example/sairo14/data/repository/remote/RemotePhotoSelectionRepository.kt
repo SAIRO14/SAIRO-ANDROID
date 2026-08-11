@@ -17,11 +17,11 @@ class RemotePhotoSelectionRepository @Inject constructor(
     private val json: Json,
 ) : PhotoSelectionRepository {
 
-    override suspend fun getPhotoCandidates(): AppResult<List<PhotoCandidate>> =
+    override suspend fun getPhotoCandidates(limit: Int): AppResult<List<PhotoCandidate>> =
         runRemoteOperation(
             action = "온보딩 사진 후보를 불러오지 못했습니다.",
             json = json,
         ) {
-            api.getPhotos().map { photo -> photo.toDomain() }
+            api.getPhotos(limit = limit).map { photo -> photo.toDomain() }
         }
 }

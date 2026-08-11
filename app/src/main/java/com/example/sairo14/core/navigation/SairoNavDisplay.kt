@@ -130,11 +130,17 @@ fun SairoNavDisplay(
             }
             entry<OnboardingPhotoSelectRoute> { route ->
                 OnboardingPhotoSelectScreenRoute(
-                    onSelectionComplete = { photoIds ->
+                    onSelectionComplete = { photoIds, animationPhotos ->
                         navigator.navigateSingleTop(
                             OnboardingLoadingRoute(
                                 searchSessionId = route.searchSessionId,
                                 selectedPhotoIds = photoIds,
+                                animationPhotos = animationPhotos.map { photo ->
+                                    OnboardingAnimationPhoto(
+                                        id = photo.id,
+                                        imageUrl = photo.imageUrl,
+                                    )
+                                },
                             ),
                         )
                     },
@@ -142,7 +148,7 @@ fun SairoNavDisplay(
             }
             entry<OnboardingLoadingRoute> { route ->
                 OnboardingLoadingScreenRoute(
-                    selectedPhotoIds = route.selectedPhotoIds,
+                    animationPhotos = route.animationPhotos,
                     onFinished = {
                         navigator.replaceTop(
                             OnboardingResultRoute(

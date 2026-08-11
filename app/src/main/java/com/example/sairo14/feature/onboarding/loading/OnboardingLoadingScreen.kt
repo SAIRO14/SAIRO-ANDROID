@@ -1,5 +1,6 @@
 package com.example.sairo14.feature.onboarding.loading
 
+import android.content.Context
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
@@ -19,17 +20,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
@@ -38,8 +41,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.rememberAsyncImagePainter
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.request.ImageRequest
 import com.example.sairo14.R
+import com.example.sairo14.core.navigation.OnboardingAnimationPhoto
 import com.example.sairo14.core.designsystem.component.SairoButton
 import com.example.sairo14.core.designsystem.component.SairoImageCard
 import com.example.sairo14.core.designsystem.component.SairoImageCardSize
@@ -52,19 +58,21 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.CancellationException
 
 /**
  * 온보딩 로딩 상태와 결과 화면 이동을 연결한다.
  *
- * 선택한 사진 ID는 Route가 소유하며, ViewModel이 복원한 [OnboardingLoadingUiState]만 화면에 전달한다.
+ * 선택한 사진 URL은 Route가 소유하며, ViewModel이 변환한 [OnboardingLoadingUiState]만 화면에 전달한다.
  * 카드 모션이 끝나고 임시 분석 대기 시간이 지나면 [onFinished]를 한 번 호출한다.
- * @param selectedPhotoIds 사진 선택 화면에서 확정한 사진 ID 목록
+ * @param animationPhotos 사진 선택 순서의 앞 5장으로 구성한 애니메이션 카드 정보
  * @param onFinished 로딩과 분석 대기가 끝났을 때 결과 화면으로 이동할 콜백
  * @param onBackClick 사진을 다시 선택해야 할 때 이전 화면으로 돌아가는 콜백
  */
 @Composable
 fun OnboardingLoadingRoute(
-    selectedPhotoIds: List<String>,
+    animationPhotos: List<OnboardingAnimationPhoto>,
     onFinished: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -72,8 +80,8 @@ fun OnboardingLoadingRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(selectedPhotoIds) {
-        viewModel.load(selectedPhotoIds)
+    LaunchedEffect(animationPhotos) {
+        viewModel.load(animationPhotos)
     }
 
     OnboardingLoadingScreen(
@@ -101,6 +109,12 @@ fun OnboardingLoadingScreen(
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val loadingPhotos = (uiState as? OnboardingLoadingUiState.Content)
+        ?.photos
+        ?.take(OnboardingLoadingCardCount)
+        .orEmpty()
+    val imagePreloadState = rememberLoadingImagePreloadState(loadingPhotos)
+
     when (uiState) {
         OnboardingLoadingUiState.Loading -> OnboardingLoadingPendingScreen(modifier)
         OnboardingLoadingUiState.Error -> OnboardingLoadingErrorScreen(
@@ -108,11 +122,84 @@ fun OnboardingLoadingScreen(
             modifier = modifier,
         )
 
-        is OnboardingLoadingUiState.Content -> OnboardingLoadingContent(
-            photos = uiState.photos.take(OnboardingLoadingCardCount),
-            onFinished = onFinished,
-            modifier = modifier,
+        is OnboardingLoadingUiState.Content -> {
+            if (imagePreloadState == LoadingImagePreloadState.Ready) {
+                OnboardingLoadingContent(
+                    photos = loadingPhotos,
+                    onFinished = onFinished,
+                    modifier = modifier,
+                )
+            } else {
+                OnboardingLoadingPendingScreen(modifier)
+            }
+        }
+    }
+}
+
+private enum class LoadingImagePreloadState {
+    Loading,
+    Ready,
+}
+
+@Composable
+private fun rememberLoadingImagePreloadState(
+    photos: List<OnboardingLoadingPhotoUiModel>,
+): LoadingImagePreloadState {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val imageLoader = remember(context) { SingletonImageLoader.get(context) }
+    val imageUrls = remember(photos) { photos.map(OnboardingLoadingPhotoUiModel::imageUrl) }
+    val targetWidthPx = remember(density) { with(density) { LoadingCardWidth.toPx().toInt() } }
+    val targetHeightPx = remember(density) {
+        with(density) { (LoadingCardWidth / LoadingCardAspectRatio).toPx().toInt() }
+    }
+    var state by remember(imageUrls, targetWidthPx, targetHeightPx) {
+        mutableStateOf(LoadingImagePreloadState.Loading)
+    }
+
+    LaunchedEffect(imageUrls, targetWidthPx, targetHeightPx) {
+        state = LoadingImagePreloadState.Loading
+        imageUrls
+            .asSequence()
+            .filter(String::isNotBlank)
+            .distinct()
+            .map { imageUrl ->
+                async {
+                    preloadLoadingImage(
+                        context = context,
+                        imageLoader = imageLoader,
+                        imageUrl = imageUrl,
+                        targetWidthPx = targetWidthPx,
+                        targetHeightPx = targetHeightPx,
+                    )
+                }
+            }
+            .toList()
+            .awaitAll()
+        state = LoadingImagePreloadState.Ready
+    }
+
+    return state
+}
+
+private suspend fun preloadLoadingImage(
+    context: Context,
+    imageLoader: ImageLoader,
+    imageUrl: String,
+    targetWidthPx: Int,
+    targetHeightPx: Int,
+) {
+    try {
+        imageLoader.execute(
+            ImageRequest.Builder(context)
+                .data(imageUrl)
+                .size(targetWidthPx.coerceAtLeast(1), targetHeightPx.coerceAtLeast(1))
+                .build(),
         )
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        // 실패한 URL은 애니메이션 카드에서 SairoRemoteImage의 fallback으로 표시한다.
     }
 }
 
@@ -216,7 +303,7 @@ private fun LoadingCardDeck(
                     },
             ) {
                 SairoImageCard(
-                    painter = rememberAsyncImagePainter(photo.imageUrl),
+                    imageUrl = photo.imageUrl,
                     selected = false,
                     showShadow = true,
                     size = SairoImageCardSize.Medium,
@@ -328,10 +415,7 @@ private fun OnboardingLoadingPendingScreen(
         modifier = modifier
             .fillMaxSize()
             .background(SairoTheme.colors.backgroundCanvas),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator(color = SairoTheme.colors.accentBase)
-    }
+    )
 }
 
 @Composable
@@ -430,6 +514,7 @@ private val TagEnterEasing = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 private val DeckWidth = 274.dp
 private val DeckHeight = 370.dp
 private val LoadingCardWidth = 260.dp
+private const val LoadingCardAspectRatio = 260f / 347f
 private val ContentTopPadding = 168.dp
 private val CompactContentTopPadding = 96.dp
 private val CompactHeightThreshold = 700.dp

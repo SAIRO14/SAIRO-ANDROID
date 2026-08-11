@@ -81,6 +81,7 @@ class OnboardingPhotoSelectViewModel @Inject constructor(
         _effect.tryEmit(
             OnboardingPhotoSelectEffect.SelectionCompleted(
                 photoIds = content.selectedPhotos.map { photo -> photo.id },
+                animationPhotos = content.selectedPhotos.take(OnboardingLoadingAnimationPhotoCount),
             ),
         )
     }
@@ -119,8 +120,11 @@ private fun PhotoCandidate.toUiModel(): OnboardingPhotoUiModel =
 /** 사진 선택 화면이 Route에 전달하는 한 번만 처리할 사용자 흐름 결과다. */
 sealed interface OnboardingPhotoSelectEffect {
 
-    /** 최소 선택 수를 만족해 다음 화면으로 전달할 사진 ID 목록이다. */
+    /** 최소 선택 수를 만족해 다음 화면으로 전달할 ID와 애니메이션 사진이다. */
     data class SelectionCompleted(
         val photoIds: List<String>,
+        val animationPhotos: List<OnboardingPhotoUiModel>,
     ) : OnboardingPhotoSelectEffect
 }
+
+private const val OnboardingLoadingAnimationPhotoCount = 5

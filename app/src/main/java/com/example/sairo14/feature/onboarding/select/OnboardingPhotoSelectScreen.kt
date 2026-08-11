@@ -71,13 +71,13 @@ import kotlinx.coroutines.coroutineScope
  * 다음 목적지 이동을 결정한다.
  * @param modifier 화면 컨테이너에 적용할 Modifier
  * @param viewModel 사진 후보와 선택 상태를 소유하는 ViewModel
- * @param onSelectionComplete 최소 선택 수를 만족한 사진 ID 목록을 전달받는 콜백
+ * @param onSelectionComplete 선택한 사진 ID와 애니메이션에 표시할 앞 5장을 전달받는 콜백
  */
 @Composable
 fun OnboardingPhotoSelectRoute(
     modifier: Modifier = Modifier,
     viewModel: OnboardingPhotoSelectViewModel = hiltViewModel(),
-    onSelectionComplete: (List<String>) -> Unit = {},
+    onSelectionComplete: (List<String>, List<OnboardingPhotoUiModel>) -> Unit = { _, _ -> },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -85,7 +85,7 @@ fun OnboardingPhotoSelectRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is OnboardingPhotoSelectEffect.SelectionCompleted -> {
-                    onSelectionComplete(effect.photoIds)
+                    onSelectionComplete(effect.photoIds, effect.animationPhotos)
                 }
             }
         }

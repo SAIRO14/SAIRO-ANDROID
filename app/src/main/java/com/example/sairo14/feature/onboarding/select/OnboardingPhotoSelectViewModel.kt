@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
  * 온보딩 사진 선택 화면의 후보 목록과 선택 상태를 관리한다.
  *
  * 로딩·빈 목록·오류·콘텐츠는 [OnboardingPhotoSelectUiState]로 노출하며, 카드와 썸네일 이벤트는
- * 선택 집합을 변경한다. 완료 가능한 선택은 [OnboardingPhotoSelectEffect.SelectionCompleted]로
+ * 선택 순서를 변경한다. 완료 가능한 선택은 [OnboardingPhotoSelectEffect.SelectionCompleted]로
  * 전달하고 화면 이동은 Route가 담당한다.
  */
 @HiltViewModel
@@ -47,37 +47,29 @@ class OnboardingPhotoSelectViewModel @Inject constructor(
         }
     }
 
-    /** 사진 카드를 눌렀을 때 해당 사진의 선택 상태를 전환한다. */
+    /** 사진 카드를 눌렀을 때 선택 상태를 전환하고 선택 순서를 갱신한다.
+     *
+     * 최대 선택 수에 도달한 경우에는 이미 선택한 사진의 해제만 허용한다.
+     */
     fun togglePhotoSelection(photoId: String) {
         updateContent { content ->
             if (content.photos.none { photo -> photo.id == photoId }) return@updateContent content
 
-            val selectedPhotoIds = content.selectedPhotoIds.toMutableSet().apply {
-                if (!add(photoId)) remove(photoId)
+            val selectedIndex = content.selectedPhotoIds.indexOf(photoId)
+            val selectedPhotoIds = when {
+                selectedIndex >= 0 -> content.selectedPhotoIds.filterNot { id -> id == photoId }
+                content.hasReachedMaximumSelection -> content.selectedPhotoIds
+                else -> content.selectedPhotoIds + photoId
             }
 
-            content.copy(
-                selectedPhotoIds = selectedPhotoIds,
-                viewedPhotoIds = content.viewedPhotoIds + photoId,
-            )
+            content.copy(selectedPhotoIds = selectedPhotoIds)
         }
     }
 
     /** 선택 썸네일의 제거 버튼을 눌렀을 때 해당 사진을 선택 목록에서 제거한다. */
     fun removePhotoSelection(photoId: String) {
         updateContent { content ->
-            content.copy(selectedPhotoIds = content.selectedPhotoIds - photoId)
-        }
-    }
-
-    /** Pager에서 사진이 보였을 때 확인한 사진으로 기록한다. */
-    fun markPhotoViewed(photoId: String) {
-        updateContent { content ->
-            if (content.photos.any { photo -> photo.id == photoId }) {
-                content.copy(viewedPhotoIds = content.viewedPhotoIds + photoId)
-            } else {
-                content
-            }
+            content.copy(selectedPhotoIds = content.selectedPhotoIds.filterNot { id -> id == photoId })
         }
     }
 

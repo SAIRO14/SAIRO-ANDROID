@@ -95,7 +95,6 @@ fun OnboardingPhotoSelectRoute(
         uiState = uiState,
         onPhotoClick = viewModel::togglePhotoSelection,
         onPhotoRemoveClick = viewModel::removePhotoSelection,
-        onVisiblePhotoChanged = viewModel::markPhotoViewed,
         onRetryClick = viewModel::retry,
         onCompleteClick = viewModel::completeSelection,
         modifier = modifier,
@@ -112,7 +111,6 @@ fun OnboardingPhotoSelectRoute(
  * @param uiState 화면에 표시할 로딩, 빈 목록, 오류, 콘텐츠 상태
  * @param onPhotoClick 사진 카드를 눌렀을 때 호출할 콜백
  * @param onPhotoRemoveClick 선택 썸네일의 제거 버튼을 눌렀을 때 호출할 콜백
- * @param onVisiblePhotoChanged Pager에서 새 사진이 보였을 때 호출할 콜백
  * @param onRetryClick 오류 상태에서 재시도를 요청할 때 호출할 콜백
  * @param onCompleteClick 완료 버튼을 눌렀을 때 호출할 콜백
  * @param modifier 화면 컨테이너에 적용할 Modifier
@@ -122,7 +120,6 @@ fun OnboardingPhotoSelectScreen(
     uiState: OnboardingPhotoSelectUiState,
     onPhotoClick: (String) -> Unit,
     onPhotoRemoveClick: (String) -> Unit,
-    onVisiblePhotoChanged: (String) -> Unit,
     onRetryClick: () -> Unit,
     onCompleteClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -201,11 +198,11 @@ fun OnboardingPhotoSelectScreen(
                                 PhotoSelectLoadingContent()
                             } else {
                                 PhotoCandidatePager(
-                                    photos = uiState.photos,
-                                    selectedPhotoIds = uiState.selectedPhotoIds,
-                                    onPhotoClick = onPhotoClick,
-                                    onVisiblePhotoChanged = onVisiblePhotoChanged,
-                                )
+                                photos = uiState.photos,
+                                selectedPhotoIds = uiState.selectedPhotoIds,
+                                hasReachedMaximumSelection = uiState.hasReachedMaximumSelection,
+                                onPhotoClick = onPhotoClick,
+                            )
                             }
                         }
                     }
@@ -213,9 +210,7 @@ fun OnboardingPhotoSelectScreen(
 
                 PhotoSelectionTray(
                     selectedPhotos = content?.selectedPhotos.orEmpty(),
-                    selectedPhotoIds = content?.selectedPhotoIds.orEmpty(),
-                    viewedPhotoIds = content?.viewedPhotoIds.orEmpty(),
-                    allPhotos = content?.photos.orEmpty(),
+                    maximumSelectionCount = content?.maximumSelectionCount ?: MaximumSelectionCount,
                     canComplete = content?.canComplete == true,
                     onPhotoRemoveClick = onPhotoRemoveClick,
                     onCompleteClick = onCompleteClick,
@@ -326,9 +321,9 @@ private fun PhotoSelectHeader(
 @Composable
 private fun PhotoCandidatePager(
     photos: List<OnboardingPhotoUiModel>,
-    selectedPhotoIds: Set<String>,
+    selectedPhotoIds: List<String>,
+    hasReachedMaximumSelection: Boolean,
     onPhotoClick: (String) -> Unit,
-    onVisiblePhotoChanged: (String) -> Unit,
 ) {
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
@@ -342,12 +337,6 @@ private fun PhotoCandidatePager(
             PhotoCardMaximumWidth,
         )
         val pagerState = rememberPagerState(pageCount = { photos.size })
-
-        LaunchedEffect(pagerState.currentPage, photos) {
-            photos.getOrNull(pagerState.currentPage)?.let { photo ->
-                onVisiblePhotoChanged(photo.id)
-            }
-        }
 
         HorizontalPager(
             state = pagerState,
@@ -371,6 +360,7 @@ private fun PhotoCandidatePager(
                 cardWidth = cardWidth,
                 contentDescription = photo.contentDescription,
                 modifier = Modifier.rotate(photoCardRotation(page)),
+                enabled = photo.id in selectedPhotoIds || !hasReachedMaximumSelection,
                 onClick = { onPhotoClick(photo.id) },
             )
         }
@@ -380,9 +370,7 @@ private fun PhotoCandidatePager(
 @Composable
 private fun PhotoSelectionTray(
     selectedPhotos: List<OnboardingPhotoUiModel>,
-    selectedPhotoIds: Set<String>,
-    viewedPhotoIds: Set<String>,
-    allPhotos: List<OnboardingPhotoUiModel>,
+    maximumSelectionCount: Int,
     canComplete: Boolean,
     onPhotoRemoveClick: (String) -> Unit,
     onCompleteClick: () -> Unit,
@@ -433,8 +421,8 @@ private fun PhotoSelectionTray(
             Text(
                 text = stringResource(
                     R.string.onboarding_photo_select_count,
-                    selectedPhotoIds.size,
-                    allPhotos.size,
+                    selectedPhotos.size,
+                    maximumSelectionCount,
                 ),
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -459,9 +447,8 @@ private fun PhotoSelectionTray(
                 verticalArrangement = Arrangement.spacedBy(TrayContentSpacing),
             ) {
                 PhotoProgressIndicator(
-                    allPhotos = allPhotos,
-                    selectedPhotoIds = selectedPhotoIds,
-                    viewedPhotoIds = viewedPhotoIds,
+                    selectedCount = selectedPhotos.size,
+                    maximumSelectionCount = maximumSelectionCount,
                 )
 
                 SelectedPhotoThumbnails(
@@ -482,24 +469,18 @@ private fun PhotoSelectionTray(
 
 @Composable
 private fun PhotoProgressIndicator(
-    allPhotos: List<OnboardingPhotoUiModel>,
-    selectedPhotoIds: Set<String>,
-    viewedPhotoIds: Set<String>,
+    selectedCount: Int,
+    maximumSelectionCount: Int,
 ) {
-    if (allPhotos.isEmpty()) {
-        Spacer(modifier = Modifier.height(ProgressIndicatorHeight))
-        return
-    }
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ProgressIndicatorSpacing),
     ) {
-        allPhotos.forEach { photo ->
-            val color = when {
-                photo.id in selectedPhotoIds -> SairoTheme.colors.indicatorActive
-                photo.id in viewedPhotoIds -> SairoTheme.colors.indicatorFilled
-                else -> SairoTheme.colors.indicatorEmpty
+        repeat(maximumSelectionCount) { index ->
+            val color = if (index < selectedCount) {
+                SairoTheme.colors.indicatorActive
+            } else {
+                SairoTheme.colors.indicatorEmpty
             }
 
             Spacer(
@@ -645,7 +626,6 @@ private fun OnboardingPhotoSelectScreenDefaultPreview() {
             uiState = previewPhotoContent(),
             onPhotoClick = {},
             onPhotoRemoveClick = {},
-            onVisiblePhotoChanged = {},
             onRetryClick = {},
             onCompleteClick = {},
         )
@@ -659,12 +639,10 @@ private fun OnboardingPhotoSelectScreenSelectedPreview() {
     SairoTheme {
         OnboardingPhotoSelectScreen(
             uiState = content.copy(
-                selectedPhotoIds = content.photos.take(6).mapTo(linkedSetOf()) { photo -> photo.id },
-                viewedPhotoIds = content.photos.take(7).mapTo(linkedSetOf()) { photo -> photo.id },
+                selectedPhotoIds = content.photos.take(6).map { photo -> photo.id },
             ),
             onPhotoClick = {},
             onPhotoRemoveClick = {},
-            onVisiblePhotoChanged = {},
             onRetryClick = {},
             onCompleteClick = {},
         )

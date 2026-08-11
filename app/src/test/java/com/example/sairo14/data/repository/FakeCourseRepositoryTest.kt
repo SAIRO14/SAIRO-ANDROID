@@ -1,5 +1,6 @@
 package com.example.sairo14.data.repository
 
+import com.example.sairo14.data.repository.fake.FakeCourseRepository
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
 import kotlinx.coroutines.test.runTest

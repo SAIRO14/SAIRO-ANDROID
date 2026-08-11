@@ -1,6 +1,6 @@
 package com.example.sairo14.feature.onboarding
 
-import com.example.sairo14.data.repository.FakePhotoSelectionRepository
+import com.example.sairo14.data.repository.fake.FakePhotoSelectionRepository
 import com.example.sairo14.domain.usecase.GetPhotoCandidatesUseCase
 import com.example.sairo14.feature.onboarding.loading.OnboardingLoadingPhotoUiModel
 import com.example.sairo14.feature.onboarding.loading.OnboardingLoadingUiState

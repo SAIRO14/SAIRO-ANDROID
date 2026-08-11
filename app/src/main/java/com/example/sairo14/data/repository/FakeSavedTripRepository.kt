@@ -1,5 +1,6 @@
 package com.example.sairo14.data.repository
 
+import com.example.sairo14.core.datastore.DeviceIdProvider
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.SavedTrip
@@ -9,20 +10,21 @@ import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-/** 서버 연동 전 저장 목록 조회와 삭제를 확인할 수 있도록 인메모리 여행지 데이터를 제공한다. */
+/** 서버 연동 전 저장 목록 조회와 삭제를 확인할 수 있도록 기기별 인메모리 여행지 데이터를 제공한다. */
 @Singleton
-class FakeSavedTripRepository @Inject constructor() : SavedTripRepository {
+class FakeSavedTripRepository @Inject constructor(
+    private val deviceIdProvider: DeviceIdProvider,
+) : SavedTripRepository {
     private val mutex = Mutex()
     private val savedTripsByDeviceId = mutableMapOf<String, List<SavedTrip>>()
 
-    override suspend fun getSavedTrips(deviceId: String): AppResult<List<SavedTrip>> = mutex.withLock {
+    override suspend fun getSavedTrips(): AppResult<List<SavedTrip>> = mutex.withLock {
+        val deviceId = deviceIdProvider.getDeviceId()
         AppResult.Success(savedTripsByDeviceId.getOrPut(deviceId) { sampleSavedTrips })
     }
 
-    override suspend fun deleteSavedTrip(
-        deviceId: String,
-        savedTripId: String,
-    ): AppResult<Unit> = mutex.withLock {
+    override suspend fun deleteSavedTrip(savedTripId: String): AppResult<Unit> = mutex.withLock {
+        val deviceId = deviceIdProvider.getDeviceId()
         val currentTrips = savedTripsByDeviceId.getOrPut(deviceId) { sampleSavedTrips }
         val updatedTrips = currentTrips.filterNot { trip -> trip.savedTripId == savedTripId }
 

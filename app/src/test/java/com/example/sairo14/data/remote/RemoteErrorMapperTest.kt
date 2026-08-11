@@ -9,6 +9,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Test
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import retrofit2.HttpException
 import retrofit2.Response
@@ -69,6 +70,22 @@ class RemoteErrorMapperTest {
         }
 
         assertTrue(exception is CancellationException)
+    }
+
+    @Test
+    fun `remote operation does not convert fatal JVM errors`() = runTest {
+        val fatalError = AssertionError("fatal")
+
+        val thrown = try {
+            runRemoteOperation(action = "사진을 읽지 못했습니다.", json = json) {
+                throw fatalError
+            }
+            null
+        } catch (error: AssertionError) {
+            error
+        }
+
+        assertSame(fatalError, thrown)
     }
 
     private fun httpException(

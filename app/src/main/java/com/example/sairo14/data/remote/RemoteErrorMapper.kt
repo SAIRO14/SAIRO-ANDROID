@@ -23,8 +23,8 @@ fun Throwable.toRemoteAppError(json: Json): AppError = when (this) {
 
 /** 실제 서버 호출의 취소 처리와 공통 오류 변환을 수행한다.
  *
- * 코루틴 취소는 오류 결과로 바꾸지 않고 다시 던진다. 호출자는 서버 응답의 DTO를 Domain 모델로
- * 변환하는 작업만 [block] 안에 둔다.
+ * 코루틴 취소와 복구할 수 없는 JVM 오류는 결과로 바꾸지 않고 다시 던진다. 호출자는 서버 응답의 DTO를
+ * Domain 모델로 변환하는 작업만 [block] 안에 둔다.
  * @param action 로그에 남길 호출 목적 설명
  * @param json 오류 본문을 읽는 데 사용하는 앱 공통 JSON 설정
  * @param block 실행할 Retrofit 호출과 응답 변환 작업
@@ -37,17 +37,17 @@ suspend fun <T> runRemoteOperation(
     AppResult.Success(block())
 } catch (cancelled: CancellationException) {
     throw cancelled
-} catch (throwable: Throwable) {
-    val error = throwable.toRemoteAppError(json)
+} catch (exception: Exception) {
+    val error = exception.toRemoteAppError(json)
     when (error) {
         is AppError.ServerFailure -> Timber.e(
-            throwable,
+            exception,
             "%s traceId=%s",
             action,
             error.traceId ?: "unavailable",
         )
 
-        else -> Timber.e(throwable, action)
+        else -> Timber.e(exception, action)
     }
     AppResult.Failure(error)
 }

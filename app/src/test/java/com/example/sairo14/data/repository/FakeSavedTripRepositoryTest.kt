@@ -1,6 +1,7 @@
 package com.example.sairo14.data.repository
 
 import com.example.sairo14.core.datastore.DeviceIdProvider
+import com.example.sairo14.data.repository.fake.FakeSavedTripRepository
 import com.example.sairo14.domain.model.AppResult
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

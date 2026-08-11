@@ -2,6 +2,7 @@ package com.example.sairo14.data.repository
 
 import com.example.sairo14.data.remote.SairoApi
 import com.example.sairo14.data.remote.dto.PhotoResponseDto
+import com.example.sairo14.data.repository.remote.RemotePhotoSelectionRepository
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
 import java.io.IOException

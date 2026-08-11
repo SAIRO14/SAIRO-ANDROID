@@ -1,45 +1,38 @@
-package com.example.sairo14.data.repository
+package com.example.sairo14.data.repository.fake
 
-import com.example.sairo14.core.datastore.DeviceIdProvider
 import com.example.sairo14.domain.model.AppResult
-import com.example.sairo14.domain.model.AppError
-import com.example.sairo14.domain.model.SavedTrip
-import com.example.sairo14.domain.repository.SavedTripRepository
+import com.example.sairo14.domain.model.OnboardingRecommendation
+import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
-/** 서버 연동 전 저장 목록 조회와 삭제를 확인할 수 있도록 기기별 인메모리 여행지 데이터를 제공한다. */
+/** 서버 연동 전 온보딩 결과 목록과 화면 분기를 확인할 수 있도록 고정 추천을 제공한다. */
 @Singleton
-class FakeSavedTripRepository @Inject constructor(
-    private val deviceIdProvider: DeviceIdProvider,
-) : SavedTripRepository {
-    private val mutex = Mutex()
-    private val savedTripsByDeviceId = mutableMapOf<String, List<SavedTrip>>()
+class FakeOnboardingRecommendationRepository @Inject constructor() : OnboardingRecommendationRepository {
 
-    override suspend fun getSavedTrips(): AppResult<List<SavedTrip>> = mutex.withLock {
-        val deviceId = deviceIdProvider.getDeviceId()
-        AppResult.Success(savedTripsByDeviceId.getOrPut(deviceId) { sampleSavedTrips })
-    }
-
-    override suspend fun deleteSavedTrip(savedTripId: String): AppResult<Unit> = mutex.withLock {
-        val deviceId = deviceIdProvider.getDeviceId()
-        val currentTrips = savedTripsByDeviceId.getOrPut(deviceId) { sampleSavedTrips }
-        val updatedTrips = currentTrips.filterNot { trip -> trip.savedTripId == savedTripId }
-
-        if (updatedTrips.size == currentTrips.size) {
-            AppResult.Failure(AppError.Unknown)
-        } else {
-            savedTripsByDeviceId[deviceId] = updatedTrips
-            AppResult.Success(Unit)
-        }
-    }
+    override suspend fun getRecommendations(
+        selectedPhotoIds: List<String>,
+    ): AppResult<List<OnboardingRecommendation>> = AppResult.Success(oneRecommendation)
 
     private companion object {
-        val sampleSavedTrips = listOf(
-            SavedTrip(
-                savedTripId = "saved-trip-boeun",
+
+        val emptyRecommendations = emptyList<OnboardingRecommendation>()
+        val oneRecommendation = listOf<OnboardingRecommendation>(
+            OnboardingRecommendation(
+                id = "recommendation-boeun",
+                courseId = "course-boeun",
+                regionName = "충북 보은권",
+                description = "고요한 자연과 전통의 분위기",
+                imageUrls = listOf(
+                    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
+                    "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
+                ),
+                placeNames = listOf("말티재 전망대", "세조길 숲 산책"),
+            )
+        )
+        val sampleRecommendations = listOf(
+            OnboardingRecommendation(
+                id = "recommendation-boeun",
                 courseId = "course-boeun",
                 regionName = "충북 보은권",
                 description = "고요한 자연과 전통의 분위기",
@@ -49,8 +42,8 @@ class FakeSavedTripRepository @Inject constructor(
                 ),
                 placeNames = listOf("말티재 전망대", "세조길 숲 산책"),
             ),
-            SavedTrip(
-                savedTripId = "saved-trip-gangneung",
+            OnboardingRecommendation(
+                id = "recommendation-gangneung",
                 courseId = "course-gangneung",
                 regionName = "강원 강릉권",
                 description = "바다와 골목이 어우러진 느긋한 풍경",
@@ -60,8 +53,8 @@ class FakeSavedTripRepository @Inject constructor(
                 ),
                 placeNames = listOf("안목해변", "명주동 골목"),
             ),
-            SavedTrip(
-                savedTripId = "saved-trip-jeju",
+            OnboardingRecommendation(
+                id = "recommendation-jeju",
                 courseId = "course-jeju",
                 regionName = "제주 서부권",
                 description = "빛과 바람을 따라 걷는 한적한 하루",

@@ -14,19 +14,33 @@ sealed interface OnboardingPhotoSelectUiState {
     /** 사진 후보를 불러오지 못해 재시도가 필요한 상태다. */
     data object Error : OnboardingPhotoSelectUiState
 
-    /** 사진 후보와 사용자의 선택·확인 상태를 표시할 수 있는 상태다. */
+    /** 사진 후보와 선택 순서를 표시할 수 있는 상태다.
+     *
+     * [selectedPhotoIds]는 사용자가 선택한 순서를 보존한다. 새 사진 선택은
+     * [maximumSelectionCount]에 도달하면 막고, 이미 선택한 사진의 해제는 항상 허용한다.
+     * @param photos 화면에 표시할 사진 후보
+     * @param selectedPhotoIds 선택한 사진 ID와 선택 순서
+     * @param minimumSelectionCount 완료에 필요한 최소 사진 수
+     * @param maximumSelectionCount 선택할 수 있는 최대 사진 수
+     */
     @Immutable
     data class Content(
         val photos: List<OnboardingPhotoUiModel>,
-        val selectedPhotoIds: Set<String> = emptySet(),
-        val viewedPhotoIds: Set<String> = emptySet(),
+        val selectedPhotoIds: List<String> = emptyList(),
         val minimumSelectionCount: Int = MinimumSelectionCount,
+        val maximumSelectionCount: Int = MaximumSelectionCount,
     ) : OnboardingPhotoSelectUiState {
         val selectedPhotos: List<OnboardingPhotoUiModel>
-            get() = photos.filter { photo -> photo.id in selectedPhotoIds }
+            get() {
+                val photosById = photos.associateBy(OnboardingPhotoUiModel::id)
+                return selectedPhotoIds.mapNotNull(photosById::get)
+            }
 
         val canComplete: Boolean
-            get() = selectedPhotoIds.size >= minimumSelectionCount
+            get() = selectedPhotoIds.size in minimumSelectionCount..maximumSelectionCount
+
+        val hasReachedMaximumSelection: Boolean
+            get() = selectedPhotoIds.size >= maximumSelectionCount
     }
 }
 
@@ -39,3 +53,4 @@ data class OnboardingPhotoUiModel(
 )
 
 const val MinimumSelectionCount = 5
+const val MaximumSelectionCount = 10

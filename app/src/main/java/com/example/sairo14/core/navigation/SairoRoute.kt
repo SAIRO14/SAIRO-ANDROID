@@ -48,7 +48,15 @@ data class OnboardingPhotoSelectRoute(
 data class OnboardingLoadingRoute(
     val searchSessionId: String,
     val selectedPhotoIds: List<String>,
+    val animationPhotos: List<OnboardingAnimationPhoto>,
 ) : SairoRoute
+
+/** 온보딩 로딩 애니메이션 카드에 표시할 선택 사진 정보다. */
+@Serializable
+data class OnboardingAnimationPhoto(
+    val id: String,
+    val imageUrl: String,
+)
 
 /** 온보딩 탐색 세션의 선택 사진에 따른 추천 결과를 식별한다. */
 @Serializable

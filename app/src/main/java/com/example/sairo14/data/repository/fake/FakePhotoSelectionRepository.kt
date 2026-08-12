@@ -10,7 +10,7 @@ import javax.inject.Singleton
 @Singleton
 class FakePhotoSelectionRepository @Inject constructor() : PhotoSelectionRepository {
 
-    override suspend fun getPhotoCandidates(): AppResult<List<PhotoCandidate>> =
+    override suspend fun getPhotoCandidates(limit: Int): AppResult<List<PhotoCandidate>> =
         AppResult.Success(photoCandidates)
 
     private companion object {

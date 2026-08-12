@@ -27,7 +27,7 @@ class RemotePhotoSelectionRepositoryTest {
         )
         val repository = RemotePhotoSelectionRepository(api, json)
 
-        val result = repository.getPhotoCandidates()
+        val result = repository.getPhotoCandidates(limit = 40)
 
         val photos = result.successValue()
         assertEquals(40, api.requestedLimit)
@@ -43,7 +43,7 @@ class RemotePhotoSelectionRepositoryTest {
             json = json,
         )
 
-        val result = repository.getPhotoCandidates()
+        val result = repository.getPhotoCandidates(limit = 40)
 
         assertTrue(
             result is AppResult.Failure && result.error is AppError.NetworkUnavailable,

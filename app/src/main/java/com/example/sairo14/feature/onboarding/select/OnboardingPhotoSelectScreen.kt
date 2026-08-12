@@ -1,5 +1,6 @@
 package com.example.sairo14.feature.onboarding.select
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -28,18 +29,25 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.rememberAsyncImagePainter
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.request.ImageRequest
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.component.SairoButton
 import com.example.sairo14.core.designsystem.component.SairoFolderFrame
@@ -51,6 +59,10 @@ import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
 import com.example.sairo14.core.extension.sairoDropShadow
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 /**
  * 온보딩 사진 선택 화면의 상태와 다음 단계 이동을 연결한다.
@@ -59,13 +71,13 @@ import com.example.sairo14.core.extension.sairoDropShadow
  * 다음 목적지 이동을 결정한다.
  * @param modifier 화면 컨테이너에 적용할 Modifier
  * @param viewModel 사진 후보와 선택 상태를 소유하는 ViewModel
- * @param onSelectionComplete 최소 선택 수를 만족한 사진 ID 목록을 전달받는 콜백
+ * @param onSelectionComplete 선택한 사진 ID와 애니메이션에 표시할 앞 5장을 전달받는 콜백
  */
 @Composable
 fun OnboardingPhotoSelectRoute(
     modifier: Modifier = Modifier,
     viewModel: OnboardingPhotoSelectViewModel = hiltViewModel(),
-    onSelectionComplete: (List<String>) -> Unit = {},
+    onSelectionComplete: (List<String>, List<OnboardingPhotoUiModel>) -> Unit = { _, _ -> },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -73,7 +85,7 @@ fun OnboardingPhotoSelectRoute(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is OnboardingPhotoSelectEffect.SelectionCompleted -> {
-                    onSelectionComplete(effect.photoIds)
+                    onSelectionComplete(effect.photoIds, effect.animationPhotos)
                 }
             }
         }
@@ -83,7 +95,6 @@ fun OnboardingPhotoSelectRoute(
         uiState = uiState,
         onPhotoClick = viewModel::togglePhotoSelection,
         onPhotoRemoveClick = viewModel::removePhotoSelection,
-        onVisiblePhotoChanged = viewModel::markPhotoViewed,
         onRetryClick = viewModel::retry,
         onCompleteClick = viewModel::completeSelection,
         modifier = modifier,
@@ -93,12 +104,13 @@ fun OnboardingPhotoSelectRoute(
 /**
  * 서버 사진 후보를 선택하고 선택 목록을 확인하는 온보딩 화면을 표시한다.
  *
- * Pager는 남은 화면 높이와 가용 너비를 기준으로 카드 크기를 계산하고, 하단 폴더는 화면 폭에
- * 비례해 크기가 정해진다. 사진 선택 상태와 완료 동작은 호출자가 소유한다.
+ * 사진 후보의 앞 5장을 사전 로딩한 뒤 Pager를 표시한다. 나머지 사진은 Pager가 카드를 구성할 때
+ * 지연 로딩한다. Pager는 남은 화면 높이와 가용 너비를 기준으로 카드 크기를 계산하고, 하단 폴더는
+ * 화면 폭에 비례해 크기가 정해진다. 개별 이미지 요청이 실패하면 dummy 이미지로 대체하며, 사진 선택
+ * 상태와 완료 동작은 호출자가 소유한다.
  * @param uiState 화면에 표시할 로딩, 빈 목록, 오류, 콘텐츠 상태
  * @param onPhotoClick 사진 카드를 눌렀을 때 호출할 콜백
  * @param onPhotoRemoveClick 선택 썸네일의 제거 버튼을 눌렀을 때 호출할 콜백
- * @param onVisiblePhotoChanged Pager에서 새 사진이 보였을 때 호출할 콜백
  * @param onRetryClick 오류 상태에서 재시도를 요청할 때 호출할 콜백
  * @param onCompleteClick 완료 버튼을 눌렀을 때 호출할 콜백
  * @param modifier 화면 컨테이너에 적용할 Modifier
@@ -108,7 +120,6 @@ fun OnboardingPhotoSelectScreen(
     uiState: OnboardingPhotoSelectUiState,
     onPhotoClick: (String) -> Unit,
     onPhotoRemoveClick: (String) -> Unit,
-    onVisiblePhotoChanged: (String) -> Unit,
     onRetryClick: () -> Unit,
     onCompleteClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -123,6 +134,22 @@ fun OnboardingPhotoSelectScreen(
             .statusBarsPadding(),
     ) {
         val isCompactHeight = maxHeight < PhotoSelectCompactHeightThreshold
+        val candidateCardWidth = minOf(
+            maxWidth * PhotoCardWidthRatio,
+            PhotoCardMaximumWidth,
+        )
+        val density = LocalDensity.current
+        val photoPreloadState = content?.let { loadedContent ->
+            rememberPhotoPreloadState(
+                imageUrls = loadedContent.photos
+                    .take(InitialPhotoPreloadCount)
+                    .map(OnboardingPhotoUiModel::imageUrl),
+                targetWidthPx = with(density) { candidateCardWidth.toPx().toInt() },
+                targetHeightPx = with(density) {
+                    (candidateCardWidth / PhotoCardAspectRatio).toPx().toInt()
+                },
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -135,56 +162,126 @@ fun OnboardingPhotoSelectScreen(
                     },
                 ),
         ) {
-            val pagerContainerModifier = if (isCompactHeight) {
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = CompactPagerMinimumHeight)
-            } else {
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
+                val pagerContainerModifier = if (isCompactHeight) {
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = CompactPagerMinimumHeight)
+                } else {
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                }
+
+                Spacer(modifier = Modifier.height(HeaderTopSpacing))
+
+                PhotoSelectHeader(
+                    modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
+                )
+
+                Spacer(modifier = Modifier.height(HeaderToPagerSpacing))
+
+                Box(
+                    modifier = pagerContainerModifier.zIndex(PhotoCandidatePagerLayer),
+                ) {
+                    when (uiState) {
+                        OnboardingPhotoSelectUiState.Loading -> PhotoSelectLoadingContent()
+                        OnboardingPhotoSelectUiState.Empty -> PhotoSelectMessageContent(
+                            text = stringResource(R.string.onboarding_photo_select_empty),
+                        )
+
+                        OnboardingPhotoSelectUiState.Error -> PhotoSelectErrorContent(
+                            onRetryClick = onRetryClick,
+                        )
+
+                        is OnboardingPhotoSelectUiState.Content -> {
+                            if (photoPreloadState == PhotoPreloadState.Loading) {
+                                PhotoSelectLoadingContent()
+                            } else {
+                                PhotoCandidatePager(
+                                photos = uiState.photos,
+                                selectedPhotoIds = uiState.selectedPhotoIds,
+                                hasReachedMaximumSelection = uiState.hasReachedMaximumSelection,
+                                onPhotoClick = onPhotoClick,
+                            )
+                            }
+                        }
+                    }
+                }
+
+                PhotoSelectionTray(
+                    selectedPhotos = content?.selectedPhotos.orEmpty(),
+                    maximumSelectionCount = content?.maximumSelectionCount ?: MaximumSelectionCount,
+                    canComplete = content?.canComplete == true,
+                    onPhotoRemoveClick = onPhotoRemoveClick,
+                    onCompleteClick = onCompleteClick,
+                )
             }
+    }
+}
 
-            Spacer(modifier = Modifier.height(HeaderTopSpacing))
+private enum class PhotoPreloadState {
+    Loading,
+    Ready,
+}
 
-            PhotoSelectHeader(
-                modifier = Modifier.padding(horizontal = ScreenHorizontalPadding),
-            )
+@Composable
+private fun rememberPhotoPreloadState(
+    imageUrls: List<String>,
+    targetWidthPx: Int,
+    targetHeightPx: Int,
+): PhotoPreloadState {
+    val context = LocalContext.current
+    val imageLoader = remember(context) { SingletonImageLoader.get(context) }
+    var state by remember(imageUrls, targetWidthPx, targetHeightPx) {
+        mutableStateOf(PhotoPreloadState.Loading)
+    }
 
-            Spacer(modifier = Modifier.height(HeaderToPagerSpacing))
-
-            Box(
-                modifier = pagerContainerModifier.zIndex(PhotoCandidatePagerLayer),
-            ) {
-                when (uiState) {
-                    OnboardingPhotoSelectUiState.Loading -> PhotoSelectLoadingContent()
-                    OnboardingPhotoSelectUiState.Empty -> PhotoSelectMessageContent(
-                        text = stringResource(R.string.onboarding_photo_select_empty),
-                    )
-
-                    OnboardingPhotoSelectUiState.Error -> PhotoSelectErrorContent(
-                        onRetryClick = onRetryClick,
-                    )
-
-                    is OnboardingPhotoSelectUiState.Content -> PhotoCandidatePager(
-                        photos = uiState.photos,
-                        selectedPhotoIds = uiState.selectedPhotoIds,
-                        onPhotoClick = onPhotoClick,
-                        onVisiblePhotoChanged = onVisiblePhotoChanged,
-                    )
+    LaunchedEffect(imageUrls, targetWidthPx, targetHeightPx) {
+        state = PhotoPreloadState.Loading
+        imageUrls
+            .asSequence()
+            .filter(String::isNotBlank)
+            .distinct()
+            .chunked(PhotoPreloadConcurrentRequestCount)
+            .forEach { urls ->
+                coroutineScope {
+                    urls.map { imageUrl ->
+                        async {
+                            preloadPhoto(
+                                context = context,
+                                imageLoader = imageLoader,
+                                imageUrl = imageUrl,
+                                targetWidthPx = targetWidthPx,
+                                targetHeightPx = targetHeightPx,
+                            )
+                        }
+                    }.awaitAll()
                 }
             }
+        state = PhotoPreloadState.Ready
+    }
 
-            PhotoSelectionTray(
-                selectedPhotos = content?.selectedPhotos.orEmpty(),
-                selectedPhotoIds = content?.selectedPhotoIds.orEmpty(),
-                viewedPhotoIds = content?.viewedPhotoIds.orEmpty(),
-                allPhotos = content?.photos.orEmpty(),
-                canComplete = content?.canComplete == true,
-                onPhotoRemoveClick = onPhotoRemoveClick,
-                onCompleteClick = onCompleteClick,
-            )
-        }
+    return state
+}
+
+private suspend fun preloadPhoto(
+    context: Context,
+    imageLoader: ImageLoader,
+    imageUrl: String,
+    targetWidthPx: Int,
+    targetHeightPx: Int,
+) {
+    try {
+        imageLoader.execute(
+            ImageRequest.Builder(context)
+                .data(imageUrl)
+                .size(targetWidthPx.coerceAtLeast(1), targetHeightPx.coerceAtLeast(1))
+                .build(),
+        )
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        // 이미지 요청 실패는 SairoRemoteImage의 fallback으로 표시한다.
     }
 }
 
@@ -224,9 +321,9 @@ private fun PhotoSelectHeader(
 @Composable
 private fun PhotoCandidatePager(
     photos: List<OnboardingPhotoUiModel>,
-    selectedPhotoIds: Set<String>,
+    selectedPhotoIds: List<String>,
+    hasReachedMaximumSelection: Boolean,
     onPhotoClick: (String) -> Unit,
-    onVisiblePhotoChanged: (String) -> Unit,
 ) {
     BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
@@ -240,12 +337,6 @@ private fun PhotoCandidatePager(
             PhotoCardMaximumWidth,
         )
         val pagerState = rememberPagerState(pageCount = { photos.size })
-
-        LaunchedEffect(pagerState.currentPage, photos) {
-            photos.getOrNull(pagerState.currentPage)?.let { photo ->
-                onVisiblePhotoChanged(photo.id)
-            }
-        }
 
         HorizontalPager(
             state = pagerState,
@@ -263,12 +354,13 @@ private fun PhotoCandidatePager(
             val photo = photos[page]
 
             SairoImageCard(
-                painter = rememberAsyncImagePainter(photo.imageUrl),
+                imageUrl = photo.imageUrl,
                 selected = photo.id in selectedPhotoIds,
                 size = SairoImageCardSize.Large,
                 cardWidth = cardWidth,
                 contentDescription = photo.contentDescription,
                 modifier = Modifier.rotate(photoCardRotation(page)),
+                enabled = photo.id in selectedPhotoIds || !hasReachedMaximumSelection,
                 onClick = { onPhotoClick(photo.id) },
             )
         }
@@ -278,9 +370,7 @@ private fun PhotoCandidatePager(
 @Composable
 private fun PhotoSelectionTray(
     selectedPhotos: List<OnboardingPhotoUiModel>,
-    selectedPhotoIds: Set<String>,
-    viewedPhotoIds: Set<String>,
-    allPhotos: List<OnboardingPhotoUiModel>,
+    maximumSelectionCount: Int,
     canComplete: Boolean,
     onPhotoRemoveClick: (String) -> Unit,
     onCompleteClick: () -> Unit,
@@ -331,8 +421,8 @@ private fun PhotoSelectionTray(
             Text(
                 text = stringResource(
                     R.string.onboarding_photo_select_count,
-                    selectedPhotoIds.size,
-                    allPhotos.size,
+                    selectedPhotos.size,
+                    maximumSelectionCount,
                 ),
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -357,9 +447,8 @@ private fun PhotoSelectionTray(
                 verticalArrangement = Arrangement.spacedBy(TrayContentSpacing),
             ) {
                 PhotoProgressIndicator(
-                    allPhotos = allPhotos,
-                    selectedPhotoIds = selectedPhotoIds,
-                    viewedPhotoIds = viewedPhotoIds,
+                    selectedCount = selectedPhotos.size,
+                    maximumSelectionCount = maximumSelectionCount,
                 )
 
                 SelectedPhotoThumbnails(
@@ -380,24 +469,18 @@ private fun PhotoSelectionTray(
 
 @Composable
 private fun PhotoProgressIndicator(
-    allPhotos: List<OnboardingPhotoUiModel>,
-    selectedPhotoIds: Set<String>,
-    viewedPhotoIds: Set<String>,
+    selectedCount: Int,
+    maximumSelectionCount: Int,
 ) {
-    if (allPhotos.isEmpty()) {
-        Spacer(modifier = Modifier.height(ProgressIndicatorHeight))
-        return
-    }
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(ProgressIndicatorSpacing),
     ) {
-        allPhotos.forEach { photo ->
-            val color = when {
-                photo.id in selectedPhotoIds -> SairoTheme.colors.indicatorActive
-                photo.id in viewedPhotoIds -> SairoTheme.colors.indicatorFilled
-                else -> SairoTheme.colors.indicatorEmpty
+        repeat(maximumSelectionCount) { index ->
+            val color = if (index < selectedCount) {
+                SairoTheme.colors.indicatorActive
+            } else {
+                SairoTheme.colors.indicatorEmpty
             }
 
             Spacer(
@@ -430,7 +513,7 @@ private fun SelectedPhotoThumbnails(
             key = OnboardingPhotoUiModel::id,
         ) { photo ->
             SairoImageThumbnail(
-                painter = rememberAsyncImagePainter(photo.imageUrl),
+                imageUrl = photo.imageUrl,
                 onRemoveClick = { onPhotoRemoveClick(photo.id) },
                 contentDescription = photo.contentDescription,
             )
@@ -515,6 +598,8 @@ private val PhotoCardTopPadding = 8.dp
 private val PhotoCardBottomShadowClearance = 20.dp
 private val PhotoCardPageSpacing = 16.dp
 private const val PhotoCandidatePagerLayer = 1f
+private const val InitialPhotoPreloadCount = 3
+private const val PhotoPreloadConcurrentRequestCount = InitialPhotoPreloadCount
 private val PhotoSelectCompactHeightThreshold = 520.dp
 private val CompactPagerMinimumHeight = 200.dp
 private const val FolderWidthRatio = 375f / 360f
@@ -541,7 +626,6 @@ private fun OnboardingPhotoSelectScreenDefaultPreview() {
             uiState = previewPhotoContent(),
             onPhotoClick = {},
             onPhotoRemoveClick = {},
-            onVisiblePhotoChanged = {},
             onRetryClick = {},
             onCompleteClick = {},
         )
@@ -555,12 +639,10 @@ private fun OnboardingPhotoSelectScreenSelectedPreview() {
     SairoTheme {
         OnboardingPhotoSelectScreen(
             uiState = content.copy(
-                selectedPhotoIds = content.photos.take(6).mapTo(linkedSetOf()) { photo -> photo.id },
-                viewedPhotoIds = content.photos.take(7).mapTo(linkedSetOf()) { photo -> photo.id },
+                selectedPhotoIds = content.photos.take(6).map { photo -> photo.id },
             ),
             onPhotoClick = {},
             onPhotoRemoveClick = {},
-            onVisiblePhotoChanged = {},
             onRetryClick = {},
             onCompleteClick = {},
         )

@@ -15,6 +15,9 @@
 ## 프로젝트 적용
 
 - Domain 모델: [`OnboardingRecommendation.kt`](../../app/src/main/java/com/example/sairo14/domain/model/OnboardingRecommendation.kt)
+- 사진 선택 상태: [`OnboardingPhotoSelectUiState.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/select/OnboardingPhotoSelectUiState.kt), [`OnboardingPhotoSelectViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/select/OnboardingPhotoSelectViewModel.kt)
+- 로딩 전달 모델: [`SairoRoute.kt`](../../app/src/main/java/com/example/sairo14/core/navigation/SairoRoute.kt)
+- 로딩 상태와 ViewModel: [`OnboardingLoadingUiState.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/loading/OnboardingLoadingUiState.kt), [`OnboardingLoadingViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/loading/OnboardingLoadingViewModel.kt)
 - Repository 계약: [`OnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/OnboardingRecommendationRepository.kt)
 - 완료 상태 정책: [`UpdateOnboardingCompletionUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/UpdateOnboardingCompletionUseCase.kt)
 - Fake 구현: [`FakeOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/FakeOnboardingRecommendationRepository.kt)
@@ -22,6 +25,8 @@
 - 결과 화면: [`OnboardingResultScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/OnboardingResultScreen.kt)
 
 `OnboardingRecommendation`은 카드 표시를 위한 지역명·분위기·이미지·장소 목록만 가진 Domain 모델이다. API DTO나 이미지 검색의 세부 점수는 이 모델에 노출하지 않는다.
+
+사진 선택 상태는 ID를 `Set`이 아닌 `List`로 보관한다. 중복은 ViewModel 이벤트 처리에서 막고, 목록 순서는 사용자가 고른 순서를 뜻한다. 따라서 완료 효과와 이후 로딩 애니메이션이 같은 앞 5장을 사용할 수 있다. 선택은 5장부터 완료할 수 있고 10장에 도달하면 새 사진 선택만 막는다. 이미 선택한 사진은 언제든 해제할 수 있다.
 
 ```kotlin
 when (uiState) {
@@ -48,12 +53,13 @@ flowchart LR
     VM --> UI["추천 결과 화면"]
 ```
 
-1. 사진 선택 화면이 탐색 세션 ID와 선택 ID를 로딩 Route로 전달한다.
-2. 로딩 완료 뒤 `OnboardingResultRoute(searchSessionId, selectedPhotoIds)`가 기존 로딩 Route를 교체한다.
-3. ViewModel은 추천 Repository를 먼저 조회하고, `UpdateOnboardingCompletionUseCase`에 결과를 전달한다. UseCase는 결과가 1개 이상이면 완료 상태를 저장하고, 0개면 완료 상태를 해제한다.
-4. 결과가 2개 이상이면 카드 목록만 스크롤한다.
-5. 결과가 0개 또는 1개면 하단 안내와 재추천 버튼을 고정한다. 카드가 있는 경우에도 작은 화면에서는 목록 하단 여백으로 버튼과 겹치지 않는다.
-6. 뒤로가기는 기존 사진 선택 화면으로 돌아가 선택 상태를 유지한다. 반면 재추천은 기존 사진 선택·결과 목적지를 제거하고 새 탐색 세션의 사진 선택 화면을 추가한다. 홈 버튼은 홈 목적지까지 백스택을 정리한다.
+1. 사진 선택 화면이 선택 순서가 보존된 5~10개의 사진 ID와 앞 5장의 `id`·`imageUrl`을 로딩 Route로 전달한다.
+2. 로딩 ViewModel은 전달받은 5장의 URL을 카드 UI 상태로 즉시 변환하고 사진 풀 API를 다시 호출하지 않는다. 화면은 Coil로 다섯 장의 요청이 끝날 때까지 대기한 뒤 카드 모션을 시작한다.
+3. 로딩 완료 뒤 `OnboardingResultRoute(searchSessionId, selectedPhotoIds)`가 기존 로딩 Route를 교체한다.
+4. ViewModel은 추천 Repository를 먼저 조회하고, `UpdateOnboardingCompletionUseCase`에 결과를 전달한다. UseCase는 결과가 1개 이상이면 완료 상태를 저장하고, 0개면 완료 상태를 해제한다.
+5. 결과가 2개 이상이면 카드 목록만 스크롤한다.
+6. 결과가 0개 또는 1개면 하단 안내와 재추천 버튼을 고정한다. 카드가 있는 경우에도 작은 화면에서는 목록 하단 여백으로 버튼과 겹치지 않는다.
+7. 뒤로가기는 기존 사진 선택 화면으로 돌아가 선택 상태를 유지한다. 반면 재추천은 기존 사진 선택·결과 목적지를 제거하고 새 탐색 세션의 사진 선택 화면을 추가한다. 홈 버튼은 홈 목적지까지 백스택을 정리한다.
 
 ## 트레이드오프와 주의점
 
@@ -61,6 +67,8 @@ flowchart LR
 - 완료 상태 저장 또는 해제가 실패하면 추천 결과를 표시하지 않고 오류·재시도를 제공한다. 다음 앱 시작 시의 진입 화면과 결과 수의 정책이 어긋나지 않도록 보장한다.
 - Fake Repository는 기본적으로 다수 추천을 반환한다. 0개·1개·오류는 ViewModel 테스트와 Preview에서 별도로 주입해 검증한다.
 - 결과 조회가 실제 네트워크에서 길어지면 로딩 화면에서 요청을 미리 시작하는 최적화를 검토할 수 있다. 현재는 Route가 입력을 보존하고 결과 ViewModel이 조회하므로 구현 경계가 단순하다.
+- 선택 ID를 `Set`으로 보관하면 중복은 막기 쉽지만 사용자의 선택 순서를 표현할 수 없다. 현재는 최대 10장으로 제한하므로 목록 기반 상태의 탐색 비용보다 순서 보존의 이점이 크다.
+- 사진 풀 API는 무작위 후보를 반환하므로 로딩 화면에서 ID만으로 같은 사진을 다시 조회할 수 없다. 앞 5장의 URL을 Route로 전달하면 사진 풀 API를 재조회하지 않아도 된다. 다만 카드가 비어 있는 상태로 모션을 시작하지 않도록 Coil 이미지 요청이 끝날 때까지는 중앙 인디케이터를 표시한다. URL이 만료되거나 요청에 실패하면 fallback 이미지가 표시된 뒤 모션을 시작한다.
 
 ## 추가 학습 및 대안
 
@@ -79,4 +87,4 @@ interface OnboardingRecommendationRepository {
 }
 ```
 
-현재는 선택 사진 ID가 작고 기존 사진 후보 Repository에서 다시 확인할 수 있으므로, 별도 분석 ID를 저장·만료 관리하는 복잡도보다 ID 목록 전달이 적합하다.
+현재는 추천 분석에 필요한 선택 사진 ID와 애니메이션에 필요한 앞 5장의 URL만 전달한다. 별도 분석 ID를 저장·만료 관리하는 복잡도보다 Navigation 입력이 작고 흐름이 단순하다.

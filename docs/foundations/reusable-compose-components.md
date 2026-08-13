@@ -39,7 +39,7 @@ SairoButton(
 
 이미지 삭제용 썸네일은 [`SairoImageThumbnail.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoImageThumbnail.kt)에서 이미지는 `Painter`, 삭제 동작은 `onRemoveClick`으로 분리한다. X 버튼은 시각적으로 썸네일 바깥으로 돌출되므로, 부모 레이아웃이 필요한 여백을 소유한다.
 
-여행 상세 바텀시트의 장소 행은 [`SairoPlaceListItem.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoPlaceListItem.kt)에서 `Simple`과 `Detailed` 정보 배치를 [SairoPlaceListItemVariant]로 분리한다. 태그는 새로 구현하지 않고 기존 `SairoTag`의 `SmallGray` 변형을 조합한다.
+여행 상세 바텀시트의 장소 행은 [`SairoPlaceListItem.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoPlaceListItem.kt)에서 `Simple`과 `Detailed` 정보 배치를 [SairoPlaceListItemVariant]로 분리한다. 태그는 새로 구현하지 않고 기존 `SairoTag`의 `SmallGray` 변형을 조합한다. 서버 태그는 공백·중복을 제거한 뒤 한 줄 최대 네 개, 최대 두 줄까지만 표시한다. 긴 문구는 최대 140dp에서 한 줄 말줄임 처리하며, 두 줄에 들어가지 않은 태그 수는 세 번째 줄의 `+N` 태그로 알린다.
 
 저장 여행지 폴더 카드는 [`SairoPlaceFolderCard.kt`](../../app/src/main/java/com/example/sairo14/core/designsystem/component/SairoPlaceFolderCard.kt)에서 `SairoFolderFrame`, `SairoTag`, `SairoBookmarker`를 조합한다. 카드 이동과 저장 상태는 호출자가 소유하고, 카드·북마크 클릭 콜백을 각각 전달한다. 이 카드는 항상 Small 폴더 변형을 사용하며, 겹친 사진 레이아웃은 전달받은 이미지 목록의 첫 두 장과 부모 너비 비율을 사용한다.
 
@@ -58,6 +58,7 @@ SairoButton(
 - ripple을 제거하면 즉각적인 터치 피드백이 줄어든다. 선택 상태·로딩·화면 이동처럼 동작 결과를
   분명하게 보여 주고, 아이콘 전용 동작에는 접근성 역할과 설명을 제공해야 한다.
 - 태그 variant를 하나의 enum으로 제한하면 잘못된 조합을 컴파일 단계에서 막을 수 있지만, Figma가 Medium/Gray 같은 새 조합을 추가하면 enum과 프리뷰를 함께 보완해야 한다.
+- 장소 태그는 카드 높이를 제한하기 위해 최대 두 줄까지만 표시한다. 긴 태그가 행 공간을 먼저 차지하면 두 줄 안의 실제 표시 개수는 여덟 개보다 적을 수 있으며, 남은 수를 정확히 `+N`으로 표시한다. `+N`은 현재 비상호작용 정보이므로, 사용자가 모든 태그를 확인해야 하는 요구가 생기면 상세 Dialog 또는 펼침 동작을 별도로 추가해야 한다.
 - `SairoImageCard`는 클릭 이벤트를 받지 않는다. 카드 선택 방식(탭, 여러 장 선택, 필수 선택 여부)은 화면 흐름마다 다를 수 있으므로, 해당 정책이 확정된 화면에서 클릭 처리와 `selected` 상태를 연결한다.
 
 ## 추가 학습 및 대안

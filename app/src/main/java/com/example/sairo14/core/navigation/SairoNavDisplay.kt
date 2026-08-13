@@ -148,6 +148,8 @@ fun SairoNavDisplay(
             }
             entry<OnboardingLoadingRoute> { route ->
                 OnboardingLoadingScreenRoute(
+                    searchSessionId = route.searchSessionId,
+                    selectedPhotoIds = route.selectedPhotoIds,
                     animationPhotos = route.animationPhotos,
                     onFinished = {
                         navigator.replaceTop(
@@ -180,7 +182,7 @@ fun SairoNavDisplay(
                 },
             ) { route ->
                 OnboardingResultScreenRoute(
-                    selectedPhotoIds = route.selectedPhotoIds,
+                    searchSessionId = route.searchSessionId,
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
                     onRequestAgainClick = {

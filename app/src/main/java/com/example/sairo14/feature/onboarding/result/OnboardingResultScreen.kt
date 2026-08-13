@@ -68,7 +68,7 @@ import com.example.sairo14.domain.model.OnboardingRecommendation
  */
 @Composable
 fun OnboardingResultRoute(
-    selectedPhotoIds: List<String>,
+    searchSessionId: String,
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
     onRequestAgainClick: () -> Unit,
@@ -78,8 +78,8 @@ fun OnboardingResultRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(selectedPhotoIds) {
-        viewModel.load(selectedPhotoIds)
+    LaunchedEffect(searchSessionId) {
+        viewModel.load(searchSessionId)
     }
 
     OnboardingResultScreen(

@@ -3,7 +3,7 @@ package com.example.sairo14.feature.onboarding.result
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sairo14.domain.model.AppResult
-import com.example.sairo14.domain.usecase.AnalyzeOnboardingTasteUseCase
+import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import com.example.sairo14.domain.usecase.UpdateOnboardingCompletionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -16,45 +16,44 @@ import kotlinx.coroutines.launch
 /**
  * 온보딩 추천 결과를 조회하고 카드의 화면 상태를 관리한다.
  *
- * 선택 사진 ID로 추천을 조회한 뒤 결과 수에 따라 온보딩 완료 상태를 저장하거나 해제해
+ * 로딩 화면이 저장한 분석 결과를 읽고 결과 수에 따라 온보딩 완료 상태를 저장하거나 해제해
  * [OnboardingResultUiState]로 노출한다. 북마크는 저장 여행 기능이 연결되기 전까지 현재 화면의
  * 표시 상태만 변경한다.
  */
 @HiltViewModel
 class OnboardingResultViewModel @Inject constructor(
-    private val analyzeOnboardingTaste: AnalyzeOnboardingTasteUseCase,
+    private val sessionStore: OnboardingAnalysisSessionStore,
     private val updateOnboardingCompletion: UpdateOnboardingCompletionUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<OnboardingResultUiState>(OnboardingResultUiState.Loading)
 
     val uiState: StateFlow<OnboardingResultUiState> = _uiState.asStateFlow()
 
-    private var selectedPhotoIds: List<String>? = null
+    private var searchSessionId: String? = null
 
-    /** 선택 사진으로 추천을 한 번 조회하고 결과 수에 맞게 온보딩 완료 상태를 갱신한다. */
-    fun load(selectedPhotoIds: List<String>, force: Boolean = false) {
-        if (!force && this.selectedPhotoIds == selectedPhotoIds) return
+    /** 세션의 분석 결과를 한 번 읽고 결과 수에 맞게 온보딩 완료 상태를 갱신한다. */
+    fun load(searchSessionId: String, force: Boolean = false) {
+        if (!force && this.searchSessionId == searchSessionId) return
 
-        this.selectedPhotoIds = selectedPhotoIds
+        this.searchSessionId = searchSessionId
         viewModelScope.launch {
             _uiState.value = OnboardingResultUiState.Loading
 
-            when (val result = analyzeOnboardingTaste(selectedPhotoIds)) {
-                is AppResult.Failure -> _uiState.value = OnboardingResultUiState.Error
-                is AppResult.Success -> {
-                    val recommendations = result.value.recommendations
-                    _uiState.value = when (updateOnboardingCompletion(recommendations)) {
-                        is AppResult.Success -> OnboardingResultUiState.Content(recommendations)
-                        is AppResult.Failure -> OnboardingResultUiState.Error
-                    }
+            val recommendations = sessionStore.getResult(searchSessionId)?.recommendations
+                ?: run {
+                    _uiState.value = OnboardingResultUiState.Error
+                    return@launch
                 }
+            _uiState.value = when (updateOnboardingCompletion(recommendations)) {
+                is AppResult.Success -> OnboardingResultUiState.Content(recommendations)
+                is AppResult.Failure -> OnboardingResultUiState.Error
             }
         }
     }
 
-    /** 마지막 조회에 실패했을 때 같은 선택 사진으로 결과를 다시 요청한다. */
+    /** 마지막 세션 조회에 실패했을 때 같은 세션 결과를 다시 읽는다. */
     fun retry() {
-        selectedPhotoIds?.let { photoIds -> load(photoIds, force = true) }
+        searchSessionId?.let { sessionId -> load(sessionId, force = true) }
     }
 
     /** 현재 화면에서 추천 카드의 북마크 표시만 전환한다. */

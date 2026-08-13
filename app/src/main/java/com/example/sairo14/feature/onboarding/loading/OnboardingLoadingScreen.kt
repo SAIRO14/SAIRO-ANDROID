@@ -72,6 +72,8 @@ import kotlinx.coroutines.CancellationException
  */
 @Composable
 fun OnboardingLoadingRoute(
+    searchSessionId: String,
+    selectedPhotoIds: List<String>,
     animationPhotos: List<OnboardingAnimationPhoto>,
     onFinished: () -> Unit,
     onBackClick: () -> Unit,
@@ -80,14 +82,15 @@ fun OnboardingLoadingRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(animationPhotos) {
-        viewModel.load(animationPhotos)
+    LaunchedEffect(searchSessionId, selectedPhotoIds, animationPhotos) {
+        viewModel.load(searchSessionId, selectedPhotoIds, animationPhotos)
     }
 
     OnboardingLoadingScreen(
         uiState = uiState,
         onFinished = onFinished,
         onBackClick = onBackClick,
+        onRetryClick = viewModel::retry,
         modifier = modifier,
     )
 }
@@ -107,6 +110,7 @@ fun OnboardingLoadingScreen(
     uiState: OnboardingLoadingUiState,
     onFinished: () -> Unit,
     onBackClick: () -> Unit,
+    onRetryClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val loadingPhotos = (uiState as? OnboardingLoadingUiState.Content)
@@ -118,7 +122,16 @@ fun OnboardingLoadingScreen(
     when (uiState) {
         OnboardingLoadingUiState.Loading -> OnboardingLoadingPendingScreen(modifier)
         OnboardingLoadingUiState.Error -> OnboardingLoadingErrorScreen(
+            messageResId = R.string.onboarding_loading_error,
             onBackClick = onBackClick,
+            onRetryClick = null,
+            modifier = modifier,
+        )
+
+        OnboardingLoadingUiState.AnalysisError -> OnboardingLoadingErrorScreen(
+            messageResId = R.string.onboarding_result_error,
+            onBackClick = onBackClick,
+            onRetryClick = onRetryClick,
             modifier = modifier,
         )
 
@@ -126,6 +139,7 @@ fun OnboardingLoadingScreen(
             if (imagePreloadState == LoadingImagePreloadState.Ready) {
                 OnboardingLoadingContent(
                     photos = loadingPhotos,
+                    moodTags = uiState.moodTags,
                     onFinished = onFinished,
                     modifier = modifier,
                 )
@@ -206,32 +220,39 @@ private suspend fun preloadLoadingImage(
 @Composable
 private fun OnboardingLoadingContent(
     photos: List<OnboardingLoadingPhotoUiModel>,
+    moodTags: List<String>?,
     onFinished: () -> Unit,
     modifier: Modifier,
 ) {
     val timeline = remember { Animatable(0f) }
+    val tagTimeline = remember { Animatable(0f) }
+    var isCardAnimationFinished by remember(photos) { mutableStateOf(false) }
+    var isTagAnimationFinished by remember(moodTags) { mutableStateOf(false) }
 
     LaunchedEffect(photos) {
         timeline.snapTo(0f)
-        coroutineScope {
-            val analysisReady = async { delay(AnalysisMinimumDurationMillis) }
-            val motionScale = currentCoroutineContext()[MotionDurationScale]?.scaleFactor ?: 1f
-
-            if (motionScale == 0f) {
-                timeline.snapTo(LoadingTimelineEndMillis.toFloat())
-            } else {
-                timeline.animateTo(
-                    targetValue = LoadingTimelineEndMillis.toFloat(),
-                    animationSpec = tween(
-                        durationMillis = LoadingTimelineEndMillis,
-                        easing = LinearEasing,
-                    ),
-                )
-            }
-
-            analysisReady.await()
-            onFinished()
+        val motionScale = currentCoroutineContext()[MotionDurationScale]?.scaleFactor ?: 1f
+        if (motionScale == 0f) {
+            timeline.snapTo(LoadingTimelineEndMillis.toFloat())
+        } else {
+            timeline.animateTo(
+                targetValue = LoadingTimelineEndMillis.toFloat(),
+                animationSpec = tween(LoadingTimelineEndMillis, easing = LinearEasing),
+            )
         }
+        isCardAnimationFinished = true
+    }
+
+    LaunchedEffect(moodTags) {
+        if (moodTags == null) return@LaunchedEffect
+        tagTimeline.snapTo(0f)
+        val endMillis = moodTags.lastIndex.coerceAtLeast(0) * TagAppearIntervalMillis + TagEnterDurationMillis
+        tagTimeline.animateTo(endMillis.toFloat(), tween(endMillis, easing = LinearEasing))
+        isTagAnimationFinished = true
+    }
+
+    LaunchedEffect(isCardAnimationFinished, isTagAnimationFinished, moodTags) {
+        if (moodTags != null && isCardAnimationFinished && isTagAnimationFinished) onFinished()
     }
 
     BoxWithConstraints(
@@ -254,7 +275,10 @@ private fun OnboardingLoadingContent(
 
             Spacer(modifier = Modifier.height(InfoTopSpacing))
 
-            LoadingInformation(elapsedMillis = timeline.value)
+            LoadingInformation(
+                moodTags = moodTags,
+                elapsedMillis = tagTimeline.value,
+            )
         }
     }
 }
@@ -317,15 +341,10 @@ private fun LoadingCardDeck(
 
 @Composable
 private fun LoadingInformation(
+    moodTags: List<String>?,
     elapsedMillis: Float,
 ) {
     val density = LocalDensity.current
-    val tagTexts = listOf(
-        stringResource(R.string.onboarding_loading_tag_quiet),
-        stringResource(R.string.onboarding_loading_tag_warm),
-        stringResource(R.string.onboarding_loading_tag_secluded),
-    )
-    val showDots = elapsedMillis < LoadingTimelineEndMillis
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
@@ -350,11 +369,11 @@ private fun LoadingInformation(
             horizontalArrangement = Arrangement.spacedBy(TagSpacing),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            tagTexts.forEachIndexed { index, tag ->
+            moodTags.orEmpty().forEachIndexed { index, tag ->
                 val tagProgress = TagEnterEasing.transform(
                     timedProgress(
                         elapsedMillis = elapsedMillis,
-                        delayMillis = TagAppearDelaysMillis[index],
+                        delayMillis = index * TagAppearIntervalMillis,
                         durationMillis = TagEnterDurationMillis,
                     ),
                 )
@@ -420,7 +439,9 @@ private fun OnboardingLoadingPendingScreen(
 
 @Composable
 private fun OnboardingLoadingErrorScreen(
+    messageResId: Int,
     onBackClick: () -> Unit,
+    onRetryClick: (() -> Unit)?,
     modifier: Modifier,
 ) {
     Box(
@@ -435,14 +456,16 @@ private fun OnboardingLoadingErrorScreen(
             verticalArrangement = Arrangement.spacedBy(ErrorContentSpacing),
         ) {
             Text(
-                text = stringResource(R.string.onboarding_loading_error),
+                text = stringResource(messageResId),
                 color = SairoTheme.colors.textPrimary,
                 style = SairoTextStyles.bodyLight18,
                 textAlign = TextAlign.Center,
             )
             SairoButton(
-                text = stringResource(R.string.onboarding_loading_reselect),
-                onClick = onBackClick,
+                text = stringResource(
+                    if (onRetryClick == null) R.string.onboarding_loading_reselect else R.string.onboarding_result_retry,
+                ),
+                onClick = onRetryClick ?: onBackClick,
             )
         }
     }
@@ -497,13 +520,12 @@ private val LoadingCardMotionSpecs = listOf(
     LoadingCardMotionSpec(2600, (-90).dp, (-18).dp, 18f, 4f),
 )
 
-private val TagAppearDelaysMillis = listOf(1250, 1900, 2550)
-
 private const val CardEnterDurationMillis = 600
 private const val CardLandingDurationMillis = 180
 private const val LoadingTimelineEndMillis = 3380
 private const val AnalysisMinimumDurationMillis = 2000L
 private const val TagEnterDurationMillis = 450
+private const val TagAppearIntervalMillis = 650
 private const val DotsCycleDurationMillis = 1800
 private const val DotCount = 3
 private const val InactiveDotAlpha = 0.2f
@@ -543,6 +565,7 @@ private fun OnboardingLoadingScreenPreview() {
             ),
             onFinished = {},
             onBackClick = {},
+            onRetryClick = {},
         )
     }
 }

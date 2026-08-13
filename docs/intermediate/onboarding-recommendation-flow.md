@@ -51,7 +51,7 @@ flowchart LR
     L --> R["결과 Route: selectedPhotoIds"]
     R --> VM["OnboardingResultViewModel"]
     VM --> M["온보딩 완료 상태 저장"]
-    VM --> UC["AnalyzeOnboardingTasteUseCase"]
+    VM --> UC["AnalyzeAndStoreOnboardingTasteUseCase"]
     UC --> RI["OnboardingRecommendationRepository"]
     RI --> RR["RemoteOnboardingRecommendationRepository"]
     RR --> API["POST /taste-analysis"]
@@ -64,20 +64,21 @@ flowchart LR
 
 1. 사진 선택 화면이 선택 순서가 보존된 5~10개의 사진 ID와 앞 5장의 `id`·`imageUrl`을 로딩 Route로 전달한다.
 2. 로딩 ViewModel은 전달받은 5장의 URL을 카드 UI 상태로 즉시 변환하고 사진 풀 API를 다시 호출하지 않는다. 화면은 Coil로 다섯 장의 요청이 끝날 때까지 대기한 뒤 카드 모션을 시작한다.
-3. 로딩 완료 뒤 `OnboardingResultRoute(searchSessionId, selectedPhotoIds)`가 기존 로딩 Route를 교체한다.
-4. Repository는 사진 ID의 중복을 제거한 뒤 5~10장인지 검증하고, `DeviceIdProvider`에서 UUID를 읽어 `X-Device-Id` 헤더와 함께 `POST /taste-analysis`를 호출한다. DataStore 오류는 네트워크 오류로 바꾸지 않고 저장소 오류로 반환한다.
-5. DTO mapper는 API 응답을 `OnboardingAnalysisResult`로 변환한다. 빈 `courses`는 실패가 아닌 정상적인 빈 추천 결과다.
-6. 현재 결과 ViewModel은 분석 결과의 추천 카드 목록을 `UpdateOnboardingCompletionUseCase`에 전달한다. UseCase는 결과가 1개 이상이면 완료 상태를 저장하고, 0개면 완료 상태를 해제한다.
-7. 결과가 2개 이상이면 카드 목록만 스크롤한다.
-8. 결과가 0개 또는 1개면 하단 안내와 재추천 버튼을 고정한다. 카드가 있는 경우에도 작은 화면에서는 목록 하단 여백으로 버튼과 겹치지 않는다.
-9. 뒤로가기는 기존 사진 선택 화면으로 돌아가 선택 상태를 유지한다. 반면 재추천은 기존 사진 선택·결과 목적지를 제거하고 새 탐색 세션의 사진 선택 화면을 추가한다. 홈 버튼은 홈 목적지까지 백스택을 정리한다.
+3. 로딩 ViewModel은 카드 애니메이션 준비와 동시에 `AnalyzeAndStoreOnboardingTasteUseCase`로 취향 분석을 요청한다. UseCase는 성공 결과를 `OnboardingAnalysisSessionStore`에 저장하고, ViewModel은 API가 반환한 무드 태그를 별도의 태그 애니메이션에 전달한다.
+4. 카드 애니메이션과 태그 애니메이션이 모두 끝난 뒤 `OnboardingResultRoute(searchSessionId, selectedPhotoIds)`가 기존 로딩 Route를 교체한다. API 실패 시에는 결과 화면으로 이동하지 않고 같은 요청을 재시도한다.
+5. Repository는 사진 ID의 중복을 제거한 뒤 5~10장인지 검증하고, `DeviceIdProvider`에서 UUID를 읽어 `X-Device-Id` 헤더와 함께 `POST /taste-analysis`를 호출한다. DataStore 오류는 네트워크 오류로 바꾸지 않고 저장소 오류로 반환한다.
+6. DTO mapper는 API 응답을 `OnboardingAnalysisResult`로 변환한다. 빈 `courses`는 실패가 아닌 정상적인 빈 추천 결과다.
+7. 결과 ViewModel은 세션에 저장된 추천 카드 목록을 `UpdateOnboardingCompletionUseCase`에 전달한다. UseCase는 결과가 1개 이상이면 완료 상태를 저장하고, 0개면 완료 상태를 해제한다.
+8. 결과가 2개 이상이면 카드 목록만 스크롤한다.
+9. 결과가 0개 또는 1개면 하단 안내와 재추천 버튼을 고정한다. 카드가 있는 경우에도 작은 화면에서는 목록 하단 여백으로 버튼과 겹치지 않는다.
+10. 뒤로가기는 기존 사진 선택 화면으로 돌아가 선택 상태를 유지한다. 반면 재추천은 기존 사진 선택·결과 목적지를 제거하고 새 탐색 세션의 사진 선택 화면을 추가한다. 홈 버튼은 홈 목적지까지 백스택을 정리한다.
 
 ## 트레이드오프와 주의점
 
 - 현재 북마크는 화면 안의 `isSaved`만 전환한다. 실제 저장 여행 기능이 도입되면 코스 API 문서에서 제안한 `SavedTripRepository`에 연결해야 하며, 화면 상태만 바꾸는 로직은 낙관적 업데이트와 실패 복구로 교체한다.
 - 완료 상태 저장 또는 해제가 실패하면 추천 결과를 표시하지 않고 오류·재시도를 제공한다. 다음 앱 시작 시의 진입 화면과 결과 수의 정책이 어긋나지 않도록 보장한다.
 - Fake Repository는 실제 Repository와 같은 `OnboardingAnalysisResult` 계약을 반환해 무드 태그·카드·상세 코스의 화면 연결을 테스트할 수 있다.
-- 현재는 결과 ViewModel이 분석 요청을 시작한다. 다음 단계에서는 로딩 화면이 카드 모션과 API 요청을 동시에 시작하고, 태그 모션까지 끝난 뒤 결과 화면으로 이동하도록 요청 위치를 옮긴다.
+- API 요청은 로딩 ViewModel이 소유한다. 결과 화면은 세션 결과를 읽기만 하므로 재구성이나 결과 화면 재진입으로 같은 분석 요청이 중복되지 않는다.
 - 선택 ID를 `Set`으로 보관하면 중복은 막기 쉽지만 사용자의 선택 순서를 표현할 수 없다. 현재는 최대 10장으로 제한하므로 목록 기반 상태의 탐색 비용보다 순서 보존의 이점이 크다.
 - 사진 풀 API는 무작위 후보를 반환하므로 로딩 화면에서 ID만으로 같은 사진을 다시 조회할 수 없다. 앞 5장의 URL을 Route로 전달하면 사진 풀 API를 재조회하지 않아도 된다. 다만 카드가 비어 있는 상태로 모션을 시작하지 않도록 Coil 이미지 요청이 끝날 때까지는 중앙 인디케이터를 표시한다. URL이 만료되거나 요청에 실패하면 fallback 이미지가 표시된 뒤 모션을 시작한다.
 

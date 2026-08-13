@@ -2,10 +2,11 @@ package com.example.sairo14.feature.onboarding
 
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.AppError
+import com.example.sairo14.domain.model.OnboardingAnalysisResult
 import com.example.sairo14.domain.model.OnboardingRecommendation
 import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import com.example.sairo14.domain.repository.OnboardingRepository
-import com.example.sairo14.domain.usecase.GetOnboardingRecommendationsUseCase
+import com.example.sairo14.domain.usecase.AnalyzeOnboardingTasteUseCase
 import com.example.sairo14.domain.usecase.UpdateOnboardingCompletionUseCase
 import com.example.sairo14.feature.onboarding.result.OnboardingResultUiState
 import com.example.sairo14.feature.onboarding.result.OnboardingResultViewModel
@@ -57,8 +58,8 @@ class OnboardingResultViewModelTest {
         val recommendations = listOf(recommendation(id = "boeun"), recommendation(id = "gangneung"))
         val onboardingRepository = ResultOnboardingRepository()
         val viewModel = OnboardingResultViewModel(
-            getOnboardingRecommendations = GetOnboardingRecommendationsUseCase(
-                ResultRecommendationRepository(AppResult.Success(recommendations)),
+            analyzeOnboardingTaste = AnalyzeOnboardingTasteUseCase(
+                ResultRecommendationRepository(AppResult.Success(analysisResult(recommendations))),
             ),
             updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(onboardingRepository),
         )
@@ -87,7 +88,7 @@ class OnboardingResultViewModelTest {
     fun `추천 조회가 실패하면 오류 상태를 표시한다`() = runTest(dispatcher) {
         val onboardingRepository = ResultOnboardingRepository()
         val viewModel = OnboardingResultViewModel(
-            getOnboardingRecommendations = GetOnboardingRecommendationsUseCase(
+            analyzeOnboardingTaste = AnalyzeOnboardingTasteUseCase(
                 ResultRecommendationRepository(AppResult.Failure(AppError.Unknown)),
             ),
             updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(onboardingRepository),
@@ -104,8 +105,8 @@ class OnboardingResultViewModelTest {
         recommendations: List<OnboardingRecommendation>,
         onboardingRepository: ResultOnboardingRepository = ResultOnboardingRepository(),
     ): OnboardingResultViewModel = OnboardingResultViewModel(
-        getOnboardingRecommendations = GetOnboardingRecommendationsUseCase(
-            ResultRecommendationRepository(AppResult.Success(recommendations)),
+        analyzeOnboardingTaste = AnalyzeOnboardingTasteUseCase(
+            ResultRecommendationRepository(AppResult.Success(analysisResult(recommendations))),
         ),
         updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(onboardingRepository),
     )
@@ -129,11 +130,11 @@ class OnboardingResultViewModelTest {
     }
 
     private class ResultRecommendationRepository(
-        private val result: AppResult<List<OnboardingRecommendation>>,
+        private val result: AppResult<OnboardingAnalysisResult>,
     ) : OnboardingRecommendationRepository {
-        override suspend fun getRecommendations(
+        override suspend fun analyzeTaste(
             selectedPhotoIds: List<String>,
-        ): AppResult<List<OnboardingRecommendation>> = result
+        ): AppResult<OnboardingAnalysisResult> = result
     }
 
     private companion object {
@@ -152,6 +153,15 @@ class OnboardingResultViewModelTest {
             description = "고요한 자연과 전통의 분위기",
             imageUrls = emptyList(),
             placeNames = listOf("말티재 전망대", "세조길 숲 산책"),
+        )
+
+        fun analysisResult(
+            recommendations: List<OnboardingRecommendation>,
+        ) = OnboardingAnalysisResult(
+            moodTags = emptyList(),
+            summary = "",
+            recommendations = recommendations,
+            courses = emptyMap(),
         )
     }
 }

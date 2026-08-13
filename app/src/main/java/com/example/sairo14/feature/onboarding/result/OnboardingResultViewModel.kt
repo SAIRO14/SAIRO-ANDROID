@@ -3,7 +3,7 @@ package com.example.sairo14.feature.onboarding.result
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sairo14.domain.model.AppResult
-import com.example.sairo14.domain.usecase.GetOnboardingRecommendationsUseCase
+import com.example.sairo14.domain.usecase.AnalyzeOnboardingTasteUseCase
 import com.example.sairo14.domain.usecase.UpdateOnboardingCompletionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
  */
 @HiltViewModel
 class OnboardingResultViewModel @Inject constructor(
-    private val getOnboardingRecommendations: GetOnboardingRecommendationsUseCase,
+    private val analyzeOnboardingTaste: AnalyzeOnboardingTasteUseCase,
     private val updateOnboardingCompletion: UpdateOnboardingCompletionUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<OnboardingResultUiState>(OnboardingResultUiState.Loading)
@@ -39,11 +39,12 @@ class OnboardingResultViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = OnboardingResultUiState.Loading
 
-            when (val result = getOnboardingRecommendations(selectedPhotoIds)) {
+            when (val result = analyzeOnboardingTaste(selectedPhotoIds)) {
                 is AppResult.Failure -> _uiState.value = OnboardingResultUiState.Error
                 is AppResult.Success -> {
-                    _uiState.value = when (updateOnboardingCompletion(result.value)) {
-                        is AppResult.Success -> OnboardingResultUiState.Content(result.value)
+                    val recommendations = result.value.recommendations
+                    _uiState.value = when (updateOnboardingCompletion(recommendations)) {
+                        is AppResult.Success -> OnboardingResultUiState.Content(recommendations)
                         is AppResult.Failure -> OnboardingResultUiState.Error
                     }
                 }

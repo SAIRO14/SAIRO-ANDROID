@@ -46,6 +46,7 @@ fun SairoApp(
 @Composable
 private fun SairoNavigation(
     startDestination: AppStartDestination,
+    sessionCleanupViewModel: OnboardingSessionCleanupViewModel = hiltViewModel(),
 ) {
     val backStack = when (startDestination) {
         AppStartDestination.Home -> rememberNavBackStack(HomeRoute)
@@ -54,7 +55,12 @@ private fun SairoNavigation(
             OnboardingIntroRoute(entryPoint = OnboardingIntroEntryPoint.AppStart),
         )
     }
-    val navigator = remember(backStack) { SairoNavigator(backStack) }
+    val navigator = remember(backStack, sessionCleanupViewModel) {
+        SairoNavigator(
+            backStack = backStack,
+            onOnboardingSessionEnded = sessionCleanupViewModel::clear,
+        )
+    }
 
     SairoNavDisplay(
         backStack = backStack,

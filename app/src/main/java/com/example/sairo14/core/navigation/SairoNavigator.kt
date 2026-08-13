@@ -9,10 +9,12 @@ import androidx.navigation3.runtime.NavKey
  *
  * 백스택의 생성과 수명은 호출자가 소유하며, 이 객체는 화면·ViewModel 대신 이동 정책만 적용한다.
  * @param backStack 현재 앱에서 표시할 Nav3 목적지 백스택
+ * @param onOnboardingSessionEnded 백스택에서 더 이상 참조되지 않는 온보딩 세션 ID를 전달받는 콜백
  */
 @Stable
 class SairoNavigator(
     private val backStack: NavBackStack<NavKey>,
+    private val onOnboardingSessionEnded: (String) -> Unit = {},
 ) {
     /** 주어진 목적지를 현재 백스택의 최상단에 추가한다. */
     fun navigate(route: SairoRoute) {
@@ -32,7 +34,9 @@ class SairoNavigator(
      */
     fun replaceTop(route: SairoRoute) {
         if (backStack.isNotEmpty()) {
+            val replacedRoute = backStack[backStack.lastIndex]
             backStack[backStack.lastIndex] = route
+            notifyOnboardingSessionEndedIfNeeded(replacedRoute)
         } else {
             backStack.add(route)
         }
@@ -45,7 +49,7 @@ class SairoNavigator(
      */
     fun navigateUp() {
         if (backStack.size > 1) {
-            backStack.removeAt(backStack.lastIndex)
+            removeTop()
         }
     }
 
@@ -62,7 +66,7 @@ class SairoNavigator(
         if (introIndex < 0) return
 
         while (backStack.lastIndex > introIndex) {
-            backStack.removeAt(backStack.lastIndex)
+            removeTop()
         }
         backStack.add(OnboardingPhotoSelectRoute(searchSessionId))
     }
@@ -78,7 +82,28 @@ class SairoNavigator(
         if (homeIndex < 0) return
 
         while (backStack.lastIndex > homeIndex) {
-            backStack.removeAt(backStack.lastIndex)
+            removeTop()
         }
     }
+
+    private fun removeTop() {
+        val removedRoute = backStack.removeAt(backStack.lastIndex)
+        notifyOnboardingSessionEndedIfNeeded(removedRoute)
+    }
+
+    private fun notifyOnboardingSessionEndedIfNeeded(removedRoute: NavKey) {
+        val endedSessionId = removedRoute.onboardingSessionIdOrNull() ?: return
+
+        if (backStack.none { route -> route.onboardingSessionIdOrNull() == endedSessionId }) {
+            onOnboardingSessionEnded(endedSessionId)
+        }
+    }
+}
+
+private fun NavKey.onboardingSessionIdOrNull(): String? = when (this) {
+    is OnboardingPhotoSelectRoute -> searchSessionId
+    is OnboardingLoadingRoute -> searchSessionId
+    is OnboardingResultRoute -> searchSessionId
+    is TravelDetailRoute -> onboardingSessionId
+    else -> null
 }

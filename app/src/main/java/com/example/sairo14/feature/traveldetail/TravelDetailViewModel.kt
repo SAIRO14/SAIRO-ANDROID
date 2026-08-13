@@ -111,8 +111,8 @@ private fun Course.toUiState(): TravelDetailUiState =
                             name = place.name,
                             imageUrl = place.imageUrl,
                             tags = place.tags,
-                            latitude = place.coordinate.latitude,
-                            longitude = place.coordinate.longitude,
+                            latitude = place.coordinate?.latitude,
+                            longitude = place.coordinate?.longitude,
                         )
                     },
                 )

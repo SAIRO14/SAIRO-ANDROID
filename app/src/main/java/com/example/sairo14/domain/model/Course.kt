@@ -29,14 +29,22 @@ data class CourseDay(
  * @param name 사용자에게 표시할 장소명
  * @param imageUrl 장소 카드에 표시할 이미지 주소. 이미지가 없으면 `null`
  * @param tags 운영 시간·휴무·주차처럼 장소에 표시할 보조 정보
- * @param coordinate 지도 핀과 카메라 중심 계산에 사용할 좌표
+ * @param coordinate 지도 핀과 카메라 중심 계산에 사용할 좌표. 서버가 제공하지 않으면 `null`
+ * @param operatingHours 장소 운영 시간 문구. 정보가 없으면 `null`
+ * @param closedDays 장소 휴무일 문구. 정보가 없으면 `null`
+ * @param parking 장소 주차 정보 문구. 정보가 없으면 `null`
+ * @param contact 장소 연락처 문구. 정보가 없으면 `null`
  */
 data class CoursePlace(
     val placeId: String,
     val name: String,
     val imageUrl: String?,
     val tags: List<String>,
-    val coordinate: MapCoordinate,
+    val coordinate: MapCoordinate?,
+    val operatingHours: String? = null,
+    val closedDays: String? = null,
+    val parking: String? = null,
+    val contact: String? = null,
 )
 
 /** 지도에서 장소를 표시하고 카메라 중심을 정할 때 사용하는 WGS84 좌표를 표현한다.

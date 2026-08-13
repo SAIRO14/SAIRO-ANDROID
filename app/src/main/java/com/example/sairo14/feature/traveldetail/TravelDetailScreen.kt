@@ -350,17 +350,22 @@ private fun TravelDetailMessageLayout(
 }
 
 private fun TravelDetailDayUiModel?.orEmptyMarkers(): List<SairoMapMarker> =
-    this?.places?.mapIndexed { index, place ->
+    this?.places?.mapIndexedNotNull { index, place ->
+        val latitude = place.latitude ?: return@mapIndexedNotNull null
+        val longitude = place.longitude ?: return@mapIndexedNotNull null
         SairoMapMarker(
             id = place.placeId,
             order = index + 1,
-            latitude = place.latitude,
-            longitude = place.longitude,
+            latitude = latitude,
+            longitude = longitude,
         )
     }.orEmpty()
 
-private fun TravelDetailPlaceUiModel.toMapCameraTarget(): SairoMapCameraTarget =
-    SairoMapCameraTarget(latitude = latitude, longitude = longitude)
+private fun TravelDetailPlaceUiModel.toMapCameraTarget(): SairoMapCameraTarget? {
+    val latitude = latitude ?: return null
+    val longitude = longitude ?: return null
+    return SairoMapCameraTarget(latitude = latitude, longitude = longitude)
+}
 
 private val ScreenHorizontalPadding = 16.dp
 private val DaySelectorTopSpacing = 12.dp

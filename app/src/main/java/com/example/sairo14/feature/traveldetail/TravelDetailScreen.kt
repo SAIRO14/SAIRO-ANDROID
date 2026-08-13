@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -202,35 +203,44 @@ private fun TravelDetailContent(
             onVisibleHeightChanged = { visibleHeight ->
                 sheetVisibleHeightPx = with(density) { visibleHeight.roundToPx() }
             },
+            contentKey = content.selectedDayNumber,
             modifier = Modifier.fillMaxSize(),
         ) {
             if (selectedDay == null || selectedDay.places.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.travel_detail_empty_day),
-                    color = SairoTheme.colors.textMuted,
-                    style = SairoTextStyles.bodyLight16,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            } else {
-                TravelCourseTimeline(placeCount = selectedDay.places.size) { index ->
-                    val place = selectedDay.places[index]
-                    SairoPlaceListItem(
-                        title = stringResource(
-                            R.string.travel_detail_place_title,
-                            index + 1,
-                            place.name,
-                        ),
-                        tags = place.tags,
-                        painter = rememberAsyncImagePainter(
-                            model = place.imageUrl ?: R.drawable.img_dummy_view,
-                        ),
-                        variant = SairoPlaceListItemVariant.Detailed,
-                        imageContentDescription = stringResource(
-                            R.string.travel_detail_place_image,
-                            place.name,
-                        ),
-                        onClick = { onPlaceClick(place.placeId) },
+                item(key = "empty-day") {
+                    Text(
+                        text = stringResource(R.string.travel_detail_empty_day),
+                        color = SairoTheme.colors.textMuted,
+                        style = SairoTextStyles.bodyLight16,
+                        modifier = Modifier.fillMaxWidth(),
                     )
+                }
+            } else {
+                itemsIndexed(
+                    items = selectedDay.places,
+                    key = { _, place -> place.placeId },
+                ) { index, place ->
+                    TravelCourseTimelineItem(
+                        isLastItem = index == selectedDay.places.lastIndex,
+                    ) {
+                        SairoPlaceListItem(
+                            title = stringResource(
+                                R.string.travel_detail_place_title,
+                                index + 1,
+                                place.name,
+                            ),
+                            tags = place.tags,
+                            painter = rememberAsyncImagePainter(
+                                model = place.imageUrl ?: R.drawable.img_dummy_view,
+                            ),
+                            variant = SairoPlaceListItemVariant.Detailed,
+                            imageContentDescription = stringResource(
+                                R.string.travel_detail_place_image,
+                                place.name,
+                            ),
+                            onClick = { onPlaceClick(place.placeId) },
+                        )
+                    }
                 }
             }
         }

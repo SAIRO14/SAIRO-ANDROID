@@ -21,12 +21,15 @@
 - API DTO·계약: [`TasteAnalysisDto.kt`](../../app/src/main/java/com/example/sairo14/data/remote/dto/TasteAnalysisDto.kt), [`SairoApi.kt`](../../app/src/main/java/com/example/sairo14/data/remote/SairoApi.kt)
 - DTO mapper: [`TasteAnalysisMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/TasteAnalysisMapper.kt)
 - Repository 계약·구현: [`OnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/OnboardingRecommendationRepository.kt), [`RemoteOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteOnboardingRecommendationRepository.kt)
+- 분석 세션 저장소: [`OnboardingAnalysisSessionStore.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/OnboardingAnalysisSessionStore.kt), [`InMemoryOnboardingAnalysisSessionStore.kt`](../../app/src/main/java/com/example/sairo14/data/repository/InMemoryOnboardingAnalysisSessionStore.kt)
 - 완료 상태 정책: [`UpdateOnboardingCompletionUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/UpdateOnboardingCompletionUseCase.kt)
 - Fake 구현: [`FakeOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/fake/FakeOnboardingRecommendationRepository.kt)
 - 화면 상태와 ViewModel: [`OnboardingResultUiState.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultUiState.kt), [`OnboardingResultViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultViewModel.kt)
 - 결과 화면: [`OnboardingResultScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultScreen.kt)
 
 `OnboardingAnalysisResult`는 로딩 화면의 무드 태그, 결과 화면의 카드, 지도 상세 화면의 코스 스냅샷을 함께 가진 Domain 모델이다. API DTO는 Data 계층에만 남기고, mapper가 `OnboardingRecommendation`과 `Course`로 변환한다.
+
+`OnboardingAnalysisSessionStore`는 탐색 세션 ID를 키로 `OnboardingAnalysisResult`를 앱 프로세스 안에 보관한다. 결과 화면은 전체 결과를, 지도 상세 화면은 같은 세션의 `courseId`로 코스 스냅샷만 읽을 수 있다. 프로세스 재시작 뒤에는 결과가 남지 않으므로, 이후 화면 연결 단계에서는 세션 누락을 사진 재선택 안내로 처리한다.
 
 사진 선택 상태는 ID를 `Set`이 아닌 `List`로 보관한다. 중복은 ViewModel 이벤트 처리에서 막고, 목록 순서는 사용자가 고른 순서를 뜻한다. 따라서 완료 효과와 이후 로딩 애니메이션이 같은 앞 5장을 사용할 수 있다. 선택은 5장부터 완료할 수 있고 10장에 도달하면 새 사진 선택만 막는다. 이미 선택한 사진은 언제든 해제할 수 있다.
 
@@ -53,6 +56,8 @@ flowchart LR
     RI --> RR["RemoteOnboardingRecommendationRepository"]
     RR --> API["POST /taste-analysis"]
     RR --> DID["DeviceIdProvider"]
+    RR -. "다음 화면 연결 단계" .-> SS["OnboardingAnalysisSessionStore"]
+    SS -. "세션 ID + courseId" .-> TD["지도 상세 화면"]
     RI -. "테스트·Preview" .-> FR["Fake Repository"]
     VM --> UI["추천 결과 화면"]
 ```

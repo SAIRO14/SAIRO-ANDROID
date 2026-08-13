@@ -1,0 +1,44 @@
+package com.example.sairo14.domain.repository
+
+import com.example.sairo14.domain.model.Course
+import com.example.sairo14.domain.model.OnboardingAnalysisResult
+
+/** 한 번의 온보딩 탐색에서 생성한 분석 결과를 화면 전환 동안 보관하는 계약이다. */
+interface OnboardingAnalysisSessionStore {
+
+    /** 분석 결과를 탐색 세션 ID에 연결해 저장하거나 같은 세션의 기존 결과를 교체한다.
+     *
+     * 세션 ID의 생성과 만료 정책은 호출자가 소유하며, 이 저장소는 앱 프로세스 안에서만 결과를 보관한다.
+     * @param searchSessionId 온보딩 탐색을 구분하는 고유 식별자
+     * @param result 서버 응답을 Domain 모델로 변환한 분석 결과
+     */
+    suspend fun save(
+        searchSessionId: String,
+        result: OnboardingAnalysisResult,
+    )
+
+    /** 세션에 저장한 전체 분석 결과를 반환한다.
+     *
+     * 결과가 없으면 세션이 아직 분석을 완료하지 않았거나 앱 프로세스가 재시작된 상태다.
+     * @param searchSessionId 조회할 온보딩 탐색 세션 ID
+     */
+    suspend fun getResult(searchSessionId: String): OnboardingAnalysisResult?
+
+    /** 세션에 저장한 코스 상세 스냅샷을 코스 ID로 조회한다.
+     *
+     * 결과 화면에서 선택한 코스가 해당 세션에 없으면 `null`을 반환한다.
+     * @param searchSessionId 조회할 온보딩 탐색 세션 ID
+     * @param courseId 지도 상세에 표시할 코스 ID
+     */
+    suspend fun getCourse(
+        searchSessionId: String,
+        courseId: String,
+    ): Course?
+
+    /** 한 세션의 분석 결과를 삭제한다.
+     *
+     * 이미 결과가 없는 세션을 삭제해도 실패하지 않는다.
+     * @param searchSessionId 삭제할 온보딩 탐색 세션 ID
+     */
+    suspend fun remove(searchSessionId: String)
+}

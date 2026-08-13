@@ -3,22 +3,26 @@ package com.example.sairo14.feature.onboarding.result
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sairo14.domain.model.AppResult
+import com.example.sairo14.domain.model.OnboardingRecommendation
 import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import com.example.sairo14.domain.usecase.UpdateOnboardingCompletionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * 온보딩 추천 결과를 조회하고 카드의 화면 상태를 관리한다.
  *
  * 로딩 화면이 저장한 분석 결과를 읽고 결과 수에 따라 온보딩 완료 상태를 저장하거나 해제해
- * [OnboardingResultUiState]로 노출한다. 북마크는 저장 여행 기능이 연결되기 전까지 현재 화면의
- * 표시 상태만 변경한다.
+ * [OnboardingResultUiState]로 노출한다. 이전 세션 조회가 늦게 끝나도 최신 세션의 화면·완료 상태를
+ * 덮어쓰지 않으며, 북마크는 저장 여행 기능이 연결되기 전까지 현재 화면의 표시 상태만 변경한다.
  */
 @HiltViewModel
 class OnboardingResultViewModel @Inject constructor(
@@ -30,21 +34,32 @@ class OnboardingResultViewModel @Inject constructor(
     val uiState: StateFlow<OnboardingResultUiState> = _uiState.asStateFlow()
 
     private var searchSessionId: String? = null
+    private var loadJob: Job? = null
+    private var loadGeneration = 0L
+    private val completionMutex = Mutex()
 
     /** 세션의 분석 결과를 한 번 읽고 결과 수에 맞게 온보딩 완료 상태를 갱신한다. */
     fun load(searchSessionId: String, force: Boolean = false) {
         if (!force && this.searchSessionId == searchSessionId) return
 
+        loadJob?.cancel()
+        val generation = ++loadGeneration
         this.searchSessionId = searchSessionId
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             _uiState.value = OnboardingResultUiState.Loading
 
             val recommendations = sessionStore.getResult(searchSessionId)?.recommendations
-                ?: run {
-                    _uiState.value = OnboardingResultUiState.Error
-                    return@launch
-                }
-            _uiState.value = when (updateOnboardingCompletion(recommendations)) {
+            if (!isCurrentGeneration(generation)) return@launch
+            if (recommendations == null) {
+                _uiState.value = OnboardingResultUiState.Error
+                return@launch
+            }
+
+            val completionResult = updateCompletionIfCurrent(generation, recommendations)
+                ?: return@launch
+            if (!isCurrentGeneration(generation)) return@launch
+
+            _uiState.value = when (completionResult) {
                 is AppResult.Success -> OnboardingResultUiState.Content(recommendations)
                 is AppResult.Failure -> OnboardingResultUiState.Error
             }
@@ -70,5 +85,16 @@ class OnboardingResultViewModel @Inject constructor(
                 },
             )
         }
+    }
+
+    private fun isCurrentGeneration(generation: Long): Boolean = generation == loadGeneration
+
+    private suspend fun updateCompletionIfCurrent(
+        generation: Long,
+        recommendations: List<OnboardingRecommendation>,
+    ): AppResult<Unit>? = completionMutex.withLock {
+        if (!isCurrentGeneration(generation)) return@withLock null
+
+        updateOnboardingCompletion(recommendations)
     }
 }

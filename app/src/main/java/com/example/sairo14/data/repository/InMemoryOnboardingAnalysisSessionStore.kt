@@ -2,6 +2,7 @@ package com.example.sairo14.data.repository
 
 import com.example.sairo14.domain.model.Course
 import com.example.sairo14.domain.model.OnboardingAnalysisResult
+import com.example.sairo14.domain.model.OnboardingAnalysisRequestToken
 import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,14 +14,31 @@ import kotlinx.coroutines.sync.withLock
 class InMemoryOnboardingAnalysisSessionStore @Inject constructor() : OnboardingAnalysisSessionStore {
     private val mutex = Mutex()
     private val resultsBySessionId = mutableMapOf<String, OnboardingAnalysisResult>()
+    private val latestRequestTokensBySessionId = mutableMapOf<String, OnboardingAnalysisRequestToken>()
 
-    override suspend fun save(
+    override suspend fun registerRequest(
         searchSessionId: String,
-        result: OnboardingAnalysisResult,
+        token: OnboardingAnalysisRequestToken,
     ) {
         mutex.withLock {
-            resultsBySessionId[searchSessionId] = result
+            val currentToken = latestRequestTokensBySessionId[searchSessionId]
+            if (currentToken == null || token.value > currentToken.value) {
+                latestRequestTokensBySessionId[searchSessionId] = token
+            }
         }
+    }
+
+    override suspend fun saveIfCurrent(
+        searchSessionId: String,
+        token: OnboardingAnalysisRequestToken,
+        result: OnboardingAnalysisResult,
+    ): Boolean = mutex.withLock {
+        if (latestRequestTokensBySessionId[searchSessionId] != token) {
+            return@withLock false
+        }
+
+        resultsBySessionId[searchSessionId] = result
+        true
     }
 
     override suspend fun getResult(searchSessionId: String): OnboardingAnalysisResult? = mutex.withLock {
@@ -37,6 +55,7 @@ class InMemoryOnboardingAnalysisSessionStore @Inject constructor() : OnboardingA
     override suspend fun remove(searchSessionId: String) {
         mutex.withLock {
             resultsBySessionId.remove(searchSessionId)
+            latestRequestTokensBySessionId.remove(searchSessionId)
         }
     }
 }

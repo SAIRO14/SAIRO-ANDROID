@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sairo14.core.navigation.OnboardingAnimationPhoto
 import com.example.sairo14.domain.model.AppResult
+import com.example.sairo14.domain.model.OnboardingAnalysisRequestToken
 import com.example.sairo14.domain.usecase.AnalyzeAndStoreOnboardingTasteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -58,11 +59,13 @@ class OnboardingLoadingViewModel @Inject constructor(
     private fun analyze(request: LoadingRequest, photos: List<OnboardingLoadingPhotoUiModel>) {
         cancelCurrentAnalysis()
         val generation = analysisGeneration
+        val requestToken = OnboardingAnalysisRequestToken(generation)
 
         analysisJob = viewModelScope.launch {
             when (val result = analyzeAndStoreOnboardingTaste(
                 searchSessionId = request.searchSessionId,
                 selectedPhotoIds = request.selectedPhotoIds,
+                requestToken = requestToken,
             )) {
                 is AppResult.Failure -> {
                     if (generation != analysisGeneration) return@launch

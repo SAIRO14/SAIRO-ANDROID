@@ -4,6 +4,7 @@ import com.example.sairo14.data.repository.InMemoryOnboardingAnalysisSessionStor
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.OnboardingAnalysisResult
+import com.example.sairo14.domain.model.OnboardingAnalysisRequestToken
 import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -21,7 +22,11 @@ class AnalyzeAndStoreOnboardingTasteUseCaseTest {
             sessionStore = store,
         )
 
-        val returned = useCase(searchSessionId = "session-1", selectedPhotoIds = photoIds)
+        val returned = useCase(
+            searchSessionId = "session-1",
+            selectedPhotoIds = photoIds,
+            requestToken = OnboardingAnalysisRequestToken(1),
+        )
 
         assertEquals(AppResult.Success(result), returned)
         assertEquals(result, store.getResult("session-1"))
@@ -35,7 +40,11 @@ class AnalyzeAndStoreOnboardingTasteUseCaseTest {
             sessionStore = store,
         )
 
-        val returned = useCase(searchSessionId = "session-1", selectedPhotoIds = photoIds)
+        val returned = useCase(
+            searchSessionId = "session-1",
+            selectedPhotoIds = photoIds,
+            requestToken = OnboardingAnalysisRequestToken(1),
+        )
 
         assertEquals(AppResult.Failure(AppError.NetworkUnavailable), returned)
         assertNull(store.getResult("session-1"))

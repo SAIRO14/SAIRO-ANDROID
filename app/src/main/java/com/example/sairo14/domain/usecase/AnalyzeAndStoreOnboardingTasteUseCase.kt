@@ -2,11 +2,10 @@ package com.example.sairo14.domain.usecase
 
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.OnboardingAnalysisResult
+import com.example.sairo14.domain.model.OnboardingAnalysisRequestToken
 import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import javax.inject.Inject
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.ensureActive
 
 /** 선택 사진을 분석하고 성공 결과를 온보딩 탐색 세션에 보관한다. */
 class AnalyzeAndStoreOnboardingTasteUseCase @Inject constructor(
@@ -15,19 +14,21 @@ class AnalyzeAndStoreOnboardingTasteUseCase @Inject constructor(
 ) {
     /** 사진 분석을 요청하고 성공한 결과만 지정한 탐색 세션에 저장한다.
      *
-     * 분석 실패는 저장하지 않고 그대로 반환한다. 세션 저장 방식은 [OnboardingAnalysisSessionStore]가
-     * 담당하며, 호출자는 반환 결과를 화면 상태로 변환한다.
+     * 분석 실패는 저장하지 않고 그대로 반환한다. 세션 저장소는 [requestToken]이 최신 요청일 때만
+     * 결과를 저장하므로, 늦게 도착한 이전 성공 응답은 세션 결과를 덮어쓰지 못한다.
      * @param searchSessionId 분석 결과를 보관할 온보딩 탐색 세션 ID
      * @param selectedPhotoIds 사용자가 선택한 사진 순서의 ID 목록
+     * @param requestToken 같은 탐색 세션 안에서 요청 순서를 구분하는 토큰
      */
     suspend operator fun invoke(
         searchSessionId: String,
         selectedPhotoIds: List<String>,
+        requestToken: OnboardingAnalysisRequestToken,
     ): AppResult<OnboardingAnalysisResult> {
+        sessionStore.registerRequest(searchSessionId, requestToken)
         val result = onboardingRecommendationRepository.analyzeTaste(selectedPhotoIds)
         if (result is AppResult.Success) {
-            currentCoroutineContext().ensureActive()
-            sessionStore.save(searchSessionId, result.value)
+            sessionStore.saveIfCurrent(searchSessionId, requestToken, result.value)
         }
         return result
     }

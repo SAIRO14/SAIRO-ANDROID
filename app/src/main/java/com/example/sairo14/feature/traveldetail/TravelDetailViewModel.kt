@@ -29,20 +29,26 @@ class TravelDetailViewModel @Inject constructor(
     val uiState: StateFlow<TravelDetailUiState> = _uiState.asStateFlow()
 
     private var courseId: String? = null
+    private var onboardingSessionId: String? = null
     private var loadJob: Job? = null
     private var loadRequestId = 0L
 
-    /** Route가 전달한 코스 ID의 상세 정보를 조회하고 가장 최신 요청의 결과만 표시한다. */
-    fun load(courseId: String, force: Boolean = false) {
-        if (!force && this.courseId == courseId) return
+    /** Route가 전달한 코스 ID와 온보딩 세션의 상세 정보를 조회하고 최신 요청만 표시한다. */
+    fun load(
+        courseId: String,
+        onboardingSessionId: String? = null,
+        force: Boolean = false,
+    ) {
+        if (!force && this.courseId == courseId && this.onboardingSessionId == onboardingSessionId) return
 
         this.courseId = courseId
+        this.onboardingSessionId = onboardingSessionId
         val requestId = ++loadRequestId
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             _uiState.value = TravelDetailUiState.Loading
 
-            val nextState = when (val result = getCourseDetail(courseId)) {
+            val nextState = when (val result = getCourseDetail(courseId, onboardingSessionId)) {
                 is AppResult.Success -> result.value.toUiState()
                 is AppResult.Failure -> TravelDetailUiState.Error
             }
@@ -54,7 +60,13 @@ class TravelDetailViewModel @Inject constructor(
 
     /** 실패한 마지막 코스 조회를 다시 시도한다. */
     fun retry() {
-        courseId?.let { currentCourseId -> load(currentCourseId, force = true) }
+        courseId?.let { currentCourseId ->
+            load(
+                courseId = currentCourseId,
+                onboardingSessionId = onboardingSessionId,
+                force = true,
+            )
+        }
     }
 
     /** 지도와 목록에 표시할 일차를 변경한다. */

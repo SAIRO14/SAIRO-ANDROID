@@ -19,6 +19,7 @@ data object SavedTripsRoute : SairoRoute
 @Serializable
 data class TravelDetailRoute(
     val courseId: String,
+    val onboardingSessionId: String? = null,
 ) : SairoRoute
 
 /** 온보딩 인트로 화면의 진입 출처를 구분한다. */

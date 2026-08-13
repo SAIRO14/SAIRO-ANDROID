@@ -22,6 +22,7 @@
 - DTO mapper: [`TasteAnalysisMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/TasteAnalysisMapper.kt)
 - Repository 계약·구현: [`OnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/OnboardingRecommendationRepository.kt), [`RemoteOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteOnboardingRecommendationRepository.kt)
 - 분석 세션 저장소: [`OnboardingAnalysisSessionStore.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/OnboardingAnalysisSessionStore.kt), [`InMemoryOnboardingAnalysisSessionStore.kt`](../../app/src/main/java/com/example/sairo14/data/repository/InMemoryOnboardingAnalysisSessionStore.kt)
+- 지도 상세 조회: [`GetCourseDetailUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/GetCourseDetailUseCase.kt), [`TravelDetailViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt)
 - 완료 상태 정책: [`UpdateOnboardingCompletionUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/UpdateOnboardingCompletionUseCase.kt)
 - Fake 구현: [`FakeOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/fake/FakeOnboardingRecommendationRepository.kt)
 - 화면 상태와 ViewModel: [`OnboardingResultUiState.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultUiState.kt), [`OnboardingResultViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultViewModel.kt)
@@ -69,9 +70,10 @@ flowchart LR
 5. Repository는 사진 ID의 중복을 제거한 뒤 5~10장인지 검증하고, `DeviceIdProvider`에서 UUID를 읽어 `X-Device-Id` 헤더와 함께 `POST /taste-analysis`를 호출한다. DataStore 오류는 네트워크 오류로 바꾸지 않고 저장소 오류로 반환한다.
 6. DTO mapper는 API 응답을 `OnboardingAnalysisResult`로 변환한다. 빈 `courses`는 실패가 아닌 정상적인 빈 추천 결과다.
 7. 결과 ViewModel은 세션에 저장된 추천 카드 목록을 `UpdateOnboardingCompletionUseCase`에 전달한다. UseCase는 결과가 1개 이상이면 완료 상태를 저장하고, 0개면 완료 상태를 해제한다.
-8. 결과가 2개 이상이면 카드 목록만 스크롤한다.
-9. 결과가 0개 또는 1개면 하단 안내와 재추천 버튼을 고정한다. 카드가 있는 경우에도 작은 화면에서는 목록 하단 여백으로 버튼과 겹치지 않는다.
-10. 뒤로가기는 기존 사진 선택 화면으로 돌아가 선택 상태를 유지한다. 반면 재추천은 기존 사진 선택·결과 목적지를 제거하고 새 탐색 세션의 사진 선택 화면을 추가한다. 홈 버튼은 홈 목적지까지 백스택을 정리한다.
+8. 결과 카드 선택은 `TravelDetailRoute(courseId, onboardingSessionId)`로 이동한다. 지도 상세 UseCase는 세션의 `courseId` 스냅샷을 우선 사용하고, 세션이 없거나 코스가 없으면 일반 `CourseRepository`를 조회한다.
+9. 결과가 2개 이상이면 카드 목록만 스크롤한다.
+10. 결과가 0개 또는 1개면 하단 안내와 재추천 버튼을 고정한다. 카드가 있는 경우에도 작은 화면에서는 목록 하단 여백으로 버튼과 겹치지 않는다.
+11. 뒤로가기는 기존 사진 선택 화면으로 돌아가 선택 상태를 유지한다. 반면 재추천은 기존 사진 선택·결과 목적지를 제거하고 새 탐색 세션의 사진 선택 화면을 추가한다. 홈 버튼은 홈 목적지까지 백스택을 정리한다.
 
 ## 트레이드오프와 주의점
 
@@ -79,6 +81,7 @@ flowchart LR
 - 완료 상태 저장 또는 해제가 실패하면 추천 결과를 표시하지 않고 오류·재시도를 제공한다. 다음 앱 시작 시의 진입 화면과 결과 수의 정책이 어긋나지 않도록 보장한다.
 - Fake Repository는 실제 Repository와 같은 `OnboardingAnalysisResult` 계약을 반환해 무드 태그·카드·상세 코스의 화면 연결을 테스트할 수 있다.
 - API 요청은 로딩 ViewModel이 소유한다. 결과 화면은 세션 결과를 읽기만 하므로 재구성이나 결과 화면 재진입으로 같은 분석 요청이 중복되지 않는다.
+- 온보딩 세션 저장소는 프로세스 재시작 뒤 비어 있을 수 있다. 이때 지도 상세는 기존 코스 Repository를 fallback으로 조회하며, 서버 코스 상세 API가 연결되면 실제 `courseId`를 이 경로로 복구할 수 있다.
 - 선택 ID를 `Set`으로 보관하면 중복은 막기 쉽지만 사용자의 선택 순서를 표현할 수 없다. 현재는 최대 10장으로 제한하므로 목록 기반 상태의 탐색 비용보다 순서 보존의 이점이 크다.
 - 사진 풀 API는 무작위 후보를 반환하므로 로딩 화면에서 ID만으로 같은 사진을 다시 조회할 수 없다. 앞 5장의 URL을 Route로 전달하면 사진 풀 API를 재조회하지 않아도 된다. 다만 카드가 비어 있는 상태로 모션을 시작하지 않도록 Coil 이미지 요청이 끝날 때까지는 중앙 인디케이터를 표시한다. URL이 만료되거나 요청에 실패하면 fallback 이미지가 표시된 뒤 모션을 시작한다.
 

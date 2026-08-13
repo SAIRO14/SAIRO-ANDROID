@@ -7,6 +7,7 @@ import com.example.sairo14.domain.model.CourseDay
 import com.example.sairo14.domain.model.CoursePlace
 import com.example.sairo14.domain.model.MapCoordinate
 import com.example.sairo14.domain.repository.CourseRepository
+import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -120,7 +121,10 @@ class TravelDetailViewModelTest {
     @Test
     fun `늦게 끝난 이전 코스 조회가 최신 조회 결과를 덮지 않는다`() = runTest(dispatcher) {
         val viewModel = TravelDetailViewModel(
-            getCourseDetail = GetCourseDetailUseCase(OutOfOrderCourseRepository()),
+            getCourseDetail = GetCourseDetailUseCase(
+                courseRepository = OutOfOrderCourseRepository(),
+                onboardingAnalysisSessionStore = EmptySessionStore,
+            ),
         )
 
         viewModel.load("first")
@@ -134,7 +138,10 @@ class TravelDetailViewModelTest {
 
     private fun createViewModel(result: AppResult<Course>): TravelDetailViewModel =
         TravelDetailViewModel(
-            getCourseDetail = GetCourseDetailUseCase(CourseResultRepository(result)),
+            getCourseDetail = GetCourseDetailUseCase(
+                courseRepository = CourseResultRepository(result),
+                onboardingAnalysisSessionStore = EmptySessionStore,
+            ),
         )
 
     private class CourseResultRepository(
@@ -159,6 +166,13 @@ class TravelDetailViewModelTest {
     }
 
     private companion object {
+        val EmptySessionStore = object : OnboardingAnalysisSessionStore {
+            override suspend fun save(searchSessionId: String, result: com.example.sairo14.domain.model.OnboardingAnalysisResult) = Unit
+            override suspend fun getResult(searchSessionId: String) = null
+            override suspend fun getCourse(searchSessionId: String, courseId: String) = null
+            override suspend fun remove(searchSessionId: String) = Unit
+        }
+
         fun course() = Course(
             courseId = "course-boeun",
             regionName = "충북 보은권",

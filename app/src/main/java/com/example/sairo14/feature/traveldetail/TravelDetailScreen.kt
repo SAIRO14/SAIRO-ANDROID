@@ -47,6 +47,7 @@ import com.example.sairo14.core.map.SairoMapViewportPadding
  * 코스 조회와 일차·저장 표시 상태는 [TravelDetailViewModel]이 소유하고, 뒤로가기·홈·공유 같은
  * 앱 이동 또는 외부 동작은 호출자가 소유한다.
  * @param courseId 표시할 코스의 안정적인 ID
+ * @param onboardingSessionId 온보딩 분석 결과를 보관한 세션 ID. 있으면 해당 세션의 코스를 우선 표시한다
  * @param onBackClick 헤더 뒤로가기 동작
  * @param onHomeClick 헤더 홈 이동 동작
  * @param onShareClick 공유 아이콘을 눌렀을 때 호출할 동작
@@ -56,6 +57,7 @@ import com.example.sairo14.core.map.SairoMapViewportPadding
 @Composable
 fun TravelDetailRoute(
     courseId: String,
+    onboardingSessionId: String?,
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
     onShareClick: () -> Unit,
@@ -64,8 +66,8 @@ fun TravelDetailRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(courseId) {
-        viewModel.load(courseId)
+    LaunchedEffect(courseId, onboardingSessionId) {
+        viewModel.load(courseId, onboardingSessionId)
     }
 
     TravelDetailScreen(

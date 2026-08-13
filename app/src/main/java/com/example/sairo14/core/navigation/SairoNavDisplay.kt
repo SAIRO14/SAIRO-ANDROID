@@ -189,13 +189,19 @@ fun SairoNavDisplay(
                         navigator.startNewOnboardingSearch(newOnboardingSearchSessionId())
                     },
                     onRecommendationClick = { courseId ->
-                        navigator.navigateSingleTop(TravelDetailRoute(courseId))
+                        navigator.navigateSingleTop(
+                            TravelDetailRoute(
+                                courseId = courseId,
+                                onboardingSessionId = route.searchSessionId,
+                            ),
+                        )
                     },
                 )
             }
             entry<TravelDetailRoute> { route ->
                 TravelDetailScreenRoute(
                     courseId = route.courseId,
+                    onboardingSessionId = route.onboardingSessionId,
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
                     onShareClick = {},

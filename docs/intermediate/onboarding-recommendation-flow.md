@@ -1,105 +1,87 @@
-# 온보딩 추천 결과 흐름
+# 온보딩 취향 분석과 추천 세션 흐름
 
 ## 개념
 
-온보딩 추천 결과는 사용자가 고른 사진 ID를 입력으로 받아 취향을 분석하고, 무드 태그·지역 추천 목록·코스 상세 스냅샷을 함께 생성하는 기능이다. `OnboardingRecommendationRepository`는 분석 데이터의 출처를 숨기고, ViewModel은 그 결과를 화면에 필요한 loading·content·error 상태로 변환한다.
+온보딩 취향 분석은 사용자가 고른 5~10장의 사진 ID를 `POST /taste-analysis`에 보내고, 서버가 반환한 무드 태그·추천 카드·코스 상세 스냅샷을 하나의 탐색 세션으로 연결하는 기능이다.
 
-추천 수가 0개인 것은 서버나 저장소 오류가 아니라 유효한 검색 결과다. 따라서 빈 목록은 `Error`가 아닌 `Content(emptyList())`로 유지한다.
+분석 응답은 화면 사이에 직접 전달하지 않는다. `searchSessionId`와 `courseId`처럼 작은 식별자만 Navigation에 넣고, `OnboardingAnalysisSessionStore`가 응답을 앱 프로세스 안에서 보관한다. 이로써 로딩·결과·지도 상세 화면이 같은 분석 결과를 재사용한다.
 
 ## 도입 이유
 
-추천 화면이 API 응답을 직접 읽으면, 실제 추천 API가 준비될 때 화면·테스트·내비게이션까지 동시에 바뀌기 쉽다. 취향 분석을 Domain Repository 계약 뒤에 두면 Retrofit 구현과 Fake 구현을 같은 계약으로 교체할 수 있다.
+결과 화면에서 분석 API를 호출하면 로딩 애니메이션과 실제 서버 작업이 분리되고, 결과 화면 재진입 시 같은 요청을 다시 보낼 수 있다. 로딩 화면에서 카드 모션과 분석 요청을 동시에 시작하면 사용자는 대기 시간을 자연스러운 진행 과정으로 인식한다.
 
-또한 결과 Route가 선택 사진 ID를 보관해야 화면 재구성 뒤에도 같은 입력으로 결과를 다시 조회할 수 있다. 로딩 화면이 끝났다는 사실만 넘기면 결과 화면은 어떤 사진을 분석했는지 알 수 없다.
+또한 `taste-analysis` 응답은 추천 카드뿐 아니라 일차별 장소·좌표도 포함한다. 결과 카드에서 지도 상세로 이동할 때 그 스냅샷을 우선 사용하면 Fake Repository에 없는 서버의 실제 `courseId`도 상세 화면에서 바로 표시할 수 있다.
 
 ## 프로젝트 적용
 
-- Domain 모델: [`OnboardingAnalysisResult.kt`](../../app/src/main/java/com/example/sairo14/domain/model/OnboardingAnalysisResult.kt), [`OnboardingRecommendation.kt`](../../app/src/main/java/com/example/sairo14/domain/model/OnboardingRecommendation.kt), [`Course.kt`](../../app/src/main/java/com/example/sairo14/domain/model/Course.kt)
-- 사진 선택 상태: [`OnboardingPhotoSelectUiState.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/select/OnboardingPhotoSelectUiState.kt), [`OnboardingPhotoSelectViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/select/OnboardingPhotoSelectViewModel.kt)
-- 로딩 전달 모델: [`SairoRoute.kt`](../../app/src/main/java/com/example/sairo14/core/navigation/SairoRoute.kt)
-- 로딩 상태와 ViewModel: [`OnboardingLoadingUiState.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/loading/OnboardingLoadingUiState.kt), [`OnboardingLoadingViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/loading/OnboardingLoadingViewModel.kt)
 - API DTO·계약: [`TasteAnalysisDto.kt`](../../app/src/main/java/com/example/sairo14/data/remote/dto/TasteAnalysisDto.kt), [`SairoApi.kt`](../../app/src/main/java/com/example/sairo14/data/remote/SairoApi.kt)
-- DTO mapper: [`TasteAnalysisMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/TasteAnalysisMapper.kt)
-- Repository 계약·구현: [`OnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/OnboardingRecommendationRepository.kt), [`RemoteOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteOnboardingRecommendationRepository.kt)
-- 분석 세션 저장소: [`OnboardingAnalysisSessionStore.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/OnboardingAnalysisSessionStore.kt), [`InMemoryOnboardingAnalysisSessionStore.kt`](../../app/src/main/java/com/example/sairo14/data/repository/InMemoryOnboardingAnalysisSessionStore.kt)
-- 지도 상세 조회: [`GetCourseDetailUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/GetCourseDetailUseCase.kt), [`TravelDetailViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt)
-- 완료 상태 정책: [`UpdateOnboardingCompletionUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/UpdateOnboardingCompletionUseCase.kt)
-- Fake 구현: [`FakeOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/fake/FakeOnboardingRecommendationRepository.kt)
-- 화면 상태와 ViewModel: [`OnboardingResultUiState.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultUiState.kt), [`OnboardingResultViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultViewModel.kt)
-- 결과 화면: [`OnboardingResultScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultScreen.kt)
+- Remote Repository·mapper: [`RemoteOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteOnboardingRecommendationRepository.kt), [`TasteAnalysisMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/TasteAnalysisMapper.kt)
+- 분석과 세션 저장 UseCase: [`AnalyzeAndStoreOnboardingTasteUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/AnalyzeAndStoreOnboardingTasteUseCase.kt)
+- 세션 계약·구현: [`OnboardingAnalysisSessionStore.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/OnboardingAnalysisSessionStore.kt), [`InMemoryOnboardingAnalysisSessionStore.kt`](../../app/src/main/java/com/example/sairo14/data/repository/InMemoryOnboardingAnalysisSessionStore.kt)
+- 로딩·결과 화면 상태: [`OnboardingLoadingViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/loading/OnboardingLoadingViewModel.kt), [`OnboardingResultViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultViewModel.kt)
+- 지도 상세 fallback: [`GetCourseDetailUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/GetCourseDetailUseCase.kt)
+- Route 연결: [`SairoRoute.kt`](../../app/src/main/java/com/example/sairo14/core/navigation/SairoRoute.kt), [`SairoNavDisplay.kt`](../../app/src/main/java/com/example/sairo14/core/navigation/SairoNavDisplay.kt)
 
-`OnboardingAnalysisResult`는 로딩 화면의 무드 태그, 결과 화면의 카드, 지도 상세 화면의 코스 스냅샷을 함께 가진 Domain 모델이다. API DTO는 Data 계층에만 남기고, mapper가 `OnboardingRecommendation`과 `Course`로 변환한다.
-
-`OnboardingAnalysisSessionStore`는 탐색 세션 ID를 키로 `OnboardingAnalysisResult`를 앱 프로세스 안에 보관한다. 결과 화면은 전체 결과를, 지도 상세 화면은 같은 세션의 `courseId`로 코스 스냅샷만 읽을 수 있다. 프로세스 재시작 뒤에는 결과가 남지 않으므로, 이후 화면 연결 단계에서는 세션 누락을 사진 재선택 안내로 처리한다.
-
-사진 선택 상태는 ID를 `Set`이 아닌 `List`로 보관한다. 중복은 ViewModel 이벤트 처리에서 막고, 목록 순서는 사용자가 고른 순서를 뜻한다. 따라서 완료 효과와 이후 로딩 애니메이션이 같은 앞 5장을 사용할 수 있다. 선택은 5장부터 완료할 수 있고 10장에 도달하면 새 사진 선택만 막는다. 이미 선택한 사진은 언제든 해제할 수 있다.
+`OnboardingAnalysisResult`는 로딩 화면용 `moodTags`, 결과 카드용 `recommendations`, 상세 화면용 `courses`를 함께 가진 Domain 모델이다. DTO는 Data 계층에만 두고 mapper가 Domain 모델로 변환한다.
 
 ```kotlin
-when (uiState) {
-    OnboardingResultUiState.Loading -> ResultPending()
-    is OnboardingResultUiState.Content -> ResultContent(uiState.recommendations)
-    OnboardingResultUiState.Error -> ResultError(onRetryClick)
-}
+data class OnboardingAnalysisResult(
+    val moodTags: List<String>,
+    val summary: String,
+    val recommendations: List<OnboardingRecommendation>,
+    val courses: Map<String, Course>,
+)
 ```
-
-화면은 기존 `SairoPlaceFolderCard`를 사용한다. 이 공통 카드는 가로 제약에서 300:286 비율을 계산하므로, 결과 화면은 최대 너비만 정하고 그림·폴더·문구의 겹침 위치를 직접 계산하지 않는다. 긴 장소명은 최대 두 개까지만 표시하고 말줄임 처리한다.
 
 ## 흐름과 영향 범위
 
 ```mermaid
 flowchart LR
-    P["사진 선택 화면"] --> L["온보딩 로딩 Route"]
-    L --> R["결과 Route: selectedPhotoIds"]
-    R --> VM["OnboardingResultViewModel"]
-    VM --> M["온보딩 완료 상태 저장"]
-    VM --> UC["AnalyzeAndStoreOnboardingTasteUseCase"]
-    UC --> RI["OnboardingRecommendationRepository"]
-    RI --> RR["RemoteOnboardingRecommendationRepository"]
-    RR --> API["POST /taste-analysis"]
-    RR --> DID["DeviceIdProvider"]
-    RR -. "다음 화면 연결 단계" .-> SS["OnboardingAnalysisSessionStore"]
-    SS -. "세션 ID + courseId" .-> TD["지도 상세 화면"]
-    RI -. "테스트·Preview" .-> FR["Fake Repository"]
-    VM --> UI["추천 결과 화면"]
+    Select["사진 선택"] --> Loading["OnboardingLoadingViewModel"]
+    Loading --> Cards["카드 5장 애니메이션"]
+    Loading --> Analyze["AnalyzeAndStoreOnboardingTasteUseCase"]
+    Analyze --> Repo["RemoteOnboardingRecommendationRepository"]
+    Repo --> Api["POST /taste-analysis"]
+    Api --> Mapper["DTO → OnboardingAnalysisResult"]
+    Mapper --> Session["OnboardingAnalysisSessionStore"]
+    Session --> Tags["API moodTags 애니메이션"]
+    Cards --> Gate["두 애니메이션 완료"]
+    Tags --> Gate
+    Gate --> Result["OnboardingResultViewModel"]
+    Session --> Result
+    Result --> Detail["TravelDetailRoute\ncourseId + onboardingSessionId"]
+    Detail --> Course["GetCourseDetailUseCase"]
+    Session --> Course
 ```
 
-1. 사진 선택 화면이 선택 순서가 보존된 5~10개의 사진 ID와 앞 5장의 `id`·`imageUrl`을 로딩 Route로 전달한다.
-2. 로딩 ViewModel은 전달받은 5장의 URL을 카드 UI 상태로 즉시 변환하고 사진 풀 API를 다시 호출하지 않는다. 화면은 Coil로 다섯 장의 요청이 끝날 때까지 대기한 뒤 카드 모션을 시작한다.
-3. 로딩 ViewModel은 카드 애니메이션 준비와 동시에 `AnalyzeAndStoreOnboardingTasteUseCase`로 취향 분석을 요청한다. UseCase는 성공 결과를 `OnboardingAnalysisSessionStore`에 저장하고, ViewModel은 API가 반환한 무드 태그를 별도의 태그 애니메이션에 전달한다.
-4. 카드 애니메이션과 태그 애니메이션이 모두 끝난 뒤 `OnboardingResultRoute(searchSessionId, selectedPhotoIds)`가 기존 로딩 Route를 교체한다. API 실패 시에는 결과 화면으로 이동하지 않고 같은 요청을 재시도한다.
-5. Repository는 사진 ID의 중복을 제거한 뒤 5~10장인지 검증하고, `DeviceIdProvider`에서 UUID를 읽어 `X-Device-Id` 헤더와 함께 `POST /taste-analysis`를 호출한다. DataStore 오류는 네트워크 오류로 바꾸지 않고 저장소 오류로 반환한다.
-6. DTO mapper는 API 응답을 `OnboardingAnalysisResult`로 변환한다. 빈 `courses`는 실패가 아닌 정상적인 빈 추천 결과다.
-7. 결과 ViewModel은 세션에 저장된 추천 카드 목록을 `UpdateOnboardingCompletionUseCase`에 전달한다. UseCase는 결과가 1개 이상이면 완료 상태를 저장하고, 0개면 완료 상태를 해제한다.
-8. 결과 카드 선택은 `TravelDetailRoute(courseId, onboardingSessionId)`로 이동한다. 지도 상세 UseCase는 세션의 `courseId` 스냅샷을 우선 사용하고, 세션이 없거나 코스가 없으면 일반 `CourseRepository`를 조회한다.
-9. 결과가 2개 이상이면 카드 목록만 스크롤한다.
-10. 결과가 0개 또는 1개면 하단 안내와 재추천 버튼을 고정한다. 카드가 있는 경우에도 작은 화면에서는 목록 하단 여백으로 버튼과 겹치지 않는다.
-11. 뒤로가기는 기존 사진 선택 화면으로 돌아가 선택 상태를 유지한다. 반면 재추천은 기존 사진 선택·결과 목적지를 제거하고 새 탐색 세션의 사진 선택 화면을 추가한다. 홈 버튼은 홈 목적지까지 백스택을 정리한다.
+1. 사진 선택 화면은 사진 ID 5~10개와 카드 애니메이션용 앞 5장의 이미지 정보를 로딩 Route에 전달한다.
+2. 로딩 ViewModel은 카드 데이터를 준비하고 `AnalyzeAndStoreOnboardingTasteUseCase`를 호출한다.
+3. UseCase는 Repository가 반환한 성공 `OnboardingAnalysisResult`만 현재 `searchSessionId`로 세션 저장소에 보관한다. 실패 결과는 저장하지 않는다.
+4. 화면은 카드 애니메이션을 즉시 시작한다. API가 성공하면 그 응답의 `moodTags`로 별도의 태그 애니메이션을 시작한다.
+5. 카드와 태그 애니메이션이 모두 끝났을 때만 결과 Route로 이동한다. 빈 태그 목록은 즉시 완료로 간주한다.
+6. 결과 ViewModel은 API를 다시 호출하지 않고 세션에서 추천 카드 목록을 읽는다. 빈 코스 목록은 정상 콘텐츠 상태다.
+7. 결과 카드 선택은 `courseId`와 `onboardingSessionId`를 지도 상세 Route에 전달한다.
+8. 상세 UseCase는 세션의 코스 스냅샷을 먼저 찾고, 없을 때만 일반 `CourseRepository`를 fallback으로 사용한다.
 
 ## 트레이드오프와 주의점
 
-- 현재 북마크는 화면 안의 `isSaved`만 전환한다. 실제 저장 여행 기능이 도입되면 코스 API 문서에서 제안한 `SavedTripRepository`에 연결해야 하며, 화면 상태만 바꾸는 로직은 낙관적 업데이트와 실패 복구로 교체한다.
-- 완료 상태 저장 또는 해제가 실패하면 추천 결과를 표시하지 않고 오류·재시도를 제공한다. 다음 앱 시작 시의 진입 화면과 결과 수의 정책이 어긋나지 않도록 보장한다.
-- Fake Repository는 실제 Repository와 같은 `OnboardingAnalysisResult` 계약을 반환해 무드 태그·카드·상세 코스의 화면 연결을 테스트할 수 있다.
-- API 요청은 로딩 ViewModel이 소유한다. 결과 화면은 세션 결과를 읽기만 하므로 재구성이나 결과 화면 재진입으로 같은 분석 요청이 중복되지 않는다.
-- 온보딩 세션 저장소는 프로세스 재시작 뒤 비어 있을 수 있다. 이때 지도 상세는 기존 코스 Repository를 fallback으로 조회하며, 서버 코스 상세 API가 연결되면 실제 `courseId`를 이 경로로 복구할 수 있다.
-- 선택 ID를 `Set`으로 보관하면 중복은 막기 쉽지만 사용자의 선택 순서를 표현할 수 없다. 현재는 최대 10장으로 제한하므로 목록 기반 상태의 탐색 비용보다 순서 보존의 이점이 크다.
-- 사진 풀 API는 무작위 후보를 반환하므로 로딩 화면에서 ID만으로 같은 사진을 다시 조회할 수 없다. 앞 5장의 URL을 Route로 전달하면 사진 풀 API를 재조회하지 않아도 된다. 다만 카드가 비어 있는 상태로 모션을 시작하지 않도록 Coil 이미지 요청이 끝날 때까지는 중앙 인디케이터를 표시한다. URL이 만료되거나 요청에 실패하면 fallback 이미지가 표시된 뒤 모션을 시작한다.
+- 세션 저장소는 인메모리 `@Singleton` 구현이다. 빠르고 큰 응답을 Navigation에 넣지 않아도 되지만, 프로세스가 재시작되면 결과가 사라진다.
+- 세션 결과가 없으면 결과 화면은 현재 오류 상태를 보인다. 제품 UX를 다듬을 때는 사진 재선택 안내로 구분하는 편이 좋다.
+- 세션을 우선 조회해도, 세션이 없을 때 일반 Repository가 실제 서버 UUID를 아직 모르면 상세 화면을 복구하지 못한다. `GET /courses/{courseId}` 연결이 장기 fallback이다.
+- 재추천·홈 이동이 끝난 뒤 이전 세션을 `remove()`하는 정리 정책은 아직 화면 흐름에 연결하지 않았다. 세션이 누적될 수 있으므로 후속 구현에서 추가해야 한다.
+- 사진 ID는 사용자 선택 순서가 의미 있으므로 `List`로 유지한다. Repository는 서버 요청 전 중복 제거 후 5~10장인지 검증한다.
 
 ## 추가 학습 및 대안
 
-실제 API가 사진 업로드 자체를 요구한다면 Route에 이미지 URL 전체를 넣는 대신 임시 분석 요청 ID만 넘기는 방식을 고려할 수 있다. 큰 데이터나 민감한 메타데이터를 Navigation 상태에 넣지 않아도 되는 장점이 있다.
+분석 결과를 앱 재시작 뒤에도 다시 열어야 한다면 인메모리 저장소 대신 로컬 DB나 서버 상세 API를 사용한다. DataStore는 기기 ID·온보딩 완료 여부 같은 작은 설정에는 적합하지만, 여러 코스와 장소 스냅샷을 장기 보관하기에는 적합하지 않다.
 
-> 아래 예시는 현재 프로젝트에 적용되지 않은 대안이다.
+> 아래 예시는 현재 프로젝트에 적용하지 않은 영속 캐시 대안이다.
 
 ```kotlin
-@Serializable
-data class OnboardingResultRoute(
-    val analysisId: String,
-) : SairoRoute
-
-interface OnboardingRecommendationRepository {
-    suspend fun analyzeTaste(photoIds: List<String>): AppResult<OnboardingAnalysisResult>
+interface OnboardingAnalysisCache {
+    suspend fun save(sessionId: String, result: OnboardingAnalysisResult)
+    suspend fun get(sessionId: String): OnboardingAnalysisResult?
 }
 ```
 
-현재는 추천 분석에 필요한 선택 사진 ID와 애니메이션에 필요한 앞 5장의 URL만 전달한다. 별도 분석 ID를 저장·만료 관리하는 복잡도보다 Navigation 입력이 작고 흐름이 단순하다.
+영속 캐시는 프로세스 재시작 복구에 유리하지만, 만료 시점·서버 결과 변경·개인 데이터 삭제 정책을 함께 설계해야 한다. 현재는 한 번의 온보딩 탐색을 마친 뒤 상세 화면으로 이어지는 짧은 수명에 맞춰 인메모리 저장소를 사용한다.

@@ -18,7 +18,7 @@ Navigation 3의 `NavEntry`는 백스택의 한 목적지를 나타낸다. `ViewM
 
 `SairoNavDisplay`는 `rememberSaveableStateHolderNavEntryDecorator()` 뒤에 `rememberViewModelStoreNavEntryDecorator()`를 적용한다. 이 순서는 목적지별 `SavedStateHandle`과 `ViewModel` 상태가 같은 `NavEntry`에 연결되게 한다.
 
-`OnboardingPhotoSelectRoute`, `OnboardingLoadingRoute`, `OnboardingResultRoute`는 같은 탐색의 `searchSessionId`를 전달한다. `SairoNavigator.startNewOnboardingSearch()`는 가장 가까운 인트로 뒤의 이전 탐색 목적지를 제거한 후 새 세션의 사진 선택 Route를 추가한다.
+`OnboardingPhotoSelectRoute`, `OnboardingLoadingRoute`, `OnboardingResultRoute`는 같은 탐색의 `searchSessionId`를 전달한다. 결과 카드에서 상세로 이동할 때는 `TravelDetailRoute`가 같은 값을 선택적인 `onboardingSessionId`로 받는다. `SairoNavigator.startNewOnboardingSearch()`는 가장 가까운 인트로 뒤의 이전 탐색 목적지를 제거한 후 새 세션의 사진 선택 Route를 추가한다.
 
 ## 흐름과 영향 범위
 
@@ -28,6 +28,7 @@ flowchart LR
     New --> Select["사진 선택 NavEntry"]
     Select --> Loading["분석 NavEntry"]
     Loading --> Result["결과 NavEntry"]
+    Result --> Detail["상세 NavEntry\ncourseId + onboardingSessionId"]
     Result -->|"뒤로가기"| Select
     Result -->|"새로운 찾기"| New
     Select --> VM["사진 선택 ViewModel"]
@@ -38,6 +39,7 @@ flowchart LR
 ## 트레이드오프와 주의점
 
 - `searchSessionId`는 추천 API의 비즈니스 입력이 아니라 Route 상태 수명을 구분하는 식별자다. 사진 ID와 혼용하거나 Repository에 전달하지 않는다.
+- `onboardingSessionId`도 Navigation이 전달하는 식별자일 뿐이며, 상세 화면은 이를 `GetCourseDetailUseCase`에 전달해 세션 스냅샷을 선택할 때만 사용한다. 전체 분석 응답을 Route에 직렬화하지 않는다.
 - 새 탐색은 기존 결과로 돌아갈 수 없게 백스택을 정리한다. 결과를 비교하거나 이력을 제공해야 하면 별도의 탐색 이력 모델이 필요하다.
 - `entryDecorators`를 직접 전달하면 `NavDisplay`의 기본 저장 상태 decorator를 명시적으로 포함해야 한다. 이를 생략하면 `rememberSaveable`과 `SavedStateHandle` 복원 정책이 달라질 수 있다.
 - 목적지별 스코프는 화면 간 ViewModel 공유를 제거한다. 여러 목적지가 같은 상태를 의도적으로 공유해야 하면 별도의 공유 범위 또는 상위 상태 소유자를 설계해야 한다.

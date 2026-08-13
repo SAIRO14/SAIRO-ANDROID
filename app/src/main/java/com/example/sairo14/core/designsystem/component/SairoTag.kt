@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
@@ -38,12 +39,16 @@ enum class SairoTagVariant {
  * @param text 태그에 표시할 문구
  * @param modifier 태그에 적용할 Modifier
  * @param variant Figma에서 지원하는 크기와 색상 조합
+ * @param maxLines 태그 문구에 허용할 최대 줄 수
+ * @param overflow 최대 줄 수를 넘는 문구의 처리 방식
  */
 @Composable
 fun SairoTag(
     text: String,
     modifier: Modifier = Modifier,
     variant: SairoTagVariant = SairoTagVariant.MediumLemon,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
 ) {
     val specification = variant.specification
 
@@ -67,6 +72,8 @@ fun SairoTag(
             text = text,
             color = specification.contentColor(),
             style = specification.textStyle,
+            maxLines = maxLines,
+            overflow = overflow,
         )
     }
 }

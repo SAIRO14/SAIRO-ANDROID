@@ -5,6 +5,8 @@ import com.example.sairo14.domain.model.OnboardingAnalysisResult
 import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import javax.inject.Inject
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 
 /** 선택 사진을 분석하고 성공 결과를 온보딩 탐색 세션에 보관한다. */
 class AnalyzeAndStoreOnboardingTasteUseCase @Inject constructor(
@@ -24,6 +26,7 @@ class AnalyzeAndStoreOnboardingTasteUseCase @Inject constructor(
     ): AppResult<OnboardingAnalysisResult> {
         val result = onboardingRecommendationRepository.analyzeTaste(selectedPhotoIds)
         if (result is AppResult.Success) {
+            currentCoroutineContext().ensureActive()
             sessionStore.save(searchSessionId, result.value)
         }
         return result

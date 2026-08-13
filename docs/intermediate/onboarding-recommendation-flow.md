@@ -56,12 +56,13 @@ flowchart LR
 
 1. 사진 선택 화면은 사진 ID 5~10개와 카드 애니메이션용 앞 5장의 이미지 정보를 로딩 Route에 전달한다.
 2. 로딩 ViewModel은 카드 데이터를 준비하고 `AnalyzeAndStoreOnboardingTasteUseCase`를 호출한다.
-3. UseCase는 Repository가 반환한 성공 `OnboardingAnalysisResult`만 현재 `searchSessionId`로 세션 저장소에 보관한다. 실패 결과는 저장하지 않는다.
-4. 화면은 카드 애니메이션을 즉시 시작한다. API가 성공하면 그 응답의 `moodTags`로 별도의 태그 애니메이션을 시작한다.
-5. 카드와 태그 애니메이션이 모두 끝났을 때만 결과 Route로 이동한다. 빈 태그 목록은 즉시 완료로 간주한다.
-6. 결과 ViewModel은 API를 다시 호출하지 않고 세션에서 추천 카드 목록을 읽는다. 빈 코스 목록은 정상 콘텐츠 상태다.
-7. 결과 카드 선택은 `courseId`와 `onboardingSessionId`를 지도 상세 Route에 전달한다.
-8. 상세 UseCase는 세션의 코스 스냅샷을 먼저 찾고, 없을 때만 일반 `CourseRepository`를 fallback으로 사용한다.
+3. 로딩 ViewModel은 새 분석 또는 재시도 전에 기존 `Job`을 취소하고 요청 세대 번호를 올린다. 늦게 도착한 이전 성공·실패 응답은 현재 세대와 다르므로 UI에 반영하지 않는다.
+4. UseCase는 Repository가 반환한 성공 `OnboardingAnalysisResult`만 현재 `searchSessionId`로 세션 저장소에 보관한다. 저장 직전에 coroutine 취소 상태를 확인하므로, 취소된 이전 요청이 늦게 성공해도 세션을 덮어쓰지 않는다. 실패 결과는 저장하지 않는다.
+5. 화면은 카드 애니메이션을 즉시 시작한다. API가 성공하면 그 응답의 `moodTags`로 별도의 태그 애니메이션을 시작한다.
+6. 카드와 태그 애니메이션이 모두 끝났을 때만 결과 Route로 이동한다. 빈 태그 목록은 즉시 완료로 간주한다.
+7. 결과 ViewModel은 API를 다시 호출하지 않고 세션에서 추천 카드 목록을 읽는다. 빈 코스 목록은 정상 콘텐츠 상태다.
+8. 결과 카드 선택은 `courseId`와 `onboardingSessionId`를 지도 상세 Route에 전달한다.
+9. 상세 UseCase는 세션의 코스 스냅샷을 먼저 찾고, 없을 때만 일반 `CourseRepository`를 fallback으로 사용한다.
 
 ## 트레이드오프와 주의점
 
@@ -70,6 +71,7 @@ flowchart LR
 - 세션 결과가 없으면 결과 화면은 현재 오류 상태를 보인다. 제품 UX를 다듬을 때는 사진 재선택 안내로 구분하는 편이 좋다.
 - 세션을 우선 조회해도, 세션이 없을 때 일반 Repository가 실제 서버 UUID를 아직 모르면 상세 화면을 복구하지 못한다. `GET /courses/{courseId}` 연결이 장기 fallback이다.
 - 사진 ID는 사용자 선택 순서가 의미 있으므로 `List`로 유지한다. Repository는 서버 요청 전 중복 제거 후 5~10장인지 검증한다.
+- 취소는 Retrofit 같은 협조적 suspend 작업을 즉시 중단한다. 외부 구현이 취소를 따르지 않아도 요청 세대 비교와 저장 전 `ensureActive()`가 오래된 응답의 UI·세션 반영을 막는다.
 
 ## 추가 학습 및 대안
 

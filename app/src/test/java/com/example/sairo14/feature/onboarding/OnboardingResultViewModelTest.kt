@@ -6,7 +6,7 @@ import com.example.sairo14.domain.model.OnboardingAnalysisResult
 import com.example.sairo14.domain.model.OnboardingRecommendation
 import com.example.sairo14.domain.model.OnboardingCompletionToken
 import com.example.sairo14.domain.model.AppError
-import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripPage
 import com.example.sairo14.domain.model.SavedTripSaveResult
 import com.example.sairo14.domain.repository.OnboardingRepository
 import com.example.sairo14.domain.repository.SavedTripRepository
@@ -327,7 +327,10 @@ class OnboardingResultViewModelTest {
             return saveResult
         }
 
-        override suspend fun getSavedTrips(): AppResult<List<SavedTrip>> = AppResult.Success(emptyList())
+        override suspend fun getSavedTrips(
+            cursor: String?,
+            size: Int,
+        ): AppResult<SavedTripPage> = AppResult.Success(SavedTripPage(emptyList(), null))
 
         override suspend fun deleteSavedTrip(savedTripId: String): AppResult<Unit> {
             deletedSavedTripIds += savedTripId

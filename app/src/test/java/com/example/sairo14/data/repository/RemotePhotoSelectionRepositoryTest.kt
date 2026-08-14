@@ -2,6 +2,7 @@ package com.example.sairo14.data.repository
 
 import com.example.sairo14.data.remote.SairoApi
 import com.example.sairo14.data.remote.dto.PhotoResponseDto
+import com.example.sairo14.data.remote.dto.SavedTripListResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveRequestDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveResponseDto
 import com.example.sairo14.data.remote.dto.TasteAnalysisRequestDto
@@ -72,6 +73,12 @@ class RemotePhotoSelectionRepositoryTest {
 
         override suspend fun deleteSavedTrip(deviceId: String, savedTripId: String) =
             error("호출되지 않아야 합니다.")
+
+        override suspend fun getSavedTrips(
+            deviceId: String,
+            cursor: String?,
+            size: Int,
+        ): SavedTripListResponseDto = error("호출되지 않아야 합니다.")
 
         override suspend fun getPhotos(limit: Int): List<PhotoResponseDto> {
             requestedLimit = limit

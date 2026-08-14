@@ -245,12 +245,17 @@ private fun SavedTripCard(
     onBookmarkClick: () -> Unit,
     onClick: () -> Unit,
 ) {
-    val imagePainters = trip.imageUrls.take(MaxCardImageCount).map { imageUrl ->
-        rememberSairoBackdropImagePainter(
-            model = imageUrl,
-            backdropState = backdropState,
-        )
-    }
+    val remoteImagePainter = rememberSairoBackdropImagePainter(
+        model = trip.imageUrl,
+        backdropState = backdropState,
+    )
+    val imagePainters = listOf(
+        if (trip.imageUrl.isNullOrBlank()) {
+            painterResource(R.drawable.img_dummy_view)
+        } else {
+            remoteImagePainter
+        },
+    )
 
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -259,8 +264,8 @@ private fun SavedTripCard(
         SairoPlaceFolderCard(
             imagePainters = imagePainters,
             regionLabel = trip.regionName,
-            description = trip.description,
-            placeNames = trip.placeNames,
+            description = trip.reason.orEmpty(),
+            placeNames = listOfNotNull(trip.regionArea),
             saved = true,
             onClick = onClick,
             onBookmarkClick = onBookmarkClick,
@@ -365,7 +370,6 @@ private fun SavedTripsError(
     }
 }
 
-private const val MaxCardImageCount = 2
 private val SavedTripsContentPadding = 16.dp
 private val SavedTripsTopSpacing = 24.dp
 private val SavedTripsBottomSpacing = 40.dp
@@ -415,11 +419,8 @@ private val previewSavedTrips = listOf(
         savedTripId = "preview-boeun",
         courseId = "course-boeun",
         regionName = "충북 보은권",
-        description = "고요한 자연과 전통의 분위기",
-        imageUrls = listOf(
-            "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
-            "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
-        ),
-        placeNames = listOf("말티재 전망대", "세조길 숲 산책"),
+        regionArea = "보은군",
+        imageUrl = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
+        reason = "고요한 자연과 전통의 분위기",
     ),
 )

@@ -28,7 +28,7 @@ data class SavedTripUiModel(
     val savedTripId: String,
     val courseId: String,
     val regionName: String,
-    val description: String,
-    val imageUrls: List<String>,
-    val placeNames: List<String>,
+    val regionArea: String?,
+    val imageUrl: String?,
+    val reason: String?,
 )

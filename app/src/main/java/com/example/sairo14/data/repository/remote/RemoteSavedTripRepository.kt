@@ -8,7 +8,7 @@ import com.example.sairo14.data.remote.dto.SavedTripSaveRequestDto
 import com.example.sairo14.data.remote.runRemoteOperation
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
-import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripPage
 import com.example.sairo14.domain.model.SavedTripSaveResult
 import com.example.sairo14.domain.repository.SavedTripRepository
 import java.io.IOException
@@ -60,7 +60,10 @@ class RemoteSavedTripRepository @Inject constructor(
         }
     }
 
-    override suspend fun getSavedTrips(): AppResult<List<SavedTrip>> =
+    override suspend fun getSavedTrips(
+        cursor: String?,
+        size: Int,
+    ): AppResult<SavedTripPage> =
         AppResult.Failure(AppError.Unknown)
 
     private suspend fun getDeviceId(): AppResult<String> = try {

@@ -67,7 +67,7 @@ class SavedTripsViewModel @Inject constructor(
 
             _uiState.value = when (val result = getSavedTrips()) {
                 is AppResult.Failure -> SavedTripsUiState.Error
-                is AppResult.Success -> result.value.toUiState()
+            is AppResult.Success -> result.value.items.toUiState()
             }
         }
     }
@@ -108,9 +108,9 @@ private fun List<SavedTrip>.toUiState(): SavedTripsUiState =
                     savedTripId = trip.savedTripId,
                     courseId = trip.courseId,
                     regionName = trip.regionName,
-                    description = trip.description,
-                    imageUrls = trip.imageUrls,
-                    placeNames = trip.placeNames,
+                    regionArea = trip.regionArea,
+                    imageUrl = trip.imageUrl,
+                    reason = trip.reason,
                 )
             },
         )

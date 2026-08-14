@@ -1,6 +1,7 @@
 package com.example.sairo14.feature.traveldetail
 
 import androidx.compose.runtime.Immutable
+import com.example.sairo14.feature.bookmark.BookmarkUiState
 
 /** 여행 상세 화면이 표시할 코스 조회 상태를 나타낸다. */
 sealed interface TravelDetailUiState {
@@ -15,7 +16,7 @@ sealed interface TravelDetailUiState {
         val selectedDayNumber: Int,
         val selectedPlaceId: String? = null,
         val cameraFocusRequestId: Long = 0L,
-        val isSaved: Boolean = false,
+        val bookmark: BookmarkUiState = BookmarkUiState(),
     ) : TravelDetailUiState {
         val selectedDay: TravelDetailDayUiModel?
             get() = course.days.firstOrNull { day -> day.dayNumber == selectedDayNumber }

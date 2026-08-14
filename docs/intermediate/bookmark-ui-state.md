@@ -38,6 +38,8 @@ flowchart LR
 
 온보딩 추천 결과에서 상세로 이동할 때는 `TravelDetailRoute`가 `initialSaved`와 `savedTripId`를 원시 값으로 전달한다. Route는 `BookmarkUiState`에 의존하지 않으며, `initialSaved = false`이면 ID가 함께 있어도 상세 화면은 이를 사용하지 않는다.
 
+[`TravelDetailViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt)은 `initialSaved`가 있으면 그 값을, 없으면 `Course.isSaved`를 사용해 상세 북마크를 초기화한다. 저장·삭제 요청 중에는 `isRequesting`만 먼저 바꾸고, 실패하면 이 값만 다시 해제해 기존 체크 상태와 `savedTripId`를 유지한다. 이 화면은 현재 오류 효과를 표시하지 않는다.
+
 ## 트레이드오프와 주의점
 
 `SharedFlow`는 구독 중인 화면에만 단발성 오류를 전달하므로, 화면이 없는 동안 발생한 오류를 나중에 다시 보여 주지 않는다. 이는 이미 사라진 화면의 Snackbar가 다시 나타나는 문제를 막지만, 오류 이력을 보존해야 하는 요구에는 적합하지 않다. `isRequesting` 검사는 버튼의 `enabled` 처리뿐 아니라 ViewModel에도 있어야 중복 이벤트를 막을 수 있다.

@@ -72,7 +72,12 @@ fun TravelDetailRoute(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(courseId, onboardingSessionId, initialSaved, savedTripId) {
-        viewModel.load(courseId, onboardingSessionId)
+        viewModel.load(
+            courseId = courseId,
+            onboardingSessionId = onboardingSessionId,
+            initialSaved = initialSaved,
+            savedTripId = savedTripId,
+        )
     }
 
     TravelDetailScreen(
@@ -82,7 +87,7 @@ fun TravelDetailRoute(
         onShareClick = onShareClick,
         onDayClick = viewModel::selectDay,
         onPlaceClick = viewModel::selectPlace,
-        onSaveClick = viewModel::toggleSaved,
+        onSaveClick = viewModel::onBookmarkClick,
         onRetryClick = viewModel::retry,
         modifier = modifier,
     )
@@ -200,7 +205,8 @@ private fun TravelDetailContent(
 
         TravelDetailSheet(
             regionName = content.course.regionName,
-            isSaved = content.isSaved,
+            isSaved = content.bookmark.isSaved,
+            isBookmarkRequesting = content.bookmark.isRequesting,
             onShareClick = onShareClick,
             onSaveClick = onSaveClick,
             expandedTopInset = headerHeight,

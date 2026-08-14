@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.Course
+import com.example.sairo14.domain.model.CoursePlace
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -122,7 +123,7 @@ private fun Course.toUiState(): TravelDetailUiState =
                             placeId = place.placeId,
                             name = place.name,
                             imageUrl = place.imageUrl,
-                            tags = place.tags,
+                            tags = place.toDisplayTags(),
                             latitude = place.coordinate?.latitude,
                             longitude = place.coordinate?.longitude,
                         )
@@ -133,3 +134,24 @@ private fun Course.toUiState(): TravelDetailUiState =
         selectedDayNumber = days.firstOrNull()?.dayNumber ?: 1,
         selectedPlaceId = days.firstOrNull()?.places?.firstOrNull()?.placeId,
     )
+
+private fun CoursePlace.toDisplayTags(): List<String> {
+    val hasStructuredPlaceInfo = operatingHours != null ||
+        closedDays != null ||
+        parking != null ||
+        contact != null
+    if (!hasStructuredPlaceInfo) return tags
+
+    return listOfNotNull(
+        operatingHours,
+        closedDays,
+        parking?.toParkingDisplayText(),
+        contact,
+    ).distinct()
+}
+
+private fun String.toParkingDisplayText(): String = when (this) {
+    "가능" -> "주차 가능"
+    "불가능" -> "주차 불가능"
+    else -> this
+}

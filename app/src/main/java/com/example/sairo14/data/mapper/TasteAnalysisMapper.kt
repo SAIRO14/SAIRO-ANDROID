@@ -56,7 +56,7 @@ private fun SpotSummaryDto.toCoursePlace(): CoursePlace = CoursePlace(
     tags = listOfNotNull(
         operatingHours.trimToNull(),
         closedDays.trimToNull(),
-        parking.trimToNull()?.toParkingTag(),
+        parking.trimToNull(),
         contact.trimToNull(),
     ).distinct(),
     coordinate = lat?.let { latitude ->
@@ -69,12 +69,6 @@ private fun SpotSummaryDto.toCoursePlace(): CoursePlace = CoursePlace(
 )
 
 private fun String?.trimToNull(): String? = this?.trim()?.takeIf(String::isNotEmpty)
-
-private fun String.toParkingTag(): String = when (this) {
-    "가능" -> "주차 가능"
-    "불가능" -> "주차 불가능"
-    else -> this
-}
 
 private fun List<String>.normalizedValues(): List<String> =
     asSequence()

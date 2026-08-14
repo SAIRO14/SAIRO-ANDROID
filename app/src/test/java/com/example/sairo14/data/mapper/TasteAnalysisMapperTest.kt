@@ -45,12 +45,12 @@ class TasteAnalysisMapperTest {
         val place = result.courses.getValue("course-1").days.first().places.first()
         assertEquals(MapCoordinate(33.0, 126.0), place.coordinate)
         assertEquals("09:00~18:00", place.operatingHours)
-        assertEquals(listOf("09:00~18:00", "월요일", "주차 가능", "000-0000-0000"), place.tags)
+        assertEquals(listOf("09:00~18:00", "월요일", "가능", "000-0000-0000"), place.tags)
         assertEquals("가능", place.parking)
     }
 
     @Test
-    fun `converts only unavailable parking value to display tag`() {
+    fun `keeps unavailable parking value in domain model`() {
         val result = response(
             day1 = listOf(
                 SpotSummaryDto(
@@ -64,7 +64,7 @@ class TasteAnalysisMapperTest {
         ).toDomain()
 
         val place = result.courses.getValue("course-1").days.first().places.single()
-        assertEquals(listOf("10:00~20:00", "주차 불가능", "010-0000-0000"), place.tags)
+        assertEquals(listOf("10:00~20:00", "불가능", "010-0000-0000"), place.tags)
         assertEquals("불가능", place.parking)
     }
 

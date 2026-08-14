@@ -54,6 +54,61 @@ class TravelDetailViewModelTest {
     }
 
     @Test
+    fun `구조화된 주차 정보는 상세 화면용 문구로 변환한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-parking",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        CoursePlace(
+                            placeId = "parking-place",
+                            name = "주차 장소",
+                            imageUrl = null,
+                            tags = listOf("기존 태그"),
+                            coordinate = null,
+                            operatingHours = "09:00~18:00",
+                            parking = "가능",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-parking")
+        advanceUntilIdle()
+
+        val content = viewModel.uiState.value as TravelDetailUiState.Content
+        assertEquals(
+            listOf("09:00~18:00", "주차 가능"),
+            content.selectedDay?.places?.single()?.tags,
+        )
+    }
+
+    @Test
+    fun `구조화된 장소 정보가 없으면 기존 태그를 유지한다`() = runTest(dispatcher) {
+        val course = course().copy(
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        place("first", "첫째 장소").copy(tags = listOf("상시 개방", "주차가능")),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+
+        val content = viewModel.uiState.value as TravelDetailUiState.Content
+        assertEquals(listOf("상시 개방", "주차가능"), content.selectedDay?.places?.single()?.tags)
+    }
+
+    @Test
     fun `일차를 선택하면 지도와 목록이 함께 사용할 선택 일차를 변경한다`() = runTest(dispatcher) {
         val viewModel = createViewModel(AppResult.Success(course()))
         viewModel.load("course-boeun")

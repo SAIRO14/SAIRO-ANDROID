@@ -8,11 +8,14 @@ import com.example.sairo14.domain.model.SavedTrip
 import com.example.sairo14.domain.model.SavedTripPage
 import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.GetSavedTripsUseCase
+import com.example.sairo14.feature.bookmark.BookmarkChange
+import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -21,18 +24,22 @@ import kotlinx.coroutines.launch
  *
  * 최초·추가 조회 결과를 [SavedTripsUiState]로 변환하고, 북마크 해제에 성공한 카드를 목록에서 제거한다.
  * 추가 조회는 서버 커서와 진행 상태를 이 ViewModel이 소유해 중복 요청을 막는다. 기기 식별과 API 헤더
- * 준비는 Repository 구현이, 화면 이동은 화면 호출자가 소유한다.
+ * 준비는 Repository 구현이 담당한다. 상세 화면의 저장 해제 성공은 [BookmarkChangeNotifier]를 통해
+ * 반영하며, 화면 이동은 화면 호출자가 소유한다.
  */
 @HiltViewModel
 class SavedTripsViewModel @Inject constructor(
     private val getSavedTrips: GetSavedTripsUseCase,
     private val deleteSavedTrip: DeleteSavedTripUseCase,
+    private val bookmarkChangeNotifier: BookmarkChangeNotifier,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<SavedTripsUiState>(SavedTripsUiState.Loading)
+    private var pageRequestGeneration = 0L
 
     val uiState: StateFlow<SavedTripsUiState> = _uiState.asStateFlow()
 
     init {
+        observeBookmarkChanges()
         loadSavedTrips()
     }
 
@@ -52,6 +59,7 @@ class SavedTripsViewModel @Inject constructor(
         val content = _uiState.value as? SavedTripsUiState.Content ?: return
         val cursor = content.nextCursor ?: return
         if (content.isLoadingMore) return
+        val requestGeneration = pageRequestGeneration
 
         _uiState.update { state ->
             val currentContent = state as? SavedTripsUiState.Content ?: return@update state
@@ -67,12 +75,12 @@ class SavedTripsViewModel @Inject constructor(
 
         viewModelScope.launch {
             when (val result = getSavedTrips(cursor = cursor)) {
-                is AppResult.Success -> appendSavedTrips(cursor, result.value)
+                is AppResult.Success -> appendSavedTrips(cursor, requestGeneration, result.value)
                 is AppResult.Failure -> {
                     if (result.error == AppError.InvalidCursor) {
                         loadSavedTrips()
                     } else {
-                        setLoadMoreError(cursor, result.error)
+                        setLoadMoreError(cursor, requestGeneration, result.error)
                     }
                 }
             }
@@ -94,27 +102,39 @@ class SavedTripsViewModel @Inject constructor(
 
         viewModelScope.launch {
             when (deleteSavedTrip(savedTripId)) {
-                is AppResult.Success -> removeSavedTripFromState(savedTripId)
+                is AppResult.Success -> {
+                    if (removeSavedTripsFromState { trip -> trip.savedTripId == savedTripId }) {
+                        refreshAfterRemoval()
+                    }
+                }
                 is AppResult.Failure -> clearRemovingState(savedTripId)
             }
         }
     }
 
     private fun loadSavedTrips() {
+        val requestGeneration = ++pageRequestGeneration
         viewModelScope.launch {
             _uiState.value = SavedTripsUiState.Loading
 
-            _uiState.value = when (val result = getSavedTrips()) {
+            val nextState = when (val result = getSavedTrips()) {
                 is AppResult.Failure -> SavedTripsUiState.Error
                 is AppResult.Success -> result.value.toUiState()
             }
+            if (requestGeneration == pageRequestGeneration) _uiState.value = nextState
         }
     }
 
-    private fun appendSavedTrips(cursor: String, page: SavedTripPage) {
+    private fun appendSavedTrips(
+        cursor: String,
+        requestGeneration: Long,
+        page: SavedTripPage,
+    ) {
         _uiState.update { state ->
             val content = state as? SavedTripsUiState.Content ?: return@update state
-            if (content.nextCursor != cursor) return@update content
+            if (requestGeneration != pageRequestGeneration || content.nextCursor != cursor) {
+                return@update content
+            }
 
             content.copy(
                 trips = (content.trips + page.items.map(SavedTrip::toUiModel))
@@ -126,10 +146,16 @@ class SavedTripsViewModel @Inject constructor(
         }
     }
 
-    private fun setLoadMoreError(cursor: String, error: AppError) {
+    private fun setLoadMoreError(
+        cursor: String,
+        requestGeneration: Long,
+        error: AppError,
+    ) {
         _uiState.update { state ->
             val content = state as? SavedTripsUiState.Content ?: return@update state
-            if (content.nextCursor != cursor) return@update content
+            if (requestGeneration != pageRequestGeneration || content.nextCursor != cursor) {
+                return@update content
+            }
 
             content.copy(
                 isLoadingMore = false,
@@ -138,18 +164,48 @@ class SavedTripsViewModel @Inject constructor(
         }
     }
 
-    private fun removeSavedTripFromState(savedTripId: String) {
-        _uiState.update { state ->
-            val content = state as? SavedTripsUiState.Content ?: return@update state
-            val updatedTrips = content.trips.filterNot { trip -> trip.savedTripId == savedTripId }
+    private fun observeBookmarkChanges() {
+        viewModelScope.launch {
+            bookmarkChangeNotifier.changes.collect(::handleBookmarkChange)
+        }
+    }
 
-            if (updatedTrips.isEmpty()) {
-                SavedTripsUiState.Empty
-            } else {
-                content.copy(
-                    trips = updatedTrips,
-                    removingSavedTripIds = content.removingSavedTripIds - savedTripId,
-                )
+    private fun handleBookmarkChange(change: BookmarkChange) {
+        if (!change.isSaved && removeSavedTripsFromState { trip -> trip.courseId == change.courseId }) {
+            refreshAfterRemoval()
+        }
+    }
+
+    private fun removeSavedTripsFromState(predicate: (SavedTripUiModel) -> Boolean): Boolean {
+        val content = _uiState.value as? SavedTripsUiState.Content ?: return false
+        val removedSavedTripIds = content.trips.filter(predicate).map(SavedTripUiModel::savedTripId).toSet()
+        if (removedSavedTripIds.isEmpty()) return false
+
+        val updatedTrips = content.trips.filterNot(predicate)
+        _uiState.value = if (updatedTrips.isEmpty()) {
+            SavedTripsUiState.Empty
+        } else {
+            content.copy(
+                trips = updatedTrips,
+                isLoadingMore = false,
+                loadMoreError = null,
+                removingSavedTripIds = content.removingSavedTripIds - removedSavedTripIds,
+            )
+        }
+        return true
+    }
+
+    private fun refreshAfterRemoval() {
+        val requestGeneration = ++pageRequestGeneration
+        viewModelScope.launch {
+            when (val result = getSavedTrips()) {
+                is AppResult.Success -> {
+                    if (requestGeneration == pageRequestGeneration) {
+                        _uiState.value = result.value.toUiState()
+                    }
+                }
+
+                is AppResult.Failure -> Unit
             }
         }
     }

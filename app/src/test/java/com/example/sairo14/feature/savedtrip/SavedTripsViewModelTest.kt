@@ -8,6 +8,8 @@ import com.example.sairo14.domain.model.SavedTripSaveResult
 import com.example.sairo14.domain.repository.SavedTripRepository
 import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.GetSavedTripsUseCase
+import com.example.sairo14.feature.bookmark.BookmarkChange
+import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import java.util.ArrayDeque
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -151,9 +153,81 @@ class SavedTripsViewModelTest {
         advanceUntilIdle()
     }
 
-    private fun createViewModel(repository: SavedTripRepository) = SavedTripsViewModel(
+    @Test
+    fun `저장 목록에서 해제 성공 후 첫 페이지로 다시 동기화한다`() = runTest(dispatcher) {
+        val repository = RecordingSavedTripRepository(
+            results = listOf(
+                AppResult.Success(page(listOf(trip("saved-1"), trip("saved-2")), "cursor-1")),
+                AppResult.Success(page(listOf(trip("saved-2")), null)),
+            ),
+        )
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.removeSavedTrip("saved-1")
+        advanceUntilIdle()
+
+        val content = viewModel.content()
+        assertEquals(listOf("saved-2"), content.trips.map { it.savedTripId })
+        assertNull(content.nextCursor)
+        assertEquals(listOf(null, null), repository.requestedCursors)
+    }
+
+    @Test
+    fun `삭제 뒤 재조회가 실패해도 즉시 제거한 목록을 유지한다`() = runTest(dispatcher) {
+        val repository = RecordingSavedTripRepository(
+            results = listOf(
+                AppResult.Success(page(listOf(trip("saved-1"), trip("saved-2")), "cursor-1")),
+                AppResult.Failure(AppError.NetworkUnavailable),
+            ),
+        )
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.removeSavedTrip("saved-1")
+        advanceUntilIdle()
+
+        val content = viewModel.content()
+        assertEquals(listOf("saved-2"), content.trips.map { it.savedTripId })
+        assertEquals("cursor-1", content.nextCursor)
+        assertEquals(listOf(null, null), repository.requestedCursors)
+    }
+
+    @Test
+    fun `상세 화면의 저장 해제 알림을 받으면 목록을 제거하고 첫 페이지를 다시 조회한다`() =
+        runTest(dispatcher) {
+            val notifier = BookmarkChangeNotifier()
+            val repository = RecordingSavedTripRepository(
+                results = listOf(
+                    AppResult.Success(page(listOf(trip("saved-1"), trip("saved-2")), "cursor-1")),
+                    AppResult.Success(page(listOf(trip("saved-2")), null)),
+                ),
+            )
+            val viewModel = createViewModel(repository, notifier)
+            advanceUntilIdle()
+
+            notifier.notify(
+                BookmarkChange(
+                    courseId = "course-saved-1",
+                    isSaved = false,
+                    savedTripId = null,
+                ),
+            )
+            advanceUntilIdle()
+
+            val content = viewModel.content()
+            assertEquals(listOf("saved-2"), content.trips.map { it.savedTripId })
+            assertNull(content.nextCursor)
+            assertEquals(listOf(null, null), repository.requestedCursors)
+        }
+
+    private fun createViewModel(
+        repository: SavedTripRepository,
+        bookmarkChangeNotifier: BookmarkChangeNotifier = BookmarkChangeNotifier(),
+    ) = SavedTripsViewModel(
         getSavedTrips = GetSavedTripsUseCase(repository),
         deleteSavedTrip = DeleteSavedTripUseCase(repository),
+        bookmarkChangeNotifier = bookmarkChangeNotifier,
     )
 
     private fun SavedTripsViewModel.content(): SavedTripsUiState.Content =

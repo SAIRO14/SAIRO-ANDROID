@@ -67,7 +67,7 @@ import kotlinx.coroutines.flow.map
  * @param onBackClick 뒤로가기 헤더 액션을 눌렀을 때 호출할 동작
  * @param onHomeClick 홈 헤더 액션을 눌렀을 때 호출할 동작
  * @param onFindTripClick 빈 상태의 여행지 탐색 CTA를 눌렀을 때 호출할 동작
- * @param onTripClick 폴더 카드의 코스를 눌렀을 때 호출할 동작
+ * @param onTripClick 폴더 카드의 코스·저장 항목 ID를 눌렀을 때 호출할 동작
  * @param modifier 화면 컨테이너에 적용할 Modifier
  * @param viewModel 저장 목록 조회 상태를 소유하는 ViewModel
  */
@@ -76,7 +76,7 @@ fun SavedTripsRoute(
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
     onFindTripClick: () -> Unit,
-    onTripClick: (String) -> Unit,
+    onTripClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SavedTripsViewModel = hiltViewModel(),
 ) {
@@ -107,7 +107,7 @@ fun SavedTripsRoute(
  * @param onRetryClick 오류 상태의 재시도 CTA를 눌렀을 때 호출할 동작
  * @param onLoadMore 목록 끝에 도달했을 때 다음 페이지를 조회할 동작
  * @param onBookmarkClick 카드 북마커를 눌렀을 때 호출할 동작
- * @param onTripClick 폴더 카드의 코스를 눌렀을 때 호출할 동작
+ * @param onTripClick 폴더 카드의 코스·저장 항목 ID를 눌렀을 때 호출할 동작
  * @param modifier 화면 컨테이너에 적용할 Modifier
  */
 @Composable
@@ -119,7 +119,7 @@ fun SavedTripsScreen(
     onRetryClick: () -> Unit,
     onLoadMore: () -> Unit,
     onBookmarkClick: (String) -> Unit,
-    onTripClick: (String) -> Unit,
+    onTripClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SavedTripsContainer(
@@ -222,7 +222,7 @@ private fun SavedTripsList(
     backdropState: SairoBackdropState,
     headerHeight: Dp,
     onBookmarkClick: (String) -> Unit,
-    onTripClick: (String) -> Unit,
+    onTripClick: (String, String) -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -263,7 +263,7 @@ private fun SavedTripsList(
                 backdropState = backdropState,
                 isBookmarkRemoving = trip.savedTripId in removingSavedTripIds,
                 onBookmarkClick = { onBookmarkClick(trip.savedTripId) },
-                onClick = { onTripClick(trip.courseId) },
+                onClick = { onTripClick(trip.courseId, trip.savedTripId) },
             )
         }
 
@@ -453,7 +453,7 @@ private fun SavedTripsContentPreview() {
             onRetryClick = {},
             onLoadMore = {},
             onBookmarkClick = {},
-            onTripClick = {},
+            onTripClick = { _, _ -> },
         )
     }
 }
@@ -470,7 +470,7 @@ private fun SavedTripsEmptyPreview() {
             onRetryClick = {},
             onLoadMore = {},
             onBookmarkClick = {},
-            onTripClick = {},
+            onTripClick = { _, _ -> },
         )
     }
 }

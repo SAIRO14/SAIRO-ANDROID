@@ -59,7 +59,9 @@ class FakeSavedTripRepository @Inject constructor(
             else -> cursor.toStartIndexOrNull()
                 ?: return@withLock AppResult.Failure(AppError.InvalidCursor)
         }
-        if (startIndex !in currentTrips.indices) return@withLock AppResult.Failure(AppError.InvalidCursor)
+        if (cursor != null && startIndex !in currentTrips.indices) {
+            return@withLock AppResult.Failure(AppError.InvalidCursor)
+        }
 
         val endIndexExclusive = (startIndex + size).coerceAtMost(currentTrips.size)
         AppResult.Success(

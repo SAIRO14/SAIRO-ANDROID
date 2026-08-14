@@ -51,6 +51,21 @@ class FakeSavedTripRepositoryTest {
     }
 
     @Test
+    fun `모든 저장 여행지를 삭제한 뒤 첫 페이지를 조회하면 빈 페이지를 반환한다`() = runTest {
+        val repository = FakeSavedTripRepository(TestDeviceIdProvider("device-a"))
+        val savedTripIds = repository.getSavedTrips().successValue().items.map { it.savedTripId }
+
+        savedTripIds.forEach { savedTripId ->
+            repository.deleteSavedTrip(savedTripId)
+        }
+
+        val emptyPage = repository.getSavedTrips().successValue()
+
+        assertEquals(emptyList<com.example.sairo14.domain.model.SavedTrip>(), emptyPage.items)
+        assertEquals(null, emptyPage.nextCursor)
+    }
+
+    @Test
     fun `유효하지 않은 커서와 페이지 크기는 실패로 반환한다`() = runTest {
         val repository = FakeSavedTripRepository(TestDeviceIdProvider("device-a"))
 

@@ -4,9 +4,9 @@ import com.example.sairo14.data.repository.DefaultOnboardingRepository
 import com.example.sairo14.data.repository.InMemoryOnboardingAnalysisSessionStore
 import com.example.sairo14.data.repository.fake.FakeCourseRepository
 import com.example.sairo14.data.repository.fake.FakeHomeRepository
-import com.example.sairo14.data.repository.fake.FakeSavedTripRepository
 import com.example.sairo14.data.repository.remote.RemoteOnboardingRecommendationRepository
 import com.example.sairo14.data.repository.remote.RemotePhotoSelectionRepository
+import com.example.sairo14.data.repository.remote.RemoteSavedTripRepository
 import com.example.sairo14.domain.repository.CourseRepository
 import com.example.sairo14.domain.repository.HomeRepository
 import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
@@ -46,7 +46,7 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindSavedTripRepository(
-        repository: FakeSavedTripRepository,
+        repository: RemoteSavedTripRepository,
     ): SavedTripRepository
 
     @Binds

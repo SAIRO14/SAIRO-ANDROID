@@ -16,7 +16,11 @@ data class BookmarkUiState(
     val isSaved: Boolean = false,
     val savedTripId: String? = null,
     val isRequesting: Boolean = false,
-)
+) {
+    /** 같은 코스의 중복 북마크 요청을 막기 위해 카드 상세 이동을 허용하는지 나타낸다. */
+    val isDetailNavigationEnabled: Boolean
+        get() = !isRequesting
+}
 
 /** 북마크 요청 실패를 한 번만 화면에 알리는 효과다.
  *

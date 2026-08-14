@@ -269,11 +269,13 @@ private fun ResultContent(
                         backdropState = backdropState,
                         onBookmarkClick = onBookmarkClick,
                         onClick = {
-                            onRecommendationClick(
-                                recommendation.courseId,
-                                bookmark.isSaved,
-                                bookmark.savedTripId.takeIf { bookmark.isSaved },
-                            )
+                            if (bookmark.isDetailNavigationEnabled) {
+                                onRecommendationClick(
+                                    recommendation.courseId,
+                                    bookmark.isSaved,
+                                    bookmark.savedTripId.takeIf { bookmark.isSaved },
+                                )
+                            }
                         },
                     )
                     if (index < recommendations.lastIndex) {
@@ -367,7 +369,7 @@ private fun RecommendationCard(
             saved = bookmark.isSaved,
             onClick = onClick,
             onBookmarkClick = { onBookmarkClick(recommendation.courseId) },
-            bookmarkEnabled = !bookmark.isRequesting,
+            bookmarkEnabled = bookmark.isDetailNavigationEnabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .widthIn(max = ResultCardMaxWidth),

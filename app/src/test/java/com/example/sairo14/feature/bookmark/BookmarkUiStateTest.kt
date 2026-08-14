@@ -23,4 +23,10 @@ class BookmarkUiStateTest {
         assertFalse(state.isSaved)
         assertTrue(state.savedTripId != null)
     }
+
+    @Test
+    fun `북마크 요청 중에는 같은 카드의 상세 이동을 허용하지 않는다`() {
+        assertFalse(BookmarkUiState(isRequesting = true).isDetailNavigationEnabled)
+        assertTrue(BookmarkUiState(isRequesting = false).isDetailNavigationEnabled)
+    }
 }

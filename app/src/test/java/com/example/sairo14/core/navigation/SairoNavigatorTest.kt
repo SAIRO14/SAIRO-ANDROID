@@ -35,6 +35,29 @@ class SairoNavigatorTest {
     }
 
     @Test
+    fun `재추천은 이전 세션을 정리하고 새 세션 Route를 만든다`() {
+        val endedSessionIds = mutableListOf<String>()
+        val backStack = NavBackStack<NavKey>(
+            HomeRoute,
+            OnboardingIntroRoute(),
+            OnboardingPhotoSelectRoute(searchSessionId = "old-session"),
+            OnboardingResultRoute(
+                searchSessionId = "old-session",
+                selectedPhotoIds = listOf("photo-1"),
+            ),
+        )
+        val navigator = SairoNavigator(
+            backStack = backStack,
+            onOnboardingSessionEnded = endedSessionIds::add,
+        )
+
+        navigator.startNewOnboardingSearch(searchSessionId = "new-session")
+
+        assertEquals(listOf("old-session"), endedSessionIds)
+        assertEquals(OnboardingPhotoSelectRoute("new-session"), backStack.last())
+    }
+
+    @Test
     fun `navigateUp retains the existing photo selection route`() {
         val selectionRoute = OnboardingPhotoSelectRoute(searchSessionId = "session")
         val backStack = NavBackStack<NavKey>(
@@ -58,5 +81,45 @@ class SairoNavigatorTest {
             ),
             backStack.toList(),
         )
+    }
+
+    @Test
+    fun `마지막 온보딩 Route가 제거되면 세션 정리를 요청한다`() {
+        val endedSessionIds = mutableListOf<String>()
+        val backStack = NavBackStack<NavKey>(
+            HomeRoute,
+            OnboardingIntroRoute(),
+            OnboardingPhotoSelectRoute(searchSessionId = "session"),
+        )
+        val navigator = SairoNavigator(
+            backStack = backStack,
+            onOnboardingSessionEnded = endedSessionIds::add,
+        )
+
+        navigator.navigateUp()
+
+        assertEquals(listOf("session"), endedSessionIds)
+    }
+
+    @Test
+    fun `상세 화면을 닫아도 결과 Route가 남아 있으면 세션을 유지한다`() {
+        val endedSessionIds = mutableListOf<String>()
+        val backStack = NavBackStack<NavKey>(
+            HomeRoute,
+            OnboardingPhotoSelectRoute(searchSessionId = "session"),
+            OnboardingResultRoute(
+                searchSessionId = "session",
+                selectedPhotoIds = listOf("photo-1"),
+            ),
+            TravelDetailRoute(courseId = "course-1", onboardingSessionId = "session"),
+        )
+        val navigator = SairoNavigator(
+            backStack = backStack,
+            onOnboardingSessionEnded = endedSessionIds::add,
+        )
+
+        navigator.navigateUp()
+
+        assertEquals(emptyList<String>(), endedSessionIds)
     }
 }

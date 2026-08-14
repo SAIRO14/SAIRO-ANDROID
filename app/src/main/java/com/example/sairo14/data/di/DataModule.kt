@@ -1,13 +1,15 @@
 package com.example.sairo14.data.di
 
 import com.example.sairo14.data.repository.DefaultOnboardingRepository
+import com.example.sairo14.data.repository.InMemoryOnboardingAnalysisSessionStore
 import com.example.sairo14.data.repository.fake.FakeCourseRepository
 import com.example.sairo14.data.repository.fake.FakeHomeRepository
-import com.example.sairo14.data.repository.fake.FakeOnboardingRecommendationRepository
 import com.example.sairo14.data.repository.fake.FakeSavedTripRepository
+import com.example.sairo14.data.repository.remote.RemoteOnboardingRecommendationRepository
 import com.example.sairo14.data.repository.remote.RemotePhotoSelectionRepository
 import com.example.sairo14.domain.repository.CourseRepository
 import com.example.sairo14.domain.repository.HomeRepository
+import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import com.example.sairo14.domain.repository.OnboardingRepository
 import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import com.example.sairo14.domain.repository.PhotoSelectionRepository
@@ -56,6 +58,12 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindOnboardingRecommendationRepository(
-        repository: FakeOnboardingRecommendationRepository,
+        repository: RemoteOnboardingRecommendationRepository,
     ): OnboardingRecommendationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOnboardingAnalysisSessionStore(
+        store: InMemoryOnboardingAnalysisSessionStore,
+    ): OnboardingAnalysisSessionStore
 }

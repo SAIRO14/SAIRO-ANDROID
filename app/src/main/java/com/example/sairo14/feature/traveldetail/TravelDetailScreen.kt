@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ import com.example.sairo14.core.map.SairoMapViewportPadding
  * 코스 조회와 일차·저장 표시 상태는 [TravelDetailViewModel]이 소유하고, 뒤로가기·홈·공유 같은
  * 앱 이동 또는 외부 동작은 호출자가 소유한다.
  * @param courseId 표시할 코스의 안정적인 ID
+ * @param onboardingSessionId 온보딩 분석 결과를 보관한 세션 ID. 있으면 해당 세션의 코스를 우선 표시한다
  * @param onBackClick 헤더 뒤로가기 동작
  * @param onHomeClick 헤더 홈 이동 동작
  * @param onShareClick 공유 아이콘을 눌렀을 때 호출할 동작
@@ -56,6 +58,7 @@ import com.example.sairo14.core.map.SairoMapViewportPadding
 @Composable
 fun TravelDetailRoute(
     courseId: String,
+    onboardingSessionId: String?,
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
     onShareClick: () -> Unit,
@@ -64,8 +67,8 @@ fun TravelDetailRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(courseId) {
-        viewModel.load(courseId)
+    LaunchedEffect(courseId, onboardingSessionId) {
+        viewModel.load(courseId, onboardingSessionId)
     }
 
     TravelDetailScreen(
@@ -200,35 +203,44 @@ private fun TravelDetailContent(
             onVisibleHeightChanged = { visibleHeight ->
                 sheetVisibleHeightPx = with(density) { visibleHeight.roundToPx() }
             },
+            contentKey = content.selectedDayNumber,
             modifier = Modifier.fillMaxSize(),
         ) {
             if (selectedDay == null || selectedDay.places.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.travel_detail_empty_day),
-                    color = SairoTheme.colors.textMuted,
-                    style = SairoTextStyles.bodyLight16,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            } else {
-                TravelCourseTimeline(placeCount = selectedDay.places.size) { index ->
-                    val place = selectedDay.places[index]
-                    SairoPlaceListItem(
-                        title = stringResource(
-                            R.string.travel_detail_place_title,
-                            index + 1,
-                            place.name,
-                        ),
-                        tags = place.tags,
-                        painter = rememberAsyncImagePainter(
-                            model = place.imageUrl ?: R.drawable.img_dummy_view,
-                        ),
-                        variant = SairoPlaceListItemVariant.Detailed,
-                        imageContentDescription = stringResource(
-                            R.string.travel_detail_place_image,
-                            place.name,
-                        ),
-                        onClick = { onPlaceClick(place.placeId) },
+                item(key = "empty-day") {
+                    Text(
+                        text = stringResource(R.string.travel_detail_empty_day),
+                        color = SairoTheme.colors.textMuted,
+                        style = SairoTextStyles.bodyLight16,
+                        modifier = Modifier.fillMaxWidth(),
                     )
+                }
+            } else {
+                itemsIndexed(
+                    items = selectedDay.places,
+                    key = { _, place -> place.placeId },
+                ) { index, place ->
+                    TravelCourseTimelineItem(
+                        isLastItem = index == selectedDay.places.lastIndex,
+                    ) {
+                        SairoPlaceListItem(
+                            title = stringResource(
+                                R.string.travel_detail_place_title,
+                                index + 1,
+                                place.name,
+                            ),
+                            tags = place.tags,
+                            painter = rememberAsyncImagePainter(
+                                model = place.imageUrl ?: R.drawable.img_dummy_view,
+                            ),
+                            variant = SairoPlaceListItemVariant.Detailed,
+                            imageContentDescription = stringResource(
+                                R.string.travel_detail_place_image,
+                                place.name,
+                            ),
+                            onClick = { onPlaceClick(place.placeId) },
+                        )
+                    }
                 }
             }
         }
@@ -350,17 +362,22 @@ private fun TravelDetailMessageLayout(
 }
 
 private fun TravelDetailDayUiModel?.orEmptyMarkers(): List<SairoMapMarker> =
-    this?.places?.mapIndexed { index, place ->
+    this?.places?.mapIndexedNotNull { index, place ->
+        val latitude = place.latitude ?: return@mapIndexedNotNull null
+        val longitude = place.longitude ?: return@mapIndexedNotNull null
         SairoMapMarker(
             id = place.placeId,
             order = index + 1,
-            latitude = place.latitude,
-            longitude = place.longitude,
+            latitude = latitude,
+            longitude = longitude,
         )
     }.orEmpty()
 
-private fun TravelDetailPlaceUiModel.toMapCameraTarget(): SairoMapCameraTarget =
-    SairoMapCameraTarget(latitude = latitude, longitude = longitude)
+private fun TravelDetailPlaceUiModel.toMapCameraTarget(): SairoMapCameraTarget? {
+    val latitude = latitude ?: return null
+    val longitude = longitude ?: return null
+    return SairoMapCameraTarget(latitude = latitude, longitude = longitude)
+}
 
 private val ScreenHorizontalPadding = 16.dp
 private val DaySelectorTopSpacing = 12.dp

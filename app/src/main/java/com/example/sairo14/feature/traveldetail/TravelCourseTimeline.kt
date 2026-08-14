@@ -20,73 +20,65 @@ import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 
 /**
- * 여행 코스 장소를 순서 핀과 연결선으로 묶어 표시한다.
+ * Lazy 목록의 한 장소를 순서 핀과 다음 장소로 이어지는 연결선으로 표시한다.
  *
- * 장소의 표시 데이터와 클릭 상태는 [itemContent]를 제공하는 화면이 소유하며, 이 컴포넌트는
- * 항목 수에 맞춰 순서선만 배치한다.
- * @param placeCount 코스에 표시할 장소 수
- * @param modifier 타임라인 전체에 적용할 Modifier
- * @param itemContent 각 순서 위치에 표시할 장소 콘텐츠
+ * 장소 데이터와 클릭 상태는 [content]를 제공하는 화면이 소유한다. 이 컴포넌트는 개별 lazy item의
+ * 핀과 연결선만 그려 화면 밖 장소가 필요할 때만 구성되도록 한다.
+ * @param isLastItem 선택한 일차의 마지막 장소인지 여부
+ * @param modifier 장소 타임라인 행에 적용할 Modifier
+ * @param content 순서 핀 오른쪽에 표시할 장소 콘텐츠
  */
 @Composable
-internal fun TravelCourseTimeline(
-    placeCount: Int,
+internal fun TravelCourseTimelineItem(
+    isLastItem: Boolean,
     modifier: Modifier = Modifier,
-    itemContent: @Composable (index: Int) -> Unit,
+    content: @Composable () -> Unit,
 ) {
-    if (placeCount == 0) return
-
     val lineColor = SairoTheme.colors.borderDefault
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        repeat(placeCount) { index ->
-            val isLastItem = index == placeCount - 1
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .drawBehind {
+                if (!isLastItem) {
+                    val markerCenterX = TimelineMarkerSize.toPx() / 2f
+                    val lineEndY = size.height
+                    val dashLength = TimelineDashLength.toPx()
+                    val dashGap = TimelineDashGap.toPx()
+                    var dashStartY = TimelineMarkerSize.toPx()
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .drawBehind {
-                        if (!isLastItem) {
-                            val markerCenterX = TimelineMarkerSize.toPx() / 2f
-                            val lineEndY = size.height
-                            val dashLength = TimelineDashLength.toPx()
-                            val dashGap = TimelineDashGap.toPx()
-                            var dashStartY = TimelineMarkerSize.toPx()
-
-                            while (dashStartY < lineEndY) {
-                                val dashEndY = (dashStartY + dashLength).coerceAtMost(lineEndY)
-                                drawLine(
-                                    color = lineColor,
-                                    start = Offset(x = markerCenterX, y = dashStartY),
-                                    end = Offset(x = markerCenterX, y = dashEndY),
-                                    strokeWidth = TimelineLineWidth.toPx(),
-                                )
-                                dashStartY += dashLength + dashGap
-                            }
-                        }
-                    },
-            ) {
-                Box(
-                    modifier = Modifier.width(TimelineMarkerSize),
-                    contentAlignment = Alignment.TopCenter,
-                ) {
-                    androidx.compose.material3.Icon(
-                        painter = painterResource(R.drawable.ic_location_small),
-                        contentDescription = null,
-                        modifier = Modifier.size(TimelineMarkerSize),
-                        tint = androidx.compose.ui.graphics.Color.Unspecified,
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = TimelineContentGap),
-                ) {
-                    itemContent(index)
-                    if (!isLastItem) {
-                        Spacer(modifier = Modifier.height(TimelineItemGap))
+                    while (dashStartY < lineEndY) {
+                        val dashEndY = (dashStartY + dashLength).coerceAtMost(lineEndY)
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(x = markerCenterX, y = dashStartY),
+                            end = Offset(x = markerCenterX, y = dashEndY),
+                            strokeWidth = TimelineLineWidth.toPx(),
+                        )
+                        dashStartY += dashLength + dashGap
                     }
                 }
+            },
+    ) {
+        Box(
+            modifier = Modifier.width(TimelineMarkerSize),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            androidx.compose.material3.Icon(
+                painter = painterResource(R.drawable.ic_location_small),
+                contentDescription = null,
+                modifier = Modifier.size(TimelineMarkerSize),
+                tint = androidx.compose.ui.graphics.Color.Unspecified,
+            )
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = TimelineContentGap),
+        ) {
+            content()
+            if (!isLastItem) {
+                Spacer(modifier = Modifier.height(TimelineItemGap))
             }
         }
     }

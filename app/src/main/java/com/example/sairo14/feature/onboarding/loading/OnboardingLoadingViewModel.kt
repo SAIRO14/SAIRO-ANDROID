@@ -1,52 +1,105 @@
 package com.example.sairo14.feature.onboarding.loading
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.sairo14.core.navigation.OnboardingAnimationPhoto
+import com.example.sairo14.domain.model.AppResult
+import com.example.sairo14.domain.usecase.AnalyzeAndStoreOnboardingTasteUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-/**
- * 온보딩 로딩 화면에서 전달받은 선택 사진을 카드 모션용 UI 상태로 변환한다.
+/** 온보딩 로딩 화면의 카드 정보와 최신 취향 분석 요청 상태를 관리한다.
  *
- * 사진 URL은 Route가 소유하며 이 ViewModel은 API를 다시 호출하지 않는다. 앞 5장의 고유한 사진이
- * 전달되면 즉시 [OnboardingLoadingUiState.Content]를 노출하고, 잘못된 전달값만 오류로 처리한다.
+ * 카드 정보와 분석 결과를 [OnboardingLoadingUiState]로 노출한다. 재시도 또는 새 요청이 시작되면
+ * 이전 작업을 취소하고, 취소를 따르지 않은 이전 응답도 화면 상태에 반영하지 않는다.
  */
 @HiltViewModel
-class OnboardingLoadingViewModel @Inject constructor() : ViewModel() {
+class OnboardingLoadingViewModel @Inject constructor(
+    private val analyzeAndStoreOnboardingTaste: AnalyzeAndStoreOnboardingTasteUseCase,
+) : ViewModel() {
     private val _uiState = MutableStateFlow<OnboardingLoadingUiState>(OnboardingLoadingUiState.Loading)
-
     val uiState: StateFlow<OnboardingLoadingUiState> = _uiState.asStateFlow()
 
-    private var animationPhotos: List<OnboardingAnimationPhoto>? = null
+    private var request: LoadingRequest? = null
+    private var analysisJob: Job? = null
+    private var analysisGeneration = 0L
 
-    /** 전달된 사진으로 로딩 애니메이션 카드 상태를 준비한다.
-     *
-     * @param animationPhotos 사진 선택 순서의 앞 5장으로 구성한 애니메이션 카드 정보
-     */
-    fun load(animationPhotos: List<OnboardingAnimationPhoto>) {
-        if (this.animationPhotos == animationPhotos) return
+    /** 카드 애니메이션을 준비하고 같은 시점에 서버 취향 분석을 시작한다. */
+    fun load(
+        searchSessionId: String,
+        selectedPhotoIds: List<String>,
+        animationPhotos: List<OnboardingAnimationPhoto>,
+    ) {
+        val nextRequest = LoadingRequest(searchSessionId, selectedPhotoIds, animationPhotos)
+        if (request == nextRequest) return
+        request = nextRequest
+        val content = animationPhotos.toLoadingContent() ?: run {
+            cancelCurrentAnalysis()
+            _uiState.value = OnboardingLoadingUiState.Error
+            return
+        }
+        _uiState.value = content
+        analyze(nextRequest, content.photos)
+    }
 
-        this.animationPhotos = animationPhotos
-        _uiState.value = animationPhotos.toLoadingContent()
-            ?: OnboardingLoadingUiState.Error
+    /** 마지막 분석 요청을 카드 애니메이션을 다시 시작하지 않고 재시도한다. */
+    fun retry() {
+        val currentRequest = request ?: return
+        val content = currentRequest.animationPhotos.toLoadingContent() ?: return
+        _uiState.value = content
+        analyze(currentRequest, content.photos)
+    }
+
+    private fun analyze(request: LoadingRequest, photos: List<OnboardingLoadingPhotoUiModel>) {
+        cancelCurrentAnalysis()
+        val generation = analysisGeneration
+        analysisJob = viewModelScope.launch {
+            when (val result = analyzeAndStoreOnboardingTaste(
+                searchSessionId = request.searchSessionId,
+                selectedPhotoIds = request.selectedPhotoIds,
+            )) {
+                is AppResult.Failure -> {
+                    if (generation != analysisGeneration) return@launch
+                    _uiState.value = OnboardingLoadingUiState.AnalysisError
+                }
+
+                is AppResult.Success -> {
+                    if (generation != analysisGeneration) return@launch
+                    _uiState.value = OnboardingLoadingUiState.Content(
+                        photos = photos,
+                        moodTags = result.value.moodTags,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun cancelCurrentAnalysis() {
+        analysisGeneration += 1
+        analysisJob?.cancel()
+        analysisJob = null
     }
 }
+
+private data class LoadingRequest(
+    val searchSessionId: String,
+    val selectedPhotoIds: List<String>,
+    val animationPhotos: List<OnboardingAnimationPhoto>,
+)
 
 private fun List<OnboardingAnimationPhoto>.toLoadingContent(): OnboardingLoadingUiState.Content? {
     val uniquePhotos = distinctBy(OnboardingAnimationPhoto::id)
     if (uniquePhotos.size != OnboardingLoadingCardCount) return null
-
-    return OnboardingLoadingUiState.Content(
-        photos = uniquePhotos.map(OnboardingAnimationPhoto::toLoadingUiModel),
-    )
+    return OnboardingLoadingUiState.Content(photos = uniquePhotos.map(OnboardingAnimationPhoto::toLoadingUiModel))
 }
 
-private fun OnboardingAnimationPhoto.toLoadingUiModel(): OnboardingLoadingPhotoUiModel =
-    OnboardingLoadingPhotoUiModel(
-        id = id,
-        imageUrl = imageUrl,
-        contentDescription = null,
-    )
+private fun OnboardingAnimationPhoto.toLoadingUiModel() = OnboardingLoadingPhotoUiModel(
+    id = id,
+    imageUrl = imageUrl,
+    contentDescription = null,
+)

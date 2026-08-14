@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,9 +18,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,7 +64,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
  * @param expandedTopInset 시트가 완전히 펼쳐졌을 때 화면 위에서 남길 영역
  * @param modifier 시트 컨테이너에 적용할 Modifier
  * @param onVisibleHeightChanged 현재 화면에 보이는 시트 높이를 전달하는 콜백
- * @param content 시트 본문에 표시할 코스 목록 콘텐츠
+ * @param contentKey 본문 데이터가 바뀌었을 때 목록을 처음으로 되돌릴 식별자
+ * @param content 시트 본문에 지연 구성할 코스 목록 콘텐츠
  */
 @Composable
 internal fun TravelDetailSheet(
@@ -74,9 +76,15 @@ internal fun TravelDetailSheet(
     expandedTopInset: Dp,
     modifier: Modifier = Modifier,
     onVisibleHeightChanged: (Dp) -> Unit = {},
-    content: @Composable ColumnScope.() -> Unit,
+    contentKey: Any? = null,
+    content: LazyListScope.() -> Unit,
 ) {
     var sheetOffsetPx by remember { mutableFloatStateOf(Float.NaN) }
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(contentKey) {
+        listState.scrollToItem(0)
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -118,6 +126,11 @@ internal fun TravelDetailSheet(
         }
 
         val sheetOffset = sheetOffsetPx.takeUnless(Float::isNaN) ?: defaultOffsetPx
+        val visibleSheetHeight = with(density) {
+            (containerHeight.toPx() - sheetOffset)
+                .coerceAtLeast(SheetHeaderHeight.toPx())
+                .toDp()
+        }
         val sheetShape = RoundedCornerShape(
             topStart = SheetCornerRadius,
             topEnd = SheetCornerRadius,
@@ -127,7 +140,7 @@ internal fun TravelDetailSheet(
             modifier = Modifier
                 .offset(y = with(density) { sheetOffset.toDp() })
                 .fillMaxWidth()
-                .height(containerHeight)
+                .height(visibleSheetHeight)
                 .sairoDropShadow(
                     shape = sheetShape,
                     shadowStyle = SairoShadowStyles.glowDeep,
@@ -147,15 +160,14 @@ internal fun TravelDetailSheet(
                         orientation = Orientation.Vertical,
                     ),
             )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(
-                        start = SheetHorizontalPadding,
-                        end = SheetHorizontalPadding,
-                        bottom = SheetBottomPadding,
-                    ),
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                state = listState,
+                contentPadding = PaddingValues(
+                    start = SheetHorizontalPadding,
+                    end = SheetHorizontalPadding,
+                    bottom = SheetBottomPadding,
+                ),
                 content = content,
             )
         }

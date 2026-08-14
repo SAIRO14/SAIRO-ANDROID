@@ -8,14 +8,18 @@ sealed interface OnboardingLoadingUiState {
     /** 선택한 사진 정보를 복원하는 중인 상태다. */
     data object Loading : OnboardingLoadingUiState
 
-    /** 카드 스태킹에 사용할 사진을 모두 준비한 상태다. */
+    /** 카드 스태킹과 서버 분석을 함께 진행하거나, 분석 태그를 표시할 수 있는 상태다. */
     @Immutable
     data class Content(
         val photos: List<OnboardingLoadingPhotoUiModel>,
+        val moodTags: List<String>? = null,
     ) : OnboardingLoadingUiState
 
     /** 선택한 사진을 복원하지 못해 다시 선택해야 하는 상태다. */
     data object Error : OnboardingLoadingUiState
+
+    /** 취향 분석 요청에 실패해 같은 사진으로 재시도가 필요한 상태다. */
+    data object AnalysisError : OnboardingLoadingUiState
 }
 
 /** 온보딩 로딩 카드에 필요한 사진 정보다. */

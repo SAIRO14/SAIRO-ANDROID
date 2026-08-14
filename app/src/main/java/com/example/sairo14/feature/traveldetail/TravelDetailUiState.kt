@@ -50,6 +50,6 @@ data class TravelDetailPlaceUiModel(
     val name: String,
     val imageUrl: String?,
     val tags: List<String>,
-    val latitude: Double,
-    val longitude: Double,
+    val latitude: Double?,
+    val longitude: Double?,
 )

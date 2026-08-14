@@ -148,6 +148,8 @@ fun SairoNavDisplay(
             }
             entry<OnboardingLoadingRoute> { route ->
                 OnboardingLoadingScreenRoute(
+                    searchSessionId = route.searchSessionId,
+                    selectedPhotoIds = route.selectedPhotoIds,
                     animationPhotos = route.animationPhotos,
                     onFinished = {
                         navigator.replaceTop(
@@ -180,20 +182,26 @@ fun SairoNavDisplay(
                 },
             ) { route ->
                 OnboardingResultScreenRoute(
-                    selectedPhotoIds = route.selectedPhotoIds,
+                    searchSessionId = route.searchSessionId,
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
                     onRequestAgainClick = {
                         navigator.startNewOnboardingSearch(newOnboardingSearchSessionId())
                     },
                     onRecommendationClick = { courseId ->
-                        navigator.navigateSingleTop(TravelDetailRoute(courseId))
+                        navigator.navigateSingleTop(
+                            TravelDetailRoute(
+                                courseId = courseId,
+                                onboardingSessionId = route.searchSessionId,
+                            ),
+                        )
                     },
                 )
             }
             entry<TravelDetailRoute> { route ->
                 TravelDetailScreenRoute(
                     courseId = route.courseId,
+                    onboardingSessionId = route.onboardingSessionId,
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
                     onShareClick = {},

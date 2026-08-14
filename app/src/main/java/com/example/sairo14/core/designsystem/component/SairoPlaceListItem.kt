@@ -8,16 +8,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
@@ -36,7 +40,8 @@ enum class SairoPlaceListItemVariant {
  *
  * [SairoPlaceListItemVariant.Simple]은 56dp 썸네일과 정보를 가로로 배치하고,
  * [SairoPlaceListItemVariant.Detailed]는 제목·태그·이미지를 세로로 배치한다. 장소 정보와
- * 이미지의 소유·변경은 호출자에게 있으며, 선택 동작은 [onClick]으로 호출자에게 전달한다.
+ * 이미지의 소유·변경은 호출자에게 있으며, 선택 동작은 [onClick]으로 호출자에게 전달한다. 태그는
+ * 공백·중복을 제거한 뒤 최대 세 개를 표시하고, 남은 태그 수는 `+N`으로 표시한다.
  * @param title 장소 순서와 이름을 포함한 제목
  * @param tags 운영 시간·휴무일처럼 장소에 표시할 태그 문구 목록
  * @param painter 장소 이미지를 표시할 Painter
@@ -139,12 +144,113 @@ private fun PlaceTitle(title: String) {
 
 @Composable
 private fun PlaceTags(tags: List<String>) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        tags.forEach { tag ->
-            SairoTag(
-                text = tag,
-                variant = SairoTagVariant.SmallGray,
-            )
+    val normalizedTags = remember(tags) {
+        tags.asSequence()
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .distinct()
+            .toList()
+    }
+
+    PlaceTagLayout(
+        modifier = Modifier.fillMaxWidth(),
+        tags = normalizedTags,
+    ) { tag ->
+        SairoTag(
+            text = tag,
+            variant = SairoTagVariant.SmallGray,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = PlaceTagMaxWidth),
+        )
+    }
+}
+
+@Composable
+private fun PlaceTagLayout(
+    tags: List<String>,
+    modifier: Modifier = Modifier,
+    tag: @Composable (String) -> Unit,
+) {
+    SubcomposeLayout(modifier = modifier) { constraints ->
+        val tagPlaceables = subcompose("tags") {
+            tags.forEach { value -> tag(value) }
+        }.map { measurable ->
+            measurable.measure(constraints.copy(minWidth = 0, minHeight = 0))
+        }
+        val horizontalSpacing = PlaceTagSpacing.roundToPx()
+        val verticalSpacing = PlaceTagRowSpacing.roundToPx()
+        val rows = mutableListOf<MutableList<androidx.compose.ui.layout.Placeable>>()
+        val rowWidths = mutableListOf<Int>()
+        var visibleTagCount = 0
+
+        tagPlaceables.forEach { placeable ->
+            val currentRow = rows.lastOrNull()
+            val currentRowWidth = rowWidths.lastOrNull() ?: 0
+            val nextWidth = currentRowWidth + if (currentRow.isNullOrEmpty()) {
+                0
+            } else {
+                horizontalSpacing + placeable.width
+            }
+            val canAddToCurrentRow = currentRow != null &&
+                currentRow.size < MaxPlaceTagsPerRow &&
+                nextWidth <= constraints.maxWidth
+
+            when {
+                canAddToCurrentRow -> {
+                    currentRow.add(placeable)
+                    rowWidths[rowWidths.lastIndex] = nextWidth
+                    visibleTagCount += 1
+                }
+
+                rows.size < MaxPlaceTagLines -> {
+                    rows += mutableListOf(placeable)
+                    rowWidths += placeable.width
+                    visibleTagCount += 1
+                }
+
+                else -> return@forEach
+            }
+        }
+
+        val hiddenTagCount = tags.size - visibleTagCount
+        val overflowPlaceable = if (hiddenTagCount > 0) {
+            subcompose("overflow") {
+                SairoTag(
+                    text = "+$hiddenTagCount",
+                    variant = SairoTagVariant.SmallGray,
+                )
+            }.single().measure(constraints.copy(minWidth = 0, minHeight = 0))
+        } else {
+            null
+        }
+
+        val rowHeights = rows.map { row -> row.maxOfOrNull { it.height } ?: 0 }
+        val tagRowsHeight = rowHeights.sum() + verticalSpacing * (rows.size - 1).coerceAtLeast(0)
+        val layoutHeight = tagRowsHeight + if (overflowPlaceable == null || rows.isEmpty()) {
+            0
+        } else {
+            verticalSpacing + overflowPlaceable.height
+        }
+
+        layout(
+            width = if (constraints.hasBoundedWidth) {
+                constraints.maxWidth
+            } else {
+                rowWidths.maxOrNull() ?: overflowPlaceable?.width ?: 0
+            },
+            height = layoutHeight.coerceIn(constraints.minHeight, constraints.maxHeight),
+        ) {
+            var rowY = 0
+            rows.forEachIndexed { rowIndex, row ->
+                var itemX = 0
+                row.forEach { placeable ->
+                    placeable.placeRelative(itemX, rowY)
+                    itemX += placeable.width + horizontalSpacing
+                }
+                rowY += rowHeights[rowIndex] + verticalSpacing
+            }
+            overflowPlaceable?.placeRelative(0, tagRowsHeight + verticalSpacing)
         }
     }
 }
@@ -187,6 +293,8 @@ private fun SairoPlaceListItemPreview(variant: SairoPlaceListItemVariant) {
             stringResource(R.string.sairo_place_list_item_preview_hours),
             stringResource(R.string.sairo_place_list_item_preview_closed_day),
             stringResource(R.string.sairo_place_list_item_preview_parking),
+            "반려동물과 함께 방문하기 좋은 공간",
+            "조용한 분위기",
         ),
         painter = painterResource(R.drawable.img_dummy_view),
         variant = variant,
@@ -194,3 +302,9 @@ private fun SairoPlaceListItemPreview(variant: SairoPlaceListItemVariant) {
         modifier = Modifier.width(343.dp),
     )
 }
+
+private const val MaxPlaceTagsPerRow = 4
+private const val MaxPlaceTagLines = 2
+private val PlaceTagMaxWidth = 140.dp
+private val PlaceTagSpacing = 6.dp
+private val PlaceTagRowSpacing = 6.dp

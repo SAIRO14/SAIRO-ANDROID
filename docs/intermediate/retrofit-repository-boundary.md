@@ -13,12 +13,13 @@ SAIRO API는 성공 응답을 공통 래퍼로 감싸지 않고 각 엔드포인
 ## 프로젝트 적용
 
 - 관련 파일: [`SairoApi.kt`](../../app/src/main/java/com/example/sairo14/data/remote/SairoApi.kt)
-- 관련 파일: [`PhotoResponseDto.kt`](../../app/src/main/java/com/example/sairo14/data/remote/dto/PhotoResponseDto.kt)
-- 관련 파일: [`PhotoMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/PhotoMapper.kt)
+- 관련 파일: [`PhotoResponseDto.kt`](../../app/src/main/java/com/example/sairo14/data/remote/dto/PhotoResponseDto.kt), [`TasteAnalysisDto.kt`](../../app/src/main/java/com/example/sairo14/data/remote/dto/TasteAnalysisDto.kt)
+- 관련 파일: [`PhotoMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/PhotoMapper.kt), [`TasteAnalysisMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/TasteAnalysisMapper.kt)
 - 관련 파일: [`RemotePhotoSelectionRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/RemotePhotoSelectionRepository.kt)
+- 관련 파일: [`RemoteOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteOnboardingRecommendationRepository.kt)
 - 관련 파일: [`RemoteApiModule.kt`](../../app/src/main/java/com/example/sairo14/data/remote/di/RemoteApiModule.kt)
 
-현재 `SairoApi`에는 사진 풀 조회 작업에 필요한 `getPhotos`만 선언한다. 다른 API 메서드는 각 기능을 실제 서버에 연결하는 작업에서 추가한다.
+현재 `SairoApi`에는 사진 풀 조회와 온보딩 취향 분석 작업만 선언한다. 사용하지 않는 Swagger API는 미리 추가하지 않는다.
 
 ```kotlin
 @GET("photos")
@@ -28,6 +29,16 @@ suspend fun getPhotos(
 ```
 
 사진 API는 공개 사진 풀이라 `X-Device-Id`를 요구하지 않는다. 반면 이후 취향 분석·저장 여행지 API는 Remote Repository가 `DeviceIdProvider`의 값을 Retrofit `@Header` 파라미터로 전달한다.
+
+```kotlin
+@POST("taste-analysis")
+suspend fun analyzeTaste(
+    @Header("X-Device-Id") deviceId: String,
+    @Body request: TasteAnalysisRequestDto,
+): TasteAnalysisResponseDto
+```
+
+`RemoteOnboardingRecommendationRepository`는 사진 ID를 중복 제거한 뒤 5~10장인지 검증하고, 기기 ID를 준비한 뒤에만 이 API를 호출한다. DataStore에서 기기 ID를 읽는 실패는 `runRemoteOperation` 밖에서 처리해 네트워크 오류로 잘못 분류하지 않는다.
 
 ## 흐름과 영향 범위
 

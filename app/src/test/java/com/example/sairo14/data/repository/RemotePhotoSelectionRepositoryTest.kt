@@ -2,6 +2,8 @@ package com.example.sairo14.data.repository
 
 import com.example.sairo14.data.remote.SairoApi
 import com.example.sairo14.data.remote.dto.PhotoResponseDto
+import com.example.sairo14.data.remote.dto.TasteAnalysisRequestDto
+import com.example.sairo14.data.remote.dto.TasteAnalysisResponseDto
 import com.example.sairo14.data.repository.remote.RemotePhotoSelectionRepository
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
@@ -66,5 +68,10 @@ class RemotePhotoSelectionRepositoryTest {
             error?.let { throwable -> throw throwable }
             return photos
         }
+
+        override suspend fun analyzeTaste(
+            deviceId: String,
+            request: TasteAnalysisRequestDto,
+        ): TasteAnalysisResponseDto = error("취향 분석 API는 이 테스트에서 호출하지 않습니다.")
     }
 }

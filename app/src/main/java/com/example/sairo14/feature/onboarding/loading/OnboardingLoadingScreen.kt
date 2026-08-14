@@ -14,12 +14,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -72,6 +76,8 @@ import kotlinx.coroutines.CancellationException
  */
 @Composable
 fun OnboardingLoadingRoute(
+    searchSessionId: String,
+    selectedPhotoIds: List<String>,
     animationPhotos: List<OnboardingAnimationPhoto>,
     onFinished: () -> Unit,
     onBackClick: () -> Unit,
@@ -80,14 +86,15 @@ fun OnboardingLoadingRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(animationPhotos) {
-        viewModel.load(animationPhotos)
+    LaunchedEffect(searchSessionId, selectedPhotoIds, animationPhotos) {
+        viewModel.load(searchSessionId, selectedPhotoIds, animationPhotos)
     }
 
     OnboardingLoadingScreen(
         uiState = uiState,
         onFinished = onFinished,
         onBackClick = onBackClick,
+        onRetryClick = viewModel::retry,
         modifier = modifier,
     )
 }
@@ -107,6 +114,7 @@ fun OnboardingLoadingScreen(
     uiState: OnboardingLoadingUiState,
     onFinished: () -> Unit,
     onBackClick: () -> Unit,
+    onRetryClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val loadingPhotos = (uiState as? OnboardingLoadingUiState.Content)
@@ -118,7 +126,16 @@ fun OnboardingLoadingScreen(
     when (uiState) {
         OnboardingLoadingUiState.Loading -> OnboardingLoadingPendingScreen(modifier)
         OnboardingLoadingUiState.Error -> OnboardingLoadingErrorScreen(
+            messageResId = R.string.onboarding_loading_error,
             onBackClick = onBackClick,
+            onRetryClick = null,
+            modifier = modifier,
+        )
+
+        OnboardingLoadingUiState.AnalysisError -> OnboardingLoadingErrorScreen(
+            messageResId = R.string.onboarding_result_error,
+            onBackClick = onBackClick,
+            onRetryClick = onRetryClick,
             modifier = modifier,
         )
 
@@ -126,6 +143,7 @@ fun OnboardingLoadingScreen(
             if (imagePreloadState == LoadingImagePreloadState.Ready) {
                 OnboardingLoadingContent(
                     photos = loadingPhotos,
+                    moodTags = uiState.moodTags,
                     onFinished = onFinished,
                     modifier = modifier,
                 )
@@ -206,32 +224,56 @@ private suspend fun preloadLoadingImage(
 @Composable
 private fun OnboardingLoadingContent(
     photos: List<OnboardingLoadingPhotoUiModel>,
+    moodTags: List<String>?,
     onFinished: () -> Unit,
     modifier: Modifier,
 ) {
     val timeline = remember { Animatable(0f) }
+    val tagTimeline = remember { Animatable(0f) }
+    val visibleMoodTags = remember(moodTags) { moodTags?.toVisibleMoodTags() }
+    var isCardAnimationFinished by remember(photos) { mutableStateOf(false) }
+    var isTagAnimationFinished by remember(visibleMoodTags) { mutableStateOf(false) }
 
     LaunchedEffect(photos) {
         timeline.snapTo(0f)
-        coroutineScope {
-            val analysisReady = async { delay(AnalysisMinimumDurationMillis) }
-            val motionScale = currentCoroutineContext()[MotionDurationScale]?.scaleFactor ?: 1f
-
-            if (motionScale == 0f) {
-                timeline.snapTo(LoadingTimelineEndMillis.toFloat())
-            } else {
-                timeline.animateTo(
-                    targetValue = LoadingTimelineEndMillis.toFloat(),
-                    animationSpec = tween(
-                        durationMillis = LoadingTimelineEndMillis,
-                        easing = LinearEasing,
-                    ),
-                )
-            }
-
-            analysisReady.await()
-            onFinished()
+        val motionScale = currentCoroutineContext()[MotionDurationScale]?.scaleFactor ?: 1f
+        if (motionScale == 0f) {
+            timeline.snapTo(LoadingTimelineEndMillis.toFloat())
+        } else {
+            timeline.animateTo(
+                targetValue = LoadingTimelineEndMillis.toFloat(),
+                animationSpec = tween(LoadingTimelineEndMillis, easing = LinearEasing),
+            )
         }
+        isCardAnimationFinished = true
+    }
+
+    LaunchedEffect(visibleMoodTags) {
+        if (visibleMoodTags == null) {
+            tagTimeline.snapTo(0f)
+            isTagAnimationFinished = false
+            return@LaunchedEffect
+        }
+
+        if (visibleMoodTags.isEmpty()) {
+            tagTimeline.snapTo(0f)
+            isTagAnimationFinished = true
+            return@LaunchedEffect
+        }
+
+        tagTimeline.snapTo(0f)
+        val endMillis = visibleMoodTags.lastIndex * TagAppearIntervalMillis + TagEnterDurationMillis
+        val motionScale = currentCoroutineContext()[MotionDurationScale]?.scaleFactor ?: 1f
+        if (motionScale == 0f) {
+            tagTimeline.snapTo(endMillis.toFloat())
+        } else {
+            tagTimeline.animateTo(endMillis.toFloat(), tween(endMillis, easing = LinearEasing))
+        }
+        isTagAnimationFinished = true
+    }
+
+    LaunchedEffect(isCardAnimationFinished, isTagAnimationFinished, visibleMoodTags) {
+        if (visibleMoodTags != null && isCardAnimationFinished && isTagAnimationFinished) onFinished()
     }
 
     BoxWithConstraints(
@@ -254,7 +296,10 @@ private fun OnboardingLoadingContent(
 
             Spacer(modifier = Modifier.height(InfoTopSpacing))
 
-            LoadingInformation(elapsedMillis = timeline.value)
+            LoadingInformation(
+                moodTags = visibleMoodTags.orEmpty(),
+                elapsedMillis = tagTimeline.value,
+            )
         }
     }
 }
@@ -317,15 +362,10 @@ private fun LoadingCardDeck(
 
 @Composable
 private fun LoadingInformation(
+    moodTags: List<String>,
     elapsedMillis: Float,
 ) {
     val density = LocalDensity.current
-    val tagTexts = listOf(
-        stringResource(R.string.onboarding_loading_tag_quiet),
-        stringResource(R.string.onboarding_loading_tag_warm),
-        stringResource(R.string.onboarding_loading_tag_secluded),
-    )
-    val showDots = elapsedMillis < LoadingTimelineEndMillis
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
@@ -346,15 +386,22 @@ private fun LoadingInformation(
         }*/
         Spacer(modifier = Modifier.height(18.dp))
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(TagSpacing),
-            verticalAlignment = Alignment.CenterVertically,
+        FlowRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = ScreenHorizontalPadding),
+            maxItemsInEachRow = MaxMoodTagsPerRow,
+            horizontalArrangement = Arrangement.spacedBy(
+                space = TagSpacing,
+                alignment = Alignment.CenterHorizontally,
+            ),
+            verticalArrangement = Arrangement.spacedBy(TagRowSpacing),
         ) {
-            tagTexts.forEachIndexed { index, tag ->
+            moodTags.forEachIndexed { index, tag ->
                 val tagProgress = TagEnterEasing.transform(
                     timedProgress(
                         elapsedMillis = elapsedMillis,
-                        delayMillis = TagAppearDelaysMillis[index],
+                        delayMillis = index * TagAppearIntervalMillis,
                         durationMillis = TagEnterDurationMillis,
                     ),
                 )
@@ -362,13 +409,17 @@ private fun LoadingInformation(
                 SairoTag(
                     text = tag,
                     variant = SairoTagVariant.MediumLemon,
-                    modifier = Modifier.graphicsLayer {
-                        translationY = with(density) {
-                            (TagInitialTranslationY * (1f - tagProgress)).toPx()
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .widthIn(max = MoodTagMaxWidth)
+                        .graphicsLayer {
+                            translationY = with(density) {
+                                (TagInitialTranslationY * (1f - tagProgress)).toPx()
+                            }
+                            alpha = tagProgress
+                            transformOrigin = TransformOrigin.Center
                         }
-                        alpha = tagProgress
-                        transformOrigin = TransformOrigin.Center
-                    },
                 )
             }
         }
@@ -420,7 +471,9 @@ private fun OnboardingLoadingPendingScreen(
 
 @Composable
 private fun OnboardingLoadingErrorScreen(
+    messageResId: Int,
     onBackClick: () -> Unit,
+    onRetryClick: (() -> Unit)?,
     modifier: Modifier,
 ) {
     Box(
@@ -435,14 +488,16 @@ private fun OnboardingLoadingErrorScreen(
             verticalArrangement = Arrangement.spacedBy(ErrorContentSpacing),
         ) {
             Text(
-                text = stringResource(R.string.onboarding_loading_error),
+                text = stringResource(messageResId),
                 color = SairoTheme.colors.textPrimary,
                 style = SairoTextStyles.bodyLight18,
                 textAlign = TextAlign.Center,
             )
             SairoButton(
-                text = stringResource(R.string.onboarding_loading_reselect),
-                onClick = onBackClick,
+                text = stringResource(
+                    if (onRetryClick == null) R.string.onboarding_loading_reselect else R.string.onboarding_result_retry,
+                ),
+                onClick = onRetryClick ?: onBackClick,
             )
         }
     }
@@ -481,6 +536,13 @@ private fun landingScale(
 private fun lerp(start: Float, end: Float, progress: Float): Float =
     start + (end - start) * progress
 
+private fun List<String>.toVisibleMoodTags(): List<String> = asSequence()
+    .map(String::trim)
+    .filter(String::isNotBlank)
+    .distinct()
+    .take(MaxVisibleMoodTagCount)
+    .toList()
+
 private data class LoadingCardMotionSpec(
     val delayMillis: Int,
     val initialTranslationX: Dp,
@@ -497,13 +559,14 @@ private val LoadingCardMotionSpecs = listOf(
     LoadingCardMotionSpec(2600, (-90).dp, (-18).dp, 18f, 4f),
 )
 
-private val TagAppearDelaysMillis = listOf(1250, 1900, 2550)
-
 private const val CardEnterDurationMillis = 600
 private const val CardLandingDurationMillis = 180
 private const val LoadingTimelineEndMillis = 3380
 private const val AnalysisMinimumDurationMillis = 2000L
 private const val TagEnterDurationMillis = 450
+private const val TagAppearIntervalMillis = 650
+private const val MaxVisibleMoodTagCount = 6
+private const val MaxMoodTagsPerRow = 3
 private const val DotsCycleDurationMillis = 1800
 private const val DotCount = 3
 private const val InactiveDotAlpha = 0.2f
@@ -523,9 +586,38 @@ private val TitleToTagsSpacing = 18.dp
 private val DotsToTagsSpacing = 2.dp
 private val DotsHeight = 20.dp
 private val TagSpacing = 8.dp
+private val TagRowSpacing = 10.dp
+private val MoodTagMaxWidth = 150.dp
 private val TagInitialTranslationY = 12.dp
 private val ScreenHorizontalPadding = 24.dp
 private val ErrorContentSpacing = 16.dp
+
+@Preview(name = "Onboarding Loading / Mood Tags", showBackground = true, widthDp = 360)
+@Composable
+private fun LoadingInformationPreview() {
+    SairoTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(SairoTheme.colors.backgroundCanvas)
+                .padding(vertical = 24.dp),
+        ) {
+            LoadingInformation(
+                moodTags = listOf(
+                    "자연",
+                    "휴식",
+                    "감성",
+                    "지역 문화",
+                    "여유로운 골목 산책",
+                    "한적한 카페 투어",
+                ),
+                elapsedMillis = (
+                    (MaxVisibleMoodTagCount - 1) * TagAppearIntervalMillis + TagEnterDurationMillis
+                ).toFloat(),
+            )
+        }
+    }
+}
 
 @Preview(name = "Onboarding Loading / Final", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
@@ -543,6 +635,7 @@ private fun OnboardingLoadingScreenPreview() {
             ),
             onFinished = {},
             onBackClick = {},
+            onRetryClick = {},
         )
     }
 }

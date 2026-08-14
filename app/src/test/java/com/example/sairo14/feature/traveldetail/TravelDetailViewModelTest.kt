@@ -7,6 +7,7 @@ import com.example.sairo14.domain.model.CourseDay
 import com.example.sairo14.domain.model.CoursePlace
 import com.example.sairo14.domain.model.MapCoordinate
 import com.example.sairo14.domain.repository.CourseRepository
+import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -50,6 +51,61 @@ class TravelDetailViewModelTest {
         assertEquals("첫째 장소", content.selectedDay?.places?.first()?.name)
         assertEquals("first", content.selectedPlaceId)
         assertEquals(0L, content.cameraFocusRequestId)
+    }
+
+    @Test
+    fun `구조화된 주차 정보는 상세 화면용 문구로 변환한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-parking",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        CoursePlace(
+                            placeId = "parking-place",
+                            name = "주차 장소",
+                            imageUrl = null,
+                            tags = listOf("기존 태그"),
+                            coordinate = null,
+                            operatingHours = "09:00~18:00",
+                            parking = "가능",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-parking")
+        advanceUntilIdle()
+
+        val content = viewModel.uiState.value as TravelDetailUiState.Content
+        assertEquals(
+            listOf("09:00~18:00", "주차 가능"),
+            content.selectedDay?.places?.single()?.tags,
+        )
+    }
+
+    @Test
+    fun `구조화된 장소 정보가 없으면 기존 태그를 유지한다`() = runTest(dispatcher) {
+        val course = course().copy(
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        place("first", "첫째 장소").copy(tags = listOf("상시 개방", "주차가능")),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+
+        val content = viewModel.uiState.value as TravelDetailUiState.Content
+        assertEquals(listOf("상시 개방", "주차가능"), content.selectedDay?.places?.single()?.tags)
     }
 
     @Test
@@ -120,7 +176,10 @@ class TravelDetailViewModelTest {
     @Test
     fun `늦게 끝난 이전 코스 조회가 최신 조회 결과를 덮지 않는다`() = runTest(dispatcher) {
         val viewModel = TravelDetailViewModel(
-            getCourseDetail = GetCourseDetailUseCase(OutOfOrderCourseRepository()),
+            getCourseDetail = GetCourseDetailUseCase(
+                courseRepository = OutOfOrderCourseRepository(),
+                onboardingAnalysisSessionStore = EmptySessionStore,
+            ),
         )
 
         viewModel.load("first")
@@ -134,7 +193,10 @@ class TravelDetailViewModelTest {
 
     private fun createViewModel(result: AppResult<Course>): TravelDetailViewModel =
         TravelDetailViewModel(
-            getCourseDetail = GetCourseDetailUseCase(CourseResultRepository(result)),
+            getCourseDetail = GetCourseDetailUseCase(
+                courseRepository = CourseResultRepository(result),
+                onboardingAnalysisSessionStore = EmptySessionStore,
+            ),
         )
 
     private class CourseResultRepository(
@@ -159,6 +221,19 @@ class TravelDetailViewModelTest {
     }
 
     private companion object {
+        val EmptySessionStore = object : OnboardingAnalysisSessionStore {
+            override suspend fun beginRequest(searchSessionId: String) =
+                com.example.sairo14.domain.model.OnboardingAnalysisRequestToken(1)
+            override suspend fun saveIfCurrent(
+                searchSessionId: String,
+                token: com.example.sairo14.domain.model.OnboardingAnalysisRequestToken,
+                result: com.example.sairo14.domain.model.OnboardingAnalysisResult,
+            ) = false
+            override suspend fun getResult(searchSessionId: String) = null
+            override suspend fun getCourse(searchSessionId: String, courseId: String) = null
+            override suspend fun remove(searchSessionId: String) = Unit
+        }
+
         fun course() = Course(
             courseId = "course-boeun",
             regionName = "충북 보은권",

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -51,6 +53,11 @@ import com.example.sairo14.core.designsystem.component.rememberSairoBackdropImag
 import com.example.sairo14.core.designsystem.component.rememberSairoBackdropState
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.domain.model.AppError
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 
 /**
  * 저장 목록 상태와 화면 이동·재시도 행동을 연결한다.
@@ -81,6 +88,7 @@ fun SavedTripsRoute(
         onHomeClick = onHomeClick,
         onFindTripClick = onFindTripClick,
         onRetryClick = viewModel::retry,
+        onLoadMore = viewModel::loadMore,
         onBookmarkClick = viewModel::removeSavedTrip,
         onTripClick = onTripClick,
         modifier = modifier,
@@ -97,6 +105,7 @@ fun SavedTripsRoute(
  * @param onHomeClick 홈 헤더 액션을 눌렀을 때 호출할 동작
  * @param onFindTripClick 빈 상태의 여행지 탐색 CTA를 눌렀을 때 호출할 동작
  * @param onRetryClick 오류 상태의 재시도 CTA를 눌렀을 때 호출할 동작
+ * @param onLoadMore 목록 끝에 도달했을 때 다음 페이지를 조회할 동작
  * @param onBookmarkClick 카드 북마커를 눌렀을 때 호출할 동작
  * @param onTripClick 폴더 카드의 코스를 눌렀을 때 호출할 동작
  * @param modifier 화면 컨테이너에 적용할 Modifier
@@ -108,6 +117,7 @@ fun SavedTripsScreen(
     onHomeClick: () -> Unit,
     onFindTripClick: () -> Unit,
     onRetryClick: () -> Unit,
+    onLoadMore: () -> Unit,
     onBookmarkClick: (String) -> Unit,
     onTripClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -129,11 +139,15 @@ fun SavedTripsScreen(
 
             is SavedTripsUiState.Content -> SavedTripsList(
                 trips = uiState.trips,
+                canLoadMore = uiState.nextCursor != null,
+                isLoadingMore = uiState.isLoadingMore,
+                loadMoreError = uiState.loadMoreError,
                 removingSavedTripIds = uiState.removingSavedTripIds,
                 backdropState = backdropState,
                 headerHeight = headerHeight,
                 onBookmarkClick = onBookmarkClick,
                 onTripClick = onTripClick,
+                onLoadMore = onLoadMore,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -201,19 +215,37 @@ private fun SavedTripsContainer(
 @Composable
 private fun SavedTripsList(
     trips: List<SavedTripUiModel>,
+    canLoadMore: Boolean,
+    isLoadingMore: Boolean,
+    loadMoreError: AppError?,
     removingSavedTripIds: Set<String>,
     backdropState: SairoBackdropState,
     headerHeight: Dp,
     onBookmarkClick: (String) -> Unit,
     onTripClick: (String) -> Unit,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val listState = rememberLazyListState()
     val navigationBarPadding = WindowInsets.navigationBars
         .asPaddingValues()
         .calculateBottomPadding()
 
+    LaunchedEffect(listState, trips.size, canLoadMore, isLoadingMore, loadMoreError) {
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+        }.map { lastVisibleItemIndex ->
+            lastVisibleItemIndex >= trips.lastIndex - LoadMoreThreshold
+        }.distinctUntilChanged().filter { isNearEnd ->
+            isNearEnd && canLoadMore && !isLoadingMore && loadMoreError == null
+        }.collect {
+            onLoadMore()
+        }
+    }
+
     LazyColumn(
         modifier = modifier,
+        state = listState,
         contentPadding = PaddingValues(
             start = SavedTripsContentPadding,
             top = headerHeight + SavedTripsTopSpacing,
@@ -233,6 +265,32 @@ private fun SavedTripsList(
                 onBookmarkClick = { onBookmarkClick(trip.savedTripId) },
                 onClick = { onTripClick(trip.courseId) },
             )
+        }
+
+        if (isLoadingMore) {
+            item(key = "saved-trips-loading-more") {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(color = SairoTheme.colors.accentBase)
+                }
+            }
+        }
+
+        if (loadMoreError != null) {
+            item(key = "saved-trips-load-more-error") {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    SairoButton(
+                        text = stringResource(R.string.saved_trips_retry),
+                        onClick = onLoadMore,
+                        style = SairoButtonStyle.Outline,
+                    )
+                }
+            }
         }
     }
 }
@@ -381,17 +439,19 @@ private val EmptyFolderHeight = 56.dp
 private val EmptyIllustrationSpacing = 24.dp
 private val EmptySectionSpacing = 32.dp
 private val ErrorSectionSpacing = 16.dp
+private const val LoadMoreThreshold = 1
 
 @Preview(name = "Saved Trips / Content", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 private fun SavedTripsContentPreview() {
     SairoTheme {
         SavedTripsScreen(
-            uiState = SavedTripsUiState.Content(previewSavedTrips),
+            uiState = SavedTripsUiState.Content(previewSavedTrips, nextCursor = null),
             onBackClick = {},
             onHomeClick = {},
             onFindTripClick = {},
             onRetryClick = {},
+            onLoadMore = {},
             onBookmarkClick = {},
             onTripClick = {},
         )
@@ -408,6 +468,7 @@ private fun SavedTripsEmptyPreview() {
             onHomeClick = {},
             onFindTripClick = {},
             onRetryClick = {},
+            onLoadMore = {},
             onBookmarkClick = {},
             onTripClick = {},
         )

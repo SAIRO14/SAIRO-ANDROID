@@ -2,8 +2,10 @@ package com.example.sairo14.feature.savedtrip
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripPage
 import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.GetSavedTripsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,8 +19,9 @@ import kotlinx.coroutines.launch
 /**
  * 저장된 여행지 목록의 조회 상태를 관리하고 재시도를 처리한다.
  *
- * 목록 결과를 [SavedTripsUiState]로 변환하고, 북마크 해제에 성공한 카드를 목록에서 제거한다.
- * 기기 식별과 API 헤더 준비는 Repository 구현이 소유하며, 화면 이동은 화면 호출자가 소유한다.
+ * 최초·추가 조회 결과를 [SavedTripsUiState]로 변환하고, 북마크 해제에 성공한 카드를 목록에서 제거한다.
+ * 추가 조회는 서버 커서와 진행 상태를 이 ViewModel이 소유해 중복 요청을 막는다. 기기 식별과 API 헤더
+ * 준비는 Repository 구현이, 화면 이동은 화면 호출자가 소유한다.
  */
 @HiltViewModel
 class SavedTripsViewModel @Inject constructor(
@@ -33,10 +36,46 @@ class SavedTripsViewModel @Inject constructor(
         loadSavedTrips()
     }
 
-    /** 오류 상태에서 저장 목록을 다시 조회한다. */
+    /** 현재 오류 상태에 맞춰 첫 페이지 또는 실패한 다음 페이지를 다시 조회한다. */
     fun retry() {
-        if (_uiState.value is SavedTripsUiState.Error) {
-            loadSavedTrips()
+        when (_uiState.value) {
+            SavedTripsUiState.Error -> loadSavedTrips()
+            is SavedTripsUiState.Content -> {
+                if ((_uiState.value as SavedTripsUiState.Content).loadMoreError != null) loadMore()
+            }
+            else -> Unit
+        }
+    }
+
+    /** 다음 페이지가 있고 진행 중이 아닐 때만 저장 여행지 목록을 추가 조회한다. */
+    fun loadMore() {
+        val content = _uiState.value as? SavedTripsUiState.Content ?: return
+        val cursor = content.nextCursor ?: return
+        if (content.isLoadingMore) return
+
+        _uiState.update { state ->
+            val currentContent = state as? SavedTripsUiState.Content ?: return@update state
+            if (currentContent.nextCursor != cursor || currentContent.isLoadingMore) {
+                currentContent
+            } else {
+                currentContent.copy(
+                    isLoadingMore = true,
+                    loadMoreError = null,
+                )
+            }
+        }
+
+        viewModelScope.launch {
+            when (val result = getSavedTrips(cursor = cursor)) {
+                is AppResult.Success -> appendSavedTrips(cursor, result.value)
+                is AppResult.Failure -> {
+                    if (result.error == AppError.InvalidCursor) {
+                        loadSavedTrips()
+                    } else {
+                        setLoadMoreError(cursor, result.error)
+                    }
+                }
+            }
         }
     }
 
@@ -67,8 +106,35 @@ class SavedTripsViewModel @Inject constructor(
 
             _uiState.value = when (val result = getSavedTrips()) {
                 is AppResult.Failure -> SavedTripsUiState.Error
-            is AppResult.Success -> result.value.items.toUiState()
+                is AppResult.Success -> result.value.toUiState()
             }
+        }
+    }
+
+    private fun appendSavedTrips(cursor: String, page: SavedTripPage) {
+        _uiState.update { state ->
+            val content = state as? SavedTripsUiState.Content ?: return@update state
+            if (content.nextCursor != cursor) return@update content
+
+            content.copy(
+                trips = (content.trips + page.items.map(SavedTrip::toUiModel))
+                    .distinctBy(SavedTripUiModel::savedTripId),
+                nextCursor = page.nextCursor,
+                isLoadingMore = false,
+                loadMoreError = null,
+            )
+        }
+    }
+
+    private fun setLoadMoreError(cursor: String, error: AppError) {
+        _uiState.update { state ->
+            val content = state as? SavedTripsUiState.Content ?: return@update state
+            if (content.nextCursor != cursor) return@update content
+
+            content.copy(
+                isLoadingMore = false,
+                loadMoreError = error,
+            )
         }
     }
 
@@ -98,20 +164,21 @@ class SavedTripsViewModel @Inject constructor(
     }
 }
 
-private fun List<SavedTrip>.toUiState(): SavedTripsUiState =
-    if (isEmpty()) {
+private fun SavedTripPage.toUiState(): SavedTripsUiState =
+    if (items.isEmpty()) {
         SavedTripsUiState.Empty
     } else {
         SavedTripsUiState.Content(
-            trips = map { trip ->
-                SavedTripUiModel(
-                    savedTripId = trip.savedTripId,
-                    courseId = trip.courseId,
-                    regionName = trip.regionName,
-                    regionArea = trip.regionArea,
-                    imageUrl = trip.imageUrl,
-                    reason = trip.reason,
-                )
-            },
+            trips = items.map(SavedTrip::toUiModel),
+            nextCursor = nextCursor,
         )
     }
+
+private fun SavedTrip.toUiModel(): SavedTripUiModel = SavedTripUiModel(
+    savedTripId = savedTripId,
+    courseId = courseId,
+    regionName = regionName,
+    regionArea = regionArea,
+    imageUrl = imageUrl,
+    reason = reason,
+)

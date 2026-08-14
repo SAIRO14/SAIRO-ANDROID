@@ -1,6 +1,7 @@
 package com.example.sairo14.feature.savedtrip
 
 import androidx.compose.runtime.Immutable
+import com.example.sairo14.domain.model.AppError
 
 /** 저장된 여행지 목록 화면이 표시할 조회 상태를 나타낸다. */
 sealed interface SavedTripsUiState {
@@ -12,6 +13,9 @@ sealed interface SavedTripsUiState {
     @Immutable
     data class Content(
         val trips: List<SavedTripUiModel>,
+        val nextCursor: String?,
+        val isLoadingMore: Boolean = false,
+        val loadMoreError: AppError? = null,
         val removingSavedTripIds: Set<String> = emptySet(),
     ) : SavedTripsUiState
 

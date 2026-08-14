@@ -3,7 +3,6 @@ package com.example.sairo14.data.repository
 import com.example.sairo14.domain.model.Course
 import com.example.sairo14.domain.model.CourseDay
 import com.example.sairo14.domain.model.OnboardingAnalysisResult
-import com.example.sairo14.domain.model.OnboardingAnalysisRequestToken
 import com.example.sairo14.domain.model.OnboardingRecommendation
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -40,11 +39,11 @@ class InMemoryOnboardingAnalysisSessionStoreTest {
     @Test
     fun `최신 요청 토큰과 일치하는 결과만 원자적으로 저장한다`() = runTest {
         val store = InMemoryOnboardingAnalysisSessionStore()
-        val previousToken = OnboardingAnalysisRequestToken(1)
-        val latestToken = OnboardingAnalysisRequestToken(2)
+        val previousToken = store.beginRequest("session-1")
+        val latestToken = store.beginRequest("session-1")
 
-        store.registerRequest("session-1", latestToken)
-        store.registerRequest("session-1", previousToken)
+        assertEquals(1L, previousToken.value)
+        assertEquals(2L, latestToken.value)
 
         val previousSaved = store.saveIfCurrent(
             searchSessionId = "session-1",
@@ -89,8 +88,7 @@ class InMemoryOnboardingAnalysisSessionStoreTest {
         searchSessionId: String,
         result: OnboardingAnalysisResult,
     ) {
-        val token = OnboardingAnalysisRequestToken(1)
-        registerRequest(searchSessionId, token)
+        val token = beginRequest(searchSessionId)
         saveIfCurrent(searchSessionId, token, result)
     }
 }

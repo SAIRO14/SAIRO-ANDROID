@@ -4,7 +4,6 @@ import com.example.sairo14.data.repository.InMemoryOnboardingAnalysisSessionStor
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.OnboardingAnalysisResult
 import com.example.sairo14.domain.model.OnboardingRecommendation
-import com.example.sairo14.domain.model.OnboardingAnalysisRequestToken
 import com.example.sairo14.domain.model.OnboardingCompletionToken
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.repository.OnboardingRepository
@@ -37,10 +36,10 @@ class OnboardingResultViewModelTest {
     @Test fun `세션의 추천 결과를 표시한다`() = runTest(dispatcher) {
         val store = InMemoryOnboardingAnalysisSessionStore()
         val recommendations = listOf(OnboardingRecommendation("id", "course", "제주도", "설명", emptyList(), emptyList()))
-        store.registerRequest("session-1", OnboardingAnalysisRequestToken(1))
+        val token = store.beginRequest("session-1")
         store.saveIfCurrent(
             searchSessionId = "session-1",
-            token = OnboardingAnalysisRequestToken(1),
+            token = token,
             result = OnboardingAnalysisResult(emptyList(), "", recommendations, emptyMap()),
         )
         val repository = OnboardingRepo()
@@ -140,8 +139,7 @@ class OnboardingResultViewModelTest {
         searchSessionId: String,
         recommendations: List<OnboardingRecommendation>,
     ) {
-        val token = OnboardingAnalysisRequestToken(1)
-        registerRequest(searchSessionId, token)
+        val token = beginRequest(searchSessionId)
         saveIfCurrent(
             searchSessionId = searchSessionId,
             token = token,

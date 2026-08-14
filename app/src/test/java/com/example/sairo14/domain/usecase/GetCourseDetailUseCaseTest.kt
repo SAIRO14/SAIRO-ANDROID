@@ -4,7 +4,6 @@ import com.example.sairo14.data.repository.InMemoryOnboardingAnalysisSessionStor
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.Course
 import com.example.sairo14.domain.model.CourseDay
-import com.example.sairo14.domain.model.OnboardingAnalysisRequestToken
 import com.example.sairo14.domain.repository.CourseRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -16,10 +15,10 @@ class GetCourseDetailUseCaseTest {
     fun `온보딩 세션 코스를 일반 Repository보다 우선한다`() = runTest {
         val sessionCourse = course("session-course")
         val store = InMemoryOnboardingAnalysisSessionStore().also { store ->
-            store.registerRequest("session-1", OnboardingAnalysisRequestToken(1))
+            val token = store.beginRequest("session-1")
             store.saveIfCurrent(
                 searchSessionId = "session-1",
-                token = OnboardingAnalysisRequestToken(1),
+                token = token,
                 result = com.example.sairo14.domain.model.OnboardingAnalysisResult(
                     moodTags = emptyList(), summary = "", recommendations = emptyList(),
                     courses = mapOf("course-1" to sessionCourse),

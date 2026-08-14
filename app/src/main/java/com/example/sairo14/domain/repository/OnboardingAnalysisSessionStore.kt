@@ -7,17 +7,17 @@ import com.example.sairo14.domain.model.OnboardingAnalysisRequestToken
 /** 한 번의 온보딩 탐색에서 생성한 분석 결과를 화면 전환 동안 보관하는 계약이다. */
 interface OnboardingAnalysisSessionStore {
 
-    /** 분석 요청 토큰을 현재 세션의 최신 요청으로 등록한다.
+    /** 분석 요청을 시작하고 해당 세션에서 유일한 최신 요청 토큰을 발급한다.
      *
-     * 더 작은 토큰은 이미 시작된 최신 요청을 되돌리지 않는다. 세션 ID의 생성과 만료 정책은 호출자가
-     * 소유하며, 이 저장소는 앱 프로세스 안에서만 결과를 보관한다.
+     * 토큰 발급과 최신 요청 등록은 하나의 원자적 작업으로 처리한다. 따라서 Loading ViewModel이 다시
+     * 생성돼도 이전 요청과 같은 토큰을 사용하지 않는다. 세션 ID의 생성과 만료 정책은 호출자가 소유하며,
+     * 이 저장소는 앱 프로세스 안에서만 결과를 보관한다.
      * @param searchSessionId 온보딩 탐색을 구분하는 고유 식별자
-     * @param token 분석 요청의 순서를 나타내는 토큰
+     * @return 같은 세션에서 새 요청일수록 커지는 순서 토큰
      */
-    suspend fun registerRequest(
+    suspend fun beginRequest(
         searchSessionId: String,
-        token: OnboardingAnalysisRequestToken,
-    )
+    ): OnboardingAnalysisRequestToken
 
     /** 토큰이 현재 세션의 최신 요청일 때만 분석 결과를 저장한다.
      *

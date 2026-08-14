@@ -222,10 +222,8 @@ class TravelDetailViewModelTest {
 
     private companion object {
         val EmptySessionStore = object : OnboardingAnalysisSessionStore {
-            override suspend fun registerRequest(
-                searchSessionId: String,
-                token: com.example.sairo14.domain.model.OnboardingAnalysisRequestToken,
-            ) = Unit
+            override suspend fun beginRequest(searchSessionId: String) =
+                com.example.sairo14.domain.model.OnboardingAnalysisRequestToken(1)
             override suspend fun saveIfCurrent(
                 searchSessionId: String,
                 token: com.example.sairo14.domain.model.OnboardingAnalysisRequestToken,

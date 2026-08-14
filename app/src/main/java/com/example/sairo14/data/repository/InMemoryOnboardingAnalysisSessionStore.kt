@@ -16,16 +16,13 @@ class InMemoryOnboardingAnalysisSessionStore @Inject constructor() : OnboardingA
     private val resultsBySessionId = mutableMapOf<String, OnboardingAnalysisResult>()
     private val latestRequestTokensBySessionId = mutableMapOf<String, OnboardingAnalysisRequestToken>()
 
-    override suspend fun registerRequest(
+    override suspend fun beginRequest(
         searchSessionId: String,
-        token: OnboardingAnalysisRequestToken,
-    ) {
-        mutex.withLock {
-            val currentToken = latestRequestTokensBySessionId[searchSessionId]
-            if (currentToken == null || token.value > currentToken.value) {
-                latestRequestTokensBySessionId[searchSessionId] = token
-            }
-        }
+    ): OnboardingAnalysisRequestToken = mutex.withLock {
+        val currentToken = latestRequestTokensBySessionId[searchSessionId]?.value ?: 0L
+        val nextToken = OnboardingAnalysisRequestToken(currentToken + 1L)
+        latestRequestTokensBySessionId[searchSessionId] = nextToken
+        nextToken
     }
 
     override suspend fun saveIfCurrent(

@@ -1,8 +1,8 @@
-# 북마크 UI 상태와 단발성 오류 효과
+# 북마크 UI 상태와 화면 간 동기화
 
 ## 개념
 
-북마크 UI는 서버가 확인한 저장 표시, 저장 해제에 필요한 식별자, 진행 중 요청을 서로 다른 값으로 관리한다. 오류 안내는 화면을 다시 그릴 때도 유지해야 하는 상태가 아니라 한 번만 소비할 효과로 분리한다.
+북마크 UI는 서버가 확인한 저장 표시, 저장 해제에 필요한 식별자, 진행 중 요청을 서로 다른 값으로 관리한다. 화면 간에는 저장·삭제에 성공한 결과만 메모리로 전달하고, 오류 안내는 필요한 화면에서만 한 번 소비하는 효과로 분리한다.
 
 ## 도입 이유
 
@@ -22,19 +22,44 @@ data class BookmarkUiState(
 
 `BookmarkEffect.ShowError`는 `SharedFlow`로 전달한다. [`OnboardingResultViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultViewModel.kt)은 추천 카드별 상태를 `Map<courseId, BookmarkUiState>`로 보관하고, [`OnboardingResultScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultScreen.kt)은 이 효과를 Snackbar 문구로 변환해 안내한다.
 
+`savedTripId`는 저장 성공 응답에서만 얻는다. 초기 코스 응답의 `saved = true`가 ID 없이 내려오면 체크 표시는 가능하지만, 상세 화면의 삭제 요청은 실행하지 않는다.
+
+```kotlin
+BookmarkUiState(
+    isSaved = true,
+    savedTripId = null,
+)
+```
+
 ## 흐름과 영향 범위
 
 ```mermaid
 flowchart LR
-    UI[북마크 클릭] --> VM[ViewModel]
-    VM --> UC[Save 또는 Delete UseCase]
-    UC --> REPO[SavedTripRepository]
-    REPO --> VM
-    VM --> STATE[BookmarkUiState]
-    VM --> EFFECT[BookmarkEffect.ShowError]
+    RESULT[온보딩 추천 카드] --> RVM[OnboardingResultViewModel]
+    RVM --> SAVE[SaveTripUseCase]
+    SAVE --> REPO[SavedTripRepository]
+    REPO --> STATE[BookmarkUiState]
+    STATE --> ROUTE[TravelDetailRoute]
+    ROUTE --> DVM[TravelDetailViewModel]
+    DVM --> DELETE[DeleteSavedTripUseCase]
+    DELETE --> REPO
+    DVM --> CHANGE[BookmarkChangeNotifier]
+    CHANGE --> RVM
 ```
 
 성공하면 ViewModel이 `isSaved`와 필요한 경우 `savedTripId`를 갱신한다. 실패하면 기존 상태는 유지하고 `isRequesting`만 해제한 뒤 효과만 전달한다.
+
+저장 성공 뒤 `savedTripId`가 이동하는 경로는 다음으로 제한한다.
+
+```text
+POST /saved-trips 응답
+→ SavedTripSaveResponseDto
+→ SavedTripSaveResult
+→ BookmarkUiState.savedTripId
+→ TravelDetailRoute.savedTripId
+→ 상세 BookmarkUiState.savedTripId
+→ DELETE /saved-trips?savedTripId=...
+```
 
 온보딩 추천 결과에서 상세로 이동할 때는 `TravelDetailRoute`가 `initialSaved`와 `savedTripId`를 원시 값으로 전달한다. Route는 `BookmarkUiState`에 의존하지 않으며, `initialSaved = false`이면 ID가 함께 있어도 상세 화면은 이를 사용하지 않는다.
 

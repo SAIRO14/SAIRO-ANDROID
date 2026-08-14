@@ -5,6 +5,7 @@ import com.example.sairo14.core.datastore.DeviceIdProvider
 import com.example.sairo14.data.remote.SairoApi
 import com.example.sairo14.data.remote.dto.PhotoResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripListResponseDto
+import com.example.sairo14.data.remote.dto.SavedTripResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveRequestDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveResponseDto
 import com.example.sairo14.data.remote.dto.TasteAnalysisRequestDto
@@ -13,6 +14,8 @@ import com.example.sairo14.data.repository.remote.RemoteSavedTripRepository
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.SavedTripSaveResult
+import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripPage
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -48,6 +51,64 @@ class RemoteSavedTripRepositoryTest {
         assertEquals("device-1", api.deletedDeviceId)
         assertEquals("saved-trip-1", api.deletedSavedTripId)
         assertEquals(AppResult.Success(Unit), result)
+    }
+
+    @Test
+    fun `저장 목록 요청에 기기 ID와 커서를 전달하고 페이지 응답을 반환한다`() = runTest {
+        val api = RecordingSairoApi(
+            savedTripsResponse = SavedTripListResponseDto(
+                items = listOf(
+                    SavedTripResponseDto(
+                        savedTripId = "saved-trip-1",
+                        courseId = "course-1",
+                        regionName = "제주",
+                        regionArea = "제주시",
+                        imageUrl = null,
+                        reason = null,
+                        createdAt = "2026-08-14T10:00:00Z",
+                    ),
+                ),
+                nextCursor = "next-cursor",
+            ),
+        )
+        val repository = createRepository(api = api)
+
+        val result = repository.getSavedTrips(cursor = "current-cursor", size = 10)
+
+        assertEquals("device-1", api.savedTripsDeviceId)
+        assertEquals("current-cursor", api.savedTripsCursor)
+        assertEquals(10, api.savedTripsSize)
+        assertEquals(
+            AppResult.Success(
+                SavedTripPage(
+                    items = listOf(
+                        SavedTrip(
+                            savedTripId = "saved-trip-1",
+                            courseId = "course-1",
+                            regionName = "제주",
+                            regionArea = "제주시",
+                            imageUrl = null,
+                            reason = null,
+                            createdAt = "2026-08-14T10:00:00Z",
+                        ),
+                    ),
+                    nextCursor = "next-cursor",
+                ),
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun `저장 목록 네트워크 오류를 재시도 가능한 앱 오류로 변환한다`() = runTest {
+        val repository = createRepository(
+            api = RecordingSairoApi(savedTripsError = IOException("offline")),
+        )
+
+        assertEquals(
+            AppResult.Failure(AppError.NetworkUnavailable),
+            repository.getSavedTrips(),
+        )
     }
 
     @Test
@@ -105,6 +166,8 @@ class RemoteSavedTripRepositoryTest {
 
     private class RecordingSairoApi(
         private val saveError: Throwable? = null,
+        private val savedTripsResponse: SavedTripListResponseDto = SavedTripListResponseDto(emptyList()),
+        private val savedTripsError: Throwable? = null,
     ) : SairoApi {
         var savedDeviceId: String? = null
             private set
@@ -113,6 +176,12 @@ class RemoteSavedTripRepositoryTest {
         var deletedDeviceId: String? = null
             private set
         var deletedSavedTripId: String? = null
+            private set
+        var savedTripsDeviceId: String? = null
+            private set
+        var savedTripsCursor: String? = null
+            private set
+        var savedTripsSize: Int? = null
             private set
 
         override suspend fun saveTrip(
@@ -137,7 +206,13 @@ class RemoteSavedTripRepositoryTest {
             deviceId: String,
             cursor: String?,
             size: Int,
-        ): SavedTripListResponseDto = error("호출되지 않아야 합니다.")
+        ): SavedTripListResponseDto {
+            savedTripsDeviceId = deviceId
+            savedTripsCursor = cursor
+            savedTripsSize = size
+            savedTripsError?.let { throwable -> throw throwable }
+            return savedTripsResponse
+        }
 
         override suspend fun getPhotos(limit: Int): List<PhotoResponseDto> = emptyList()
 

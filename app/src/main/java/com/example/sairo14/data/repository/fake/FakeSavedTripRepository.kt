@@ -49,10 +49,24 @@ class FakeSavedTripRepository @Inject constructor(
         size: Int,
     ): AppResult<SavedTripPage> = mutex.withLock {
         val deviceId = deviceIdProvider.getDeviceId()
+        if (size !in MinPageSize..MaxPageSize) {
+            return@withLock AppResult.Failure(AppError.InvalidRequest)
+        }
+
+        val currentTrips = savedTripsByDeviceId.getOrPut(deviceId) { sampleSavedTrips }
+        val startIndex = when (cursor) {
+            null -> 0
+            else -> cursor.toStartIndexOrNull()
+                ?: return@withLock AppResult.Failure(AppError.InvalidCursor)
+        }
+        if (startIndex !in currentTrips.indices) return@withLock AppResult.Failure(AppError.InvalidCursor)
+
+        val endIndexExclusive = (startIndex + size).coerceAtMost(currentTrips.size)
         AppResult.Success(
             SavedTripPage(
-                items = savedTripsByDeviceId.getOrPut(deviceId) { sampleSavedTrips },
-                nextCursor = null,
+                items = currentTrips.subList(startIndex, endIndexExclusive).toList(),
+                nextCursor = endIndexExclusive.takeIf { it < currentTrips.size }
+                    ?.let(::toCursor),
             ),
         )
     }
@@ -71,6 +85,12 @@ class FakeSavedTripRepository @Inject constructor(
     }
 
     private companion object {
+        const val MinPageSize = 1
+        const val MaxPageSize = 50
+        const val CursorPrefix = "fake-saved-trip-cursor-"
+
+        fun toCursor(startIndex: Int): String = "$CursorPrefix$startIndex"
+
         val sampleSavedTrips = listOf(
             SavedTrip(
                 savedTripId = "saved-trip-boeun",
@@ -101,4 +121,9 @@ class FakeSavedTripRepository @Inject constructor(
             ),
         )
     }
+
+    private fun String.toStartIndexOrNull(): Int? =
+        removePrefix(CursorPrefix)
+            .takeIf { startsWith(CursorPrefix) }
+            ?.toIntOrNull()
 }

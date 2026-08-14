@@ -37,6 +37,33 @@ class FakeSavedTripRepositoryTest {
         assertEquals(removedTripId, secondDeviceTrips.first().savedTripId)
     }
 
+    @Test
+    fun `다음 커서로 조회하면 최신 저장 순서를 유지한 다음 페이지를 반환한다`() = runTest {
+        val repository = FakeSavedTripRepository(TestDeviceIdProvider("device-a"))
+
+        val firstPage = repository.getSavedTrips(size = 2).successValue()
+        val secondPage = repository.getSavedTrips(cursor = firstPage.nextCursor, size = 2).successValue()
+
+        assertEquals(listOf("saved-trip-boeun", "saved-trip-gangneung"), firstPage.items.map { it.savedTripId })
+        assertEquals("fake-saved-trip-cursor-2", firstPage.nextCursor)
+        assertEquals(listOf("saved-trip-jeju"), secondPage.items.map { it.savedTripId })
+        assertEquals(null, secondPage.nextCursor)
+    }
+
+    @Test
+    fun `유효하지 않은 커서와 페이지 크기는 실패로 반환한다`() = runTest {
+        val repository = FakeSavedTripRepository(TestDeviceIdProvider("device-a"))
+
+        assertEquals(
+            AppResult.Failure(com.example.sairo14.domain.model.AppError.InvalidCursor),
+            repository.getSavedTrips(cursor = "invalid", size = 2),
+        )
+        assertEquals(
+            AppResult.Failure(com.example.sairo14.domain.model.AppError.InvalidRequest),
+            repository.getSavedTrips(size = 0),
+        )
+    }
+
     private fun <T> AppResult<T>.successValue(): T =
         (this as? AppResult.Success<T>)?.value
             ?: error("성공 결과를 기대했습니다.")

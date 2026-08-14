@@ -33,7 +33,10 @@ class DataStoreDeviceIdProvider(
 
 ```kotlin
 interface SavedTripRepository {
-    suspend fun getSavedTrips(): AppResult<List<SavedTrip>>
+    suspend fun getSavedTrips(
+        cursor: String? = null,
+        size: Int = 20,
+    ): AppResult<SavedTripPage>
     suspend fun deleteSavedTrip(savedTripId: String): AppResult<Unit>
 }
 ```
@@ -45,7 +48,7 @@ flowchart LR
     UI[SavedTripsViewModel] --> UC[UseCase]
     UC --> RI[SavedTripRepository]
     RI --> FR[FakeSavedTripRepository]
-    RI -. 실제 서버 연결 후 .-> RR[RemoteSavedTripRepository]
+    RI --> RR[RemoteSavedTripRepository]
     FR --> DP[DeviceIdProvider]
     RR --> DP
     DP --> DS[AnonymousIdentityDataStore]
@@ -55,7 +58,7 @@ flowchart LR
 1. ViewModel은 목록 조회 또는 저장 해제라는 사용자 행동만 UseCase에 전달한다.
 2. Repository는 `DeviceIdProvider.getDeviceId()`로 현재 기기의 UUID를 얻는다.
 3. Fake Repository는 UUID를 인메모리 목록의 키로 사용한다.
-4. 이후 Remote Repository는 같은 UUID를 Retrofit의 `X-Device-Id` 헤더 파라미터에 전달한다.
+4. Remote Repository는 같은 UUID를 Retrofit의 `X-Device-Id` 헤더 파라미터에 전달하고, cursor와 size는 Domain 계약에서 받은 값을 그대로 전달한다.
 
 ## 트레이드오프와 주의점
 

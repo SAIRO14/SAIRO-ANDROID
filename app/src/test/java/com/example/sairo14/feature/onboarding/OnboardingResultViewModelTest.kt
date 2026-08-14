@@ -5,7 +5,10 @@ import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.OnboardingAnalysisResult
 import com.example.sairo14.domain.model.OnboardingRecommendation
 import com.example.sairo14.domain.model.OnboardingAnalysisRequestToken
+import com.example.sairo14.domain.model.OnboardingCompletionToken
+import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.repository.OnboardingRepository
+import com.example.sairo14.domain.usecase.CreateOnboardingCompletionRequestUseCase
 import com.example.sairo14.domain.usecase.UpdateOnboardingCompletionUseCase
 import com.example.sairo14.feature.onboarding.result.OnboardingResultUiState
 import com.example.sairo14.feature.onboarding.result.OnboardingResultViewModel
@@ -40,7 +43,12 @@ class OnboardingResultViewModelTest {
             token = OnboardingAnalysisRequestToken(1),
             result = OnboardingAnalysisResult(emptyList(), "", recommendations, emptyMap()),
         )
-        val viewModel = OnboardingResultViewModel(store, UpdateOnboardingCompletionUseCase(OnboardingRepo()))
+        val repository = OnboardingRepo()
+        val viewModel = OnboardingResultViewModel(
+            sessionStore = store,
+            createOnboardingCompletionRequest = CreateOnboardingCompletionRequestUseCase(repository),
+            updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(repository),
+        )
 
         viewModel.load("session-1")
         advanceUntilIdle()
@@ -48,13 +56,14 @@ class OnboardingResultViewModelTest {
         assertEquals(recommendations, (viewModel.uiState.value as OnboardingResultUiState.Content).recommendations)
     }
 
-    @Test fun `늦은 이전 세션의 완료 상태 저장이 최신 세션 결과를 덮어쓰지 않는다`() = runTest(dispatcher) {
+    @Test fun `최신 세션 완료 상태 저장이 실패해도 이전 세션은 완료 상태를 덮어쓰지 않는다`() = runTest(dispatcher) {
         val store = InMemoryOnboardingAnalysisSessionStore()
         store.saveResult("session-A", recommendations = listOf(recommendation("A")))
         store.saveResult("session-B", recommendations = emptyList())
         val repository = DelayedOnboardingRepository()
         val viewModel = OnboardingResultViewModel(
             sessionStore = store,
+            createOnboardingCompletionRequest = CreateOnboardingCompletionRequestUseCase(repository),
             updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(repository),
         )
 
@@ -67,29 +76,40 @@ class OnboardingResultViewModelTest {
         repository.completeFirstUpdate()
         advanceUntilIdle()
 
-        val content = viewModel.uiState.value as OnboardingResultUiState.Content
-        assertEquals(emptyList<OnboardingRecommendation>(), content.recommendations)
+        assertEquals(OnboardingResultUiState.Error, viewModel.uiState.value)
         assertEquals(false, repository.completed)
     }
 
     private class OnboardingRepo : OnboardingRepository {
+        private var token = 0L
         override suspend fun getHasCompletedOnboarding() = AppResult.Success(false)
-        override suspend fun markOnboardingCompleted() = AppResult.Success(Unit)
-        override suspend fun markOnboardingIncomplete() = AppResult.Success(Unit)
+        override suspend fun createCompletionRequest() = AppResult.Success(
+            OnboardingCompletionToken(++token),
+        )
+        override suspend fun updateCompletionIfCurrent(
+            token: OnboardingCompletionToken,
+            completed: Boolean,
+        ) = AppResult.Success(true)
     }
 
     private class DelayedOnboardingRepository : OnboardingRepository {
         private val firstUpdateStarted = CompletableDeferred<Unit>()
         private val firstUpdateGate = CompletableDeferred<Unit>()
         private var updateCount = 0
-        var completed: Boolean? = null
+        private var latestToken = 0L
+        var completed: Boolean = false
             private set
 
-        override suspend fun getHasCompletedOnboarding() = AppResult.Success(completed ?: false)
+        override suspend fun getHasCompletedOnboarding() = AppResult.Success(completed)
 
-        override suspend fun markOnboardingCompleted(): AppResult<Unit> = update(true)
+        override suspend fun createCompletionRequest() = AppResult.Success(
+            OnboardingCompletionToken(++latestToken),
+        )
 
-        override suspend fun markOnboardingIncomplete(): AppResult<Unit> = update(false)
+        override suspend fun updateCompletionIfCurrent(
+            token: OnboardingCompletionToken,
+            completed: Boolean,
+        ): AppResult<Boolean> = update(token, completed)
 
         suspend fun awaitFirstCompletionUpdate() {
             firstUpdateStarted.await()
@@ -99,14 +119,20 @@ class OnboardingResultViewModelTest {
             firstUpdateGate.complete(Unit)
         }
 
-        private suspend fun update(nextCompleted: Boolean): AppResult<Unit> = withContext(NonCancellable) {
+        private suspend fun update(
+            token: OnboardingCompletionToken,
+            nextCompleted: Boolean,
+        ): AppResult<Boolean> = withContext(NonCancellable) {
             updateCount += 1
             if (updateCount == 1) {
                 firstUpdateStarted.complete(Unit)
                 firstUpdateGate.await()
             }
+            if (token.value != latestToken) return@withContext AppResult.Success(false)
+            if (updateCount == 2) return@withContext AppResult.Failure(AppError.StorageUnavailable)
+
             completed = nextCompleted
-            AppResult.Success(Unit)
+            AppResult.Success(true)
         }
     }
 

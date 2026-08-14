@@ -5,6 +5,7 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -40,16 +41,28 @@ class AppPreferencesDataStore @Inject constructor(
         .map { preferences -> preferences[HAS_COMPLETED_ONBOARDING] ?: false }
         .distinctUntilChanged()
 
-    suspend fun markOnboardingCompleted() {
+    suspend fun createOnboardingCompletionRequest(): Long {
+        var nextToken = 0L
         dataStore.edit { preferences ->
-            preferences[HAS_COMPLETED_ONBOARDING] = true
+            val currentToken = preferences[ONBOARDING_COMPLETION_TOKEN] ?: 0L
+            nextToken = currentToken + 1L
+            preferences[ONBOARDING_COMPLETION_TOKEN] = nextToken
         }
+        return nextToken
     }
 
-    suspend fun markOnboardingIncomplete() {
+    suspend fun updateOnboardingCompletionIfCurrent(
+        token: Long,
+        completed: Boolean,
+    ): Boolean {
+        var updated = false
         dataStore.edit { preferences ->
-            preferences[HAS_COMPLETED_ONBOARDING] = false
+            if (preferences[ONBOARDING_COMPLETION_TOKEN] == token) {
+                preferences[HAS_COMPLETED_ONBOARDING] = completed
+                updated = true
+            }
         }
+        return updated
     }
 
     /**
@@ -69,6 +82,7 @@ class AppPreferencesDataStore @Inject constructor(
 
     private companion object {
         val HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
+        val ONBOARDING_COMPLETION_TOKEN = longPreferencesKey("onboarding_completion_token")
         val ANONYMOUS_USER_ID = stringPreferencesKey("anonymous_user_id")
     }
 }

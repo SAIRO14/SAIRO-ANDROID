@@ -148,6 +148,7 @@ fun SavedTripsScreen(
                 onBookmarkClick = onBookmarkClick,
                 onTripClick = onTripClick,
                 onLoadMore = onLoadMore,
+                onLoadMoreRetry = onRetryClick,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -224,6 +225,7 @@ private fun SavedTripsList(
     onBookmarkClick: (String) -> Unit,
     onTripClick: (String, String) -> Unit,
     onLoadMore: () -> Unit,
+    onLoadMoreRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -286,7 +288,7 @@ private fun SavedTripsList(
                 ) {
                     SairoButton(
                         text = stringResource(R.string.saved_trips_retry),
-                        onClick = onLoadMore,
+                        onClick = onLoadMoreRetry,
                         style = SairoButtonStyle.Outline,
                     )
                 }

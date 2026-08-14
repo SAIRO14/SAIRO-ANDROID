@@ -48,7 +48,12 @@ class SavedTripsViewModel @Inject constructor(
         when (_uiState.value) {
             SavedTripsUiState.Error -> loadSavedTrips()
             is SavedTripsUiState.Content -> {
-                if ((_uiState.value as SavedTripsUiState.Content).loadMoreError != null) loadMore()
+                val content = _uiState.value as SavedTripsUiState.Content
+                when (content.loadMoreError) {
+                    AppError.InvalidCursor -> loadSavedTrips()
+                    null -> Unit
+                    else -> loadMore()
+                }
             }
             else -> Unit
         }
@@ -136,13 +141,21 @@ class SavedTripsViewModel @Inject constructor(
                 return@update content
             }
 
-            content.copy(
-                trips = (content.trips + page.items.map(SavedTrip::toUiModel))
-                    .distinctBy(SavedTripUiModel::savedTripId),
-                nextCursor = page.nextCursor,
-                isLoadingMore = false,
-                loadMoreError = null,
-            )
+            if (page.nextCursor == cursor) {
+                content.copy(
+                    nextCursor = null,
+                    isLoadingMore = false,
+                    loadMoreError = AppError.InvalidCursor,
+                )
+            } else {
+                content.copy(
+                    trips = (content.trips + page.items.map(SavedTrip::toUiModel))
+                        .distinctBy(SavedTripUiModel::savedTripId),
+                    nextCursor = page.nextCursor,
+                    isLoadingMore = false,
+                    loadMoreError = null,
+                )
+            }
         }
     }
 

@@ -136,6 +136,39 @@ class SavedTripsViewModelTest {
     }
 
     @Test
+    fun `다음 페이지가 같은 커서를 반환하면 자동 추가 조회를 멈추고 재시도 시 첫 페이지를 조회한다`() = runTest(dispatcher) {
+        val repository = RecordingSavedTripRepository(
+            results = listOf(
+                AppResult.Success(page(listOf(trip("saved-1")), "cursor-1")),
+                AppResult.Success(page(listOf(trip("saved-2")), "cursor-1")),
+                AppResult.Success(page(listOf(trip("saved-1"), trip("saved-3")), null)),
+            ),
+        )
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.loadMore()
+        advanceUntilIdle()
+
+        val invalidCursorContent = viewModel.content()
+        assertEquals(listOf("saved-1"), invalidCursorContent.trips.map { it.savedTripId })
+        assertNull(invalidCursorContent.nextCursor)
+        assertEquals(AppError.InvalidCursor, invalidCursorContent.loadMoreError)
+
+        viewModel.loadMore()
+        advanceUntilIdle()
+        assertEquals(listOf(null, "cursor-1"), repository.requestedCursors)
+
+        viewModel.retry()
+        advanceUntilIdle()
+
+        val refreshedContent = viewModel.content()
+        assertEquals(listOf("saved-1", "saved-3"), refreshedContent.trips.map { it.savedTripId })
+        assertNull(refreshedContent.nextCursor)
+        assertEquals(listOf(null, "cursor-1", null), repository.requestedCursors)
+    }
+
+    @Test
     fun `추가 조회 중에는 같은 커서 요청을 한 번만 보낸다`() = runTest(dispatcher) {
         val nextPageResult = CompletableDeferred<AppResult<SavedTripPage>>()
         val repository = BlockingSavedTripRepository(nextPageResult)

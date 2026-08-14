@@ -32,7 +32,7 @@ class TravelDetailViewModel @Inject constructor(
     private val getCourseDetail: GetCourseDetailUseCase,
     private val saveTripUseCase: SaveTripUseCase,
     private val deleteSavedTripUseCase: DeleteSavedTripUseCase,
-    private val bookmarkChangeNotifier: BookmarkChangeNotifier = BookmarkChangeNotifier(),
+    private val bookmarkChangeNotifier: BookmarkChangeNotifier,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<TravelDetailUiState>(TravelDetailUiState.Loading)
 

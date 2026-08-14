@@ -40,7 +40,7 @@ class OnboardingResultViewModel @Inject constructor(
     private val updateOnboardingCompletion: UpdateOnboardingCompletionUseCase,
     private val saveTripUseCase: SaveTripUseCase,
     private val deleteSavedTripUseCase: DeleteSavedTripUseCase,
-    private val bookmarkChangeNotifier: BookmarkChangeNotifier = BookmarkChangeNotifier(),
+    private val bookmarkChangeNotifier: BookmarkChangeNotifier,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<OnboardingResultUiState>(OnboardingResultUiState.Loading)
 

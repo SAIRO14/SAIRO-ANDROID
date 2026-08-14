@@ -309,6 +309,7 @@ class TravelDetailViewModelTest {
             ),
             saveTripUseCase = SaveTripUseCase(SavedTripRepo()),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(SavedTripRepo()),
+            bookmarkChangeNotifier = BookmarkChangeNotifier(),
         )
 
         viewModel.load("first")

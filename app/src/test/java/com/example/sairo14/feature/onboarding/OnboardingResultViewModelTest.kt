@@ -63,6 +63,7 @@ class OnboardingResultViewModelTest {
             updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(repository),
             saveTripUseCase = SaveTripUseCase(SavedTripRepo()),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(SavedTripRepo()),
+            bookmarkChangeNotifier = BookmarkChangeNotifier(),
         )
 
         viewModel.load("session-1")
@@ -84,6 +85,7 @@ class OnboardingResultViewModelTest {
             updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(repository),
             saveTripUseCase = SaveTripUseCase(SavedTripRepo()),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(SavedTripRepo()),
+            bookmarkChangeNotifier = BookmarkChangeNotifier(),
         )
 
         viewModel.load("session-A")

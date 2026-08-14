@@ -4,19 +4,43 @@ import com.example.sairo14.core.datastore.DeviceIdProvider
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripSaveResult
 import com.example.sairo14.domain.repository.SavedTripRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-/** 서버 연동 전 저장 목록 조회와 삭제를 확인할 수 있도록 기기별 인메모리 여행지 데이터를 제공한다. */
+/** 서버 연동 전 저장·조회·삭제 흐름을 확인할 수 있도록 기기별 인메모리 여행지 데이터를 제공한다. */
 @Singleton
 class FakeSavedTripRepository @Inject constructor(
     private val deviceIdProvider: DeviceIdProvider,
 ) : SavedTripRepository {
     private val mutex = Mutex()
     private val savedTripsByDeviceId = mutableMapOf<String, List<SavedTrip>>()
+
+    override suspend fun saveTrip(courseId: String): AppResult<SavedTripSaveResult> = mutex.withLock {
+        val deviceId = deviceIdProvider.getDeviceId()
+        val currentTrips = savedTripsByDeviceId.getOrPut(deviceId) { sampleSavedTrips }
+        val existingTrip = currentTrips.firstOrNull { trip -> trip.courseId == courseId }
+        val savedTrip = existingTrip ?: SavedTrip(
+            savedTripId = "saved-trip-$courseId",
+            courseId = courseId,
+            regionName = "새로 저장한 여행지",
+            description = "저장 API 계약 검증용 여행지",
+            imageUrls = emptyList(),
+            placeNames = emptyList(),
+        ).also { newTrip ->
+            savedTripsByDeviceId[deviceId] = listOf(newTrip) + currentTrips
+        }
+
+        AppResult.Success(
+            SavedTripSaveResult(
+                savedTripId = savedTrip.savedTripId,
+                courseId = savedTrip.courseId,
+            ),
+        )
+    }
 
     override suspend fun getSavedTrips(): AppResult<List<SavedTrip>> = mutex.withLock {
         val deviceId = deviceIdProvider.getDeviceId()

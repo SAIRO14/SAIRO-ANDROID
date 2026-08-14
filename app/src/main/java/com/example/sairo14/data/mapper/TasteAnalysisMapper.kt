@@ -47,6 +47,7 @@ private fun CourseCardDto.toCourse(): Course = Course(
         CourseDay(dayNumber = 1, places = day1.map(SpotSummaryDto::toCoursePlace)),
         CourseDay(dayNumber = 2, places = day2.map(SpotSummaryDto::toCoursePlace)),
     ),
+    isSaved = saved,
 )
 
 private fun SpotSummaryDto.toCoursePlace(): CoursePlace = CoursePlace(

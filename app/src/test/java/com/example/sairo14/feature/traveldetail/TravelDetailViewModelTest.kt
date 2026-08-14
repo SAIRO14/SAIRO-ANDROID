@@ -6,10 +6,18 @@ import com.example.sairo14.domain.model.Course
 import com.example.sairo14.domain.model.CourseDay
 import com.example.sairo14.domain.model.CoursePlace
 import com.example.sairo14.domain.model.MapCoordinate
+import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripSaveResult
 import com.example.sairo14.domain.repository.CourseRepository
 import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
+import com.example.sairo14.domain.repository.SavedTripRepository
+import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
+import com.example.sairo14.domain.usecase.SaveTripUseCase
+import com.example.sairo14.feature.bookmark.BookmarkChange
+import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -19,8 +27,11 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -152,15 +163,131 @@ class TravelDetailViewModelTest {
     }
 
     @Test
-    fun `저장 표시는 현재 상세 화면 안에서 전환한다`() = runTest(dispatcher) {
-        val viewModel = createViewModel(AppResult.Success(course()))
+    fun `코스 응답의 저장 상태로 상세 북마크를 초기화한다`() = runTest(dispatcher) {
+        val viewModel = createViewModel(AppResult.Success(course().copy(isSaved = true)))
         viewModel.load("course-boeun")
         advanceUntilIdle()
 
-        viewModel.toggleSaved()
-
         val content = viewModel.uiState.value as TravelDetailUiState.Content
-        assertTrue(content.isSaved)
+        assertTrue(content.bookmark.isSaved)
+        assertNull(content.bookmark.savedTripId)
+    }
+
+    @Test
+    fun `Route의 최신 미저장 상태는 코스 응답의 이전 저장 상태보다 우선한다`() = runTest(dispatcher) {
+        val viewModel = createViewModel(AppResult.Success(course().copy(isSaved = true)))
+
+        viewModel.load(
+            courseId = "course-boeun",
+            initialSaved = false,
+            savedTripId = "obsolete-saved-trip",
+        )
+        advanceUntilIdle()
+
+        val bookmark = (viewModel.uiState.value as TravelDetailUiState.Content).bookmark
+        assertFalse(bookmark.isSaved)
+        assertNull(bookmark.savedTripId)
+    }
+
+    @Test
+    fun `저장 성공 후 savedTripId를 보관하고 삭제 성공 후 제거한다`() = runTest(dispatcher) {
+        val savedTripRepo = SavedTripRepo()
+        val notifier = BookmarkChangeNotifier()
+        val viewModel = createViewModel(
+            result = AppResult.Success(course()),
+            savedTripRepo = savedTripRepo,
+            bookmarkChangeNotifier = notifier,
+        )
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+
+        val saveChange = async { notifier.changes.first() }
+        runCurrent()
+        viewModel.onBookmarkClick()
+        advanceUntilIdle()
+
+        val savedBookmark = (viewModel.uiState.value as TravelDetailUiState.Content).bookmark
+        assertTrue(savedBookmark.isSaved)
+        assertEquals("saved-trip-1", savedBookmark.savedTripId)
+        assertEquals(listOf("course-boeun"), savedTripRepo.savedCourseIds)
+        assertEquals(
+            BookmarkChange("course-boeun", isSaved = true, savedTripId = "saved-trip-1"),
+            saveChange.await(),
+        )
+
+        val deleteChange = async { notifier.changes.first() }
+        runCurrent()
+        viewModel.onBookmarkClick()
+        advanceUntilIdle()
+
+        val deletedBookmark = (viewModel.uiState.value as TravelDetailUiState.Content).bookmark
+        assertFalse(deletedBookmark.isSaved)
+        assertNull(deletedBookmark.savedTripId)
+        assertEquals(listOf("saved-trip-1"), savedTripRepo.deletedSavedTripIds)
+        assertEquals(
+            BookmarkChange("course-boeun", isSaved = false, savedTripId = null),
+            deleteChange.await(),
+        )
+    }
+
+    @Test
+    fun `저장과 삭제 실패는 기존 북마크 상태를 유지한다`() = runTest(dispatcher) {
+        val savedTripRepo = SavedTripRepo(saveResult = AppResult.Failure(AppError.NetworkUnavailable))
+        val viewModel = createViewModel(AppResult.Success(course()), savedTripRepo)
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+
+        viewModel.onBookmarkClick()
+        advanceUntilIdle()
+
+        val saveFailedBookmark = (viewModel.uiState.value as TravelDetailUiState.Content).bookmark
+        assertFalse(saveFailedBookmark.isSaved)
+        assertNull(saveFailedBookmark.savedTripId)
+        assertFalse(saveFailedBookmark.isRequesting)
+
+        savedTripRepo.saveResult = AppResult.Success(
+            SavedTripSaveResult(savedTripId = "saved-trip-1", courseId = "unexpected-course"),
+        )
+        savedTripRepo.deleteResult = AppResult.Failure(AppError.NetworkUnavailable)
+        viewModel.onBookmarkClick()
+        advanceUntilIdle()
+        viewModel.onBookmarkClick()
+        advanceUntilIdle()
+
+        val deleteFailedBookmark = (viewModel.uiState.value as TravelDetailUiState.Content).bookmark
+        assertTrue(deleteFailedBookmark.isSaved)
+        assertEquals("saved-trip-1", deleteFailedBookmark.savedTripId)
+        assertFalse(deleteFailedBookmark.isRequesting)
+    }
+
+    @Test
+    fun `savedTripId 없는 체크 상태에서는 삭제 요청을 보내지 않는다`() = runTest(dispatcher) {
+        val savedTripRepo = SavedTripRepo()
+        val viewModel = createViewModel(
+            result = AppResult.Success(course().copy(isSaved = true)),
+            savedTripRepo = savedTripRepo,
+        )
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+
+        viewModel.onBookmarkClick()
+        advanceUntilIdle()
+
+        assertTrue(savedTripRepo.deletedSavedTripIds.isEmpty())
+    }
+
+    @Test
+    fun `요청 중 연속 클릭은 저장 API를 한 번만 호출한다`() = runTest(dispatcher) {
+        val savedTripRepo = SavedTripRepo()
+        val viewModel = createViewModel(AppResult.Success(course()), savedTripRepo)
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+
+        viewModel.onBookmarkClick()
+        viewModel.onBookmarkClick()
+        advanceUntilIdle()
+
+        assertEquals(listOf("course-boeun"), savedTripRepo.savedCourseIds)
     }
 
     @Test
@@ -180,6 +307,9 @@ class TravelDetailViewModelTest {
                 courseRepository = OutOfOrderCourseRepository(),
                 onboardingAnalysisSessionStore = EmptySessionStore,
             ),
+            saveTripUseCase = SaveTripUseCase(SavedTripRepo()),
+            deleteSavedTripUseCase = DeleteSavedTripUseCase(SavedTripRepo()),
+            bookmarkChangeNotifier = BookmarkChangeNotifier(),
         )
 
         viewModel.load("first")
@@ -191,12 +321,19 @@ class TravelDetailViewModelTest {
         assertEquals("second", content.course.courseId)
     }
 
-    private fun createViewModel(result: AppResult<Course>): TravelDetailViewModel =
+    private fun createViewModel(
+        result: AppResult<Course>,
+        savedTripRepo: SavedTripRepo = SavedTripRepo(),
+        bookmarkChangeNotifier: BookmarkChangeNotifier = BookmarkChangeNotifier(),
+    ): TravelDetailViewModel =
         TravelDetailViewModel(
             getCourseDetail = GetCourseDetailUseCase(
                 courseRepository = CourseResultRepository(result),
                 onboardingAnalysisSessionStore = EmptySessionStore,
             ),
+            saveTripUseCase = SaveTripUseCase(savedTripRepo),
+            deleteSavedTripUseCase = DeleteSavedTripUseCase(savedTripRepo),
+            bookmarkChangeNotifier = bookmarkChangeNotifier,
         )
 
     private class CourseResultRepository(
@@ -217,6 +354,28 @@ class TravelDetailViewModelTest {
             }
 
             else -> AppResult.Success(course().copy(courseId = "second"))
+        }
+    }
+
+    private class SavedTripRepo(
+        var saveResult: AppResult<SavedTripSaveResult> = AppResult.Success(
+            SavedTripSaveResult(savedTripId = "saved-trip-1", courseId = "course-boeun"),
+        ),
+        var deleteResult: AppResult<Unit> = AppResult.Success(Unit),
+    ) : SavedTripRepository {
+        val savedCourseIds = mutableListOf<String>()
+        val deletedSavedTripIds = mutableListOf<String>()
+
+        override suspend fun saveTrip(courseId: String): AppResult<SavedTripSaveResult> {
+            savedCourseIds += courseId
+            return saveResult
+        }
+
+        override suspend fun getSavedTrips(): AppResult<List<SavedTrip>> = AppResult.Success(emptyList())
+
+        override suspend fun deleteSavedTrip(savedTripId: String): AppResult<Unit> {
+            deletedSavedTripIds += savedTripId
+            return deleteResult
         }
     }
 

@@ -122,4 +122,17 @@ class SairoNavigatorTest {
 
         assertEquals(emptyList<String>(), endedSessionIds)
     }
+
+    @Test
+    fun `상세 Route는 이전 화면의 북마크 표시와 저장 항목 ID를 보존한다`() {
+        val route = TravelDetailRoute(
+            courseId = "course-1",
+            onboardingSessionId = "session",
+            initialSaved = true,
+            savedTripId = "saved-trip-1",
+        )
+
+        assertEquals(true, route.initialSaved)
+        assertEquals("saved-trip-1", route.savedTripId)
+    }
 }

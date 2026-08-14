@@ -13,13 +13,14 @@ SAIRO API는 성공 응답을 공통 래퍼로 감싸지 않고 각 엔드포인
 ## 프로젝트 적용
 
 - 관련 파일: [`SairoApi.kt`](../../app/src/main/java/com/example/sairo14/data/remote/SairoApi.kt)
-- 관련 파일: [`PhotoResponseDto.kt`](../../app/src/main/java/com/example/sairo14/data/remote/dto/PhotoResponseDto.kt), [`TasteAnalysisDto.kt`](../../app/src/main/java/com/example/sairo14/data/remote/dto/TasteAnalysisDto.kt)
-- 관련 파일: [`PhotoMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/PhotoMapper.kt), [`TasteAnalysisMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/TasteAnalysisMapper.kt)
+- 관련 파일: [`PhotoResponseDto.kt`](../../app/src/main/java/com/example/sairo14/data/remote/dto/PhotoResponseDto.kt), [`TasteAnalysisDto.kt`](../../app/src/main/java/com/example/sairo14/data/remote/dto/TasteAnalysisDto.kt), [`SavedTripDto.kt`](../../app/src/main/java/com/example/sairo14/data/remote/dto/SavedTripDto.kt)
+- 관련 파일: [`PhotoMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/PhotoMapper.kt), [`TasteAnalysisMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/TasteAnalysisMapper.kt), [`SavedTripMapper.kt`](../../app/src/main/java/com/example/sairo14/data/mapper/SavedTripMapper.kt)
 - 관련 파일: [`RemotePhotoSelectionRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/RemotePhotoSelectionRepository.kt)
 - 관련 파일: [`RemoteOnboardingRecommendationRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteOnboardingRecommendationRepository.kt)
+- 관련 파일: [`RemoteSavedTripRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteSavedTripRepository.kt)
 - 관련 파일: [`RemoteApiModule.kt`](../../app/src/main/java/com/example/sairo14/data/remote/di/RemoteApiModule.kt)
 
-현재 `SairoApi`에는 사진 풀 조회와 온보딩 취향 분석 작업만 선언한다. 사용하지 않는 Swagger API는 미리 추가하지 않는다.
+현재 `SairoApi`에는 사진 풀 조회, 온보딩 취향 분석, 온보딩 화면에서 사용하는 저장·해제 작업만 선언한다. 사용하지 않는 Swagger API는 미리 추가하지 않는다.
 
 ```kotlin
 @GET("photos")
@@ -39,6 +40,24 @@ suspend fun analyzeTaste(
 ```
 
 `RemoteOnboardingRecommendationRepository`는 사진 ID를 중복 제거한 뒤 5~10장인지 검증하고, 기기 ID를 준비한 뒤에만 이 API를 호출한다. DataStore에서 기기 ID를 읽는 실패는 `runRemoteOperation` 밖에서 처리해 네트워크 오류로 잘못 분류하지 않는다.
+
+저장 요청은 응답의 `savedTripId`를 Domain 모델로 변환해 화면이 이후 삭제 API를 호출할 수 있게 한다. 중복 저장도 서버의 `201 Created` 응답을 그대로 성공으로 처리하며, 응답의 `courseId`를 요청값과 비교하지 않는다.
+
+```kotlin
+@POST("saved-trips")
+suspend fun saveTrip(
+    @Header("X-Device-Id") deviceId: String,
+    @Body request: SavedTripSaveRequestDto,
+): SavedTripSaveResponseDto
+
+@DELETE("saved-trips")
+suspend fun deleteSavedTrip(
+    @Header("X-Device-Id") deviceId: String,
+    @Query("savedTripId") savedTripId: String,
+)
+```
+
+삭제 API는 본문 없는 `204 No Content`를 반환하므로 Retrofit 메서드의 반환형을 `Unit`으로 둔다. 정상 삭제뿐 아니라 이미 삭제된 ID도 서버가 `204`로 응답하는 계약이므로, Repository는 모두 `AppResult.Success(Unit)`으로 전달한다.
 
 ## 흐름과 영향 범위
 

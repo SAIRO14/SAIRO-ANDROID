@@ -2,9 +2,17 @@ package com.example.sairo14.domain.repository
 
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripSaveResult
 
 /** 현재 기기에 저장된 여행지 목록을 최신 저장 순서로 조회하는 도메인 계약이다. */
 interface SavedTripRepository {
+
+    /** 현재 기기에서 지정한 코스를 저장하고, 이후 해제에 필요한 저장 항목 ID를 반환한다.
+     *
+     * 기기 식별은 Data 계층 구현이 관리하므로, 호출자는 [courseId]만 전달한다.
+     * @param courseId 저장할 코스의 안정적인 ID
+     */
+    suspend fun saveTrip(courseId: String): AppResult<SavedTripSaveResult>
 
     /** 현재 기기의 저장 여행지 목록을 한 번 조회한다. */
     suspend fun getSavedTrips(): AppResult<List<SavedTrip>>

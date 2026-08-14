@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,13 +60,16 @@ import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
 import com.example.sairo14.core.extension.sairoDropShadow
 import com.example.sairo14.domain.model.OnboardingRecommendation
+import com.example.sairo14.feature.bookmark.BookmarkEffect
+import com.example.sairo14.feature.bookmark.BookmarkUiState
+import kotlinx.coroutines.flow.collect
 
 /**
  * 온보딩 결과의 상태와 내비게이션 행동을 화면에 연결한다.
  *
  * 선택 사진 ID는 Route가 소유하고, 결과 조회·재시도·북마크 표시 상태는 [OnboardingResultViewModel]이
  * 관리한다. 홈 이동, 사진 재선택 이동, 추천 코스 상세 이동은 호출자가 소유한다.
- * @param onRecommendationClick 추천 폴더 카드를 눌렀을 때 코스 ID와 함께 호출할 동작
+ * @param onRecommendationClick 추천 폴더 카드를 눌렀을 때 코스 ID와 최신 북마크 상태를 전달할 동작
  */
 @Composable
 fun OnboardingResultRoute(
@@ -72,14 +77,26 @@ fun OnboardingResultRoute(
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
     onRequestAgainClick: () -> Unit,
-    onRecommendationClick: (String) -> Unit,
+    onRecommendationClick: (String, Boolean, String?) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: OnboardingResultViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val bookmarkSnackbarHostState = remember { SnackbarHostState() }
+    val bookmarkErrorMessage = stringResource(R.string.bookmark_request_error)
 
     LaunchedEffect(searchSessionId) {
         viewModel.load(searchSessionId)
+    }
+
+    LaunchedEffect(viewModel, bookmarkErrorMessage) {
+        viewModel.bookmarkEffect.collect { effect ->
+            when (effect) {
+                is BookmarkEffect.ShowError -> {
+                    bookmarkSnackbarHostState.showSnackbar(bookmarkErrorMessage)
+                }
+            }
+        }
     }
 
     OnboardingResultScreen(
@@ -88,8 +105,9 @@ fun OnboardingResultRoute(
         onHomeClick = onHomeClick,
         onRequestAgainClick = onRequestAgainClick,
         onRetryClick = viewModel::retry,
-        onBookmarkClick = viewModel::toggleSaved,
+        onBookmarkClick = viewModel::onBookmarkClick,
         onRecommendationClick = onRecommendationClick,
+        bookmarkSnackbarHostState = bookmarkSnackbarHostState,
         modifier = modifier,
     )
 }
@@ -99,7 +117,7 @@ fun OnboardingResultRoute(
  *
  * 추천이 2개 이상이면 카드 목록만 스크롤하고, 0개 또는 1개면 재추천 영역을 화면 하단에 고정한다.
  * 카드와 버튼의 실제 동작은 호출자가 전달한 콜백으로 처리한다.
- * @param onRecommendationClick 추천 폴더 카드를 눌렀을 때 코스 ID와 함께 호출할 동작
+ * @param onRecommendationClick 추천 폴더 카드를 눌렀을 때 코스 ID와 최신 북마크 상태를 전달할 동작
  */
 @Composable
 fun OnboardingResultScreen(
@@ -109,34 +127,48 @@ fun OnboardingResultScreen(
     onRequestAgainClick: () -> Unit,
     onRetryClick: () -> Unit,
     onBookmarkClick: (String) -> Unit,
-    onRecommendationClick: (String) -> Unit,
+    onRecommendationClick: (String, Boolean, String?) -> Unit,
+    bookmarkSnackbarHostState: SnackbarHostState? = null,
     modifier: Modifier = Modifier,
 ) {
-    OnboardingResultContainer(
-        modifier = modifier,
-        onBackClick = onBackClick,
-        onHomeClick = onHomeClick,
-    ) { backdropState, headerHeight ->
-        when (uiState) {
-            OnboardingResultUiState.Loading -> ResultPending(
-                headerHeight = headerHeight,
-                modifier = Modifier.fillMaxSize(),
-            )
+    Box(modifier = modifier) {
+        OnboardingResultContainer(
+            modifier = Modifier.fillMaxSize(),
+            onBackClick = onBackClick,
+            onHomeClick = onHomeClick,
+        ) { backdropState, headerHeight ->
+            when (uiState) {
+                OnboardingResultUiState.Loading -> ResultPending(
+                    headerHeight = headerHeight,
+                    modifier = Modifier.fillMaxSize(),
+                )
 
-            OnboardingResultUiState.Error -> ResultError(
-                headerHeight = headerHeight,
-                onRetryClick = onRetryClick,
-                modifier = Modifier.fillMaxSize(),
-            )
+                OnboardingResultUiState.Error -> ResultError(
+                    headerHeight = headerHeight,
+                    onRetryClick = onRetryClick,
+                    modifier = Modifier.fillMaxSize(),
+                )
 
-            is OnboardingResultUiState.Content -> ResultContent(
-                recommendations = uiState.recommendations,
-                backdropState = backdropState,
-                headerHeight = headerHeight,
-                onRequestAgainClick = onRequestAgainClick,
-                onBookmarkClick = onBookmarkClick,
-                onRecommendationClick = onRecommendationClick,
-                modifier = Modifier.fillMaxSize(),
+                is OnboardingResultUiState.Content -> ResultContent(
+                    recommendations = uiState.recommendations,
+                    bookmarks = uiState.bookmarks,
+                    backdropState = backdropState,
+                    headerHeight = headerHeight,
+                    onRequestAgainClick = onRequestAgainClick,
+                    onBookmarkClick = onBookmarkClick,
+                    onRecommendationClick = onRecommendationClick,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+
+        bookmarkSnackbarHostState?.let { hostState ->
+            SnackbarHost(
+                hostState = hostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(ResultHorizontalPadding),
             )
         }
     }
@@ -191,11 +223,12 @@ private fun OnboardingResultContainer(
 @Composable
 private fun ResultContent(
     recommendations: List<OnboardingRecommendation>,
+    bookmarks: Map<String, BookmarkUiState>,
     backdropState: SairoBackdropState,
     headerHeight: Dp,
     onRequestAgainClick: () -> Unit,
     onBookmarkClick: (String) -> Unit,
-    onRecommendationClick: (String) -> Unit,
+    onRecommendationClick: (String, Boolean, String?) -> Unit,
     modifier: Modifier,
 ) {
     val isInsufficient = recommendations.size <= InsufficientRecommendationCount
@@ -227,11 +260,23 @@ private fun ResultContent(
                     items = recommendations,
                     key = { _, recommendation -> recommendation.id },
                 ) { index, recommendation ->
+                    val bookmark = bookmarks[recommendation.courseId] ?: BookmarkUiState(
+                        isSaved = recommendation.isSaved,
+                    )
                     RecommendationCard(
                         recommendation = recommendation,
+                        bookmark = bookmark,
                         backdropState = backdropState,
                         onBookmarkClick = onBookmarkClick,
-                        onClick = { onRecommendationClick(recommendation.courseId) },
+                        onClick = {
+                            if (bookmark.isDetailNavigationEnabled) {
+                                onRecommendationClick(
+                                    recommendation.courseId,
+                                    bookmark.isSaved,
+                                    bookmark.savedTripId.takeIf { bookmark.isSaved },
+                                )
+                            }
+                        },
                     )
                     if (index < recommendations.lastIndex) {
                         Spacer(modifier = Modifier.height(CardSpacing))
@@ -298,6 +343,7 @@ private fun ResultTitleShadow() {
 @Composable
 private fun RecommendationCard(
     recommendation: OnboardingRecommendation,
+    bookmark: BookmarkUiState,
     backdropState: SairoBackdropState,
     onBookmarkClick: (String) -> Unit,
     onClick: () -> Unit,
@@ -320,9 +366,10 @@ private fun RecommendationCard(
             regionLabel = recommendation.regionName,
             description = recommendation.description,
             placeNames = recommendation.placeNames,
-            saved = recommendation.isSaved,
+            saved = bookmark.isSaved,
             onClick = onClick,
-            onBookmarkClick = { onBookmarkClick(recommendation.id) },
+            onBookmarkClick = { onBookmarkClick(recommendation.courseId) },
+            bookmarkEnabled = bookmark.isDetailNavigationEnabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .widthIn(max = ResultCardMaxWidth),
@@ -432,13 +479,16 @@ private val ErrorButtonSpacing = 16.dp
 private fun OnboardingResultMultiplePreview() {
     SairoTheme {
         OnboardingResultScreen(
-            uiState = OnboardingResultUiState.Content(previewRecommendations),
+            uiState = OnboardingResultUiState.Content(
+                recommendations = previewRecommendations,
+                bookmarks = previewRecommendations.toPreviewBookmarks(),
+            ),
             onBackClick = {},
             onHomeClick = {},
             onRequestAgainClick = {},
             onRetryClick = {},
             onBookmarkClick = {},
-            onRecommendationClick = {},
+            onRecommendationClick = { _, _, _ -> },
         )
     }
 }
@@ -448,13 +498,16 @@ private fun OnboardingResultMultiplePreview() {
 private fun OnboardingResultInsufficientPreview() {
     SairoTheme {
         OnboardingResultScreen(
-            uiState = OnboardingResultUiState.Content(previewRecommendations.take(1)),
+            uiState = OnboardingResultUiState.Content(
+                recommendations = previewRecommendations.take(1),
+                bookmarks = previewRecommendations.take(1).toPreviewBookmarks(),
+            ),
             onBackClick = {},
             onHomeClick = {},
             onRequestAgainClick = {},
             onRetryClick = {},
             onBookmarkClick = {},
-            onRecommendationClick = {},
+            onRecommendationClick = { _, _, _ -> },
         )
     }
 }
@@ -464,13 +517,16 @@ private fun OnboardingResultInsufficientPreview() {
 private fun OnboardingResultEmptyPreview() {
     SairoTheme {
         OnboardingResultScreen(
-            uiState = OnboardingResultUiState.Content(emptyList()),
+            uiState = OnboardingResultUiState.Content(
+                recommendations = emptyList(),
+                bookmarks = emptyMap(),
+            ),
             onBackClick = {},
             onHomeClick = {},
             onRequestAgainClick = {},
             onRetryClick = {},
             onBookmarkClick = {},
-            onRecommendationClick = {},
+            onRecommendationClick = { _, _, _ -> },
         )
     }
 }
@@ -493,3 +549,8 @@ private val previewRecommendations = listOf(
         placeNames = listOf("안목해변", "명주동 골목"),
     ),
 )
+
+private fun List<OnboardingRecommendation>.toPreviewBookmarks(): Map<String, BookmarkUiState> =
+    associate { recommendation ->
+        recommendation.courseId to BookmarkUiState(isSaved = recommendation.isSaved)
+    }

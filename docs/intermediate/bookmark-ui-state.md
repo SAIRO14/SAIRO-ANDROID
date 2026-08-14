@@ -1,0 +1,94 @@
+# 북마크 UI 상태와 화면 간 동기화
+
+## 개념
+
+북마크 UI는 서버가 확인한 저장 표시, 저장 해제에 필요한 식별자, 진행 중 요청을 서로 다른 값으로 관리한다. 화면 간에는 저장·삭제에 성공한 결과만 메모리로 전달하고, 오류 안내는 필요한 화면에서만 한 번 소비하는 효과로 분리한다.
+
+## 도입 이유
+
+`savedTripId`는 삭제 요청을 위한 값일 뿐 저장 여부의 기준이 아니다. 예를 들어 코스 응답이 `saved = true`만 주면 체크 상태는 보여 줄 수 있지만, 삭제 API에 전달할 ID가 없어 해제 요청은 할 수 없다. 또한 API 실패를 UI state에 남기면 화면 회전이나 재수집 때 과거 오류가 반복 표시될 수 있다.
+
+## 프로젝트 적용
+
+- 관련 파일: [`BookmarkUiState.kt`](../../app/src/main/java/com/example/sairo14/feature/bookmark/BookmarkUiState.kt)
+
+```kotlin
+data class BookmarkUiState(
+    val isSaved: Boolean = false,
+    val savedTripId: String? = null,
+    val isRequesting: Boolean = false,
+)
+```
+
+`BookmarkEffect.ShowError`는 `SharedFlow`로 전달한다. [`OnboardingResultViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultViewModel.kt)은 추천 카드별 상태를 `Map<courseId, BookmarkUiState>`로 보관하고, [`OnboardingResultScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultScreen.kt)은 이 효과를 Snackbar 문구로 변환해 안내한다.
+
+`savedTripId`는 저장 성공 응답에서만 얻는다. 초기 코스 응답의 `saved = true`가 ID 없이 내려오면 체크 표시는 가능하지만, 상세 화면의 삭제 요청은 실행하지 않는다.
+
+```kotlin
+BookmarkUiState(
+    isSaved = true,
+    savedTripId = null,
+)
+```
+
+## 흐름과 영향 범위
+
+```mermaid
+flowchart LR
+    RESULT[온보딩 추천 카드] --> RVM[OnboardingResultViewModel]
+    RVM --> SAVE[SaveTripUseCase]
+    SAVE --> REPO[SavedTripRepository]
+    REPO --> STATE[BookmarkUiState]
+    STATE --> ROUTE[TravelDetailRoute]
+    ROUTE --> DVM[TravelDetailViewModel]
+    DVM --> DELETE[DeleteSavedTripUseCase]
+    DELETE --> REPO
+    DVM --> CHANGE[BookmarkChangeNotifier]
+    CHANGE --> RVM
+```
+
+성공하면 ViewModel이 `isSaved`와 필요한 경우 `savedTripId`를 갱신한다. 실패하면 기존 상태는 유지하고 `isRequesting`만 해제한 뒤 효과만 전달한다.
+
+저장 성공 뒤 `savedTripId`가 이동하는 경로는 다음으로 제한한다.
+
+```text
+POST /saved-trips 응답
+→ SavedTripSaveResponseDto
+→ SavedTripSaveResult
+→ BookmarkUiState.savedTripId
+→ TravelDetailRoute.savedTripId
+→ 상세 BookmarkUiState.savedTripId
+→ DELETE /saved-trips?savedTripId=...
+```
+
+온보딩 추천 결과에서 상세로 이동할 때는 `TravelDetailRoute`가 `initialSaved`와 `savedTripId`를 원시 값으로 전달한다. Route는 `BookmarkUiState`에 의존하지 않으며, `initialSaved = false`이면 ID가 함께 있어도 상세 화면은 이를 사용하지 않는다.
+
+[`TravelDetailViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt)은 `initialSaved`가 있으면 그 값을, 없으면 `Course.isSaved`를 사용해 상세 북마크를 초기화한다. 저장·삭제 요청 중에는 `isRequesting`만 먼저 바꾸고, 실패하면 이 값만 다시 해제해 기존 체크 상태와 `savedTripId`를 유지한다. 이 화면은 현재 오류 효과를 표시하지 않는다.
+
+상세에서 성공한 변경은 [`BookmarkChangeNotifier.kt`](../../app/src/main/java/com/example/sairo14/feature/bookmark/BookmarkChangeNotifier.kt)를 통해 이전 추천 결과 화면에만 전달한다.
+
+```kotlin
+BookmarkChange(
+    courseId = "course-1",
+    isSaved = false,
+    savedTripId = null,
+)
+```
+
+이 통지자는 앱 메모리에서 살아 있는 화면만 갱신하며, DataStore나 서버 상태 캐시가 아니다. 추천 결과 ViewModel은 현재 목록에 포함된 같은 `courseId`만 반영하고, 화면을 다시 로드할 때는 서버 응답을 다시 사용한다.
+
+## 트레이드오프와 주의점
+
+`SharedFlow`는 구독 중인 화면에만 단발성 오류를 전달하므로, 화면이 없는 동안 발생한 오류를 나중에 다시 보여 주지 않는다. 이는 이미 사라진 화면의 Snackbar가 다시 나타나는 문제를 막지만, 오류 이력을 보존해야 하는 요구에는 적합하지 않다. `isRequesting` 검사는 버튼의 `enabled` 처리뿐 아니라 ViewModel에도 있어야 중복 이벤트를 막을 수 있다.
+
+## 추가 학습 및 대안
+
+> 아래 예시는 현재 프로젝트에 적용하지 않은 상태 기반 오류 표시 방식이다.
+
+```kotlin
+data class BookmarkUiState(
+    val error: AppError? = null,
+)
+```
+
+이 방식은 오류를 다시 표시하거나 화면에 고정할 때 유용하다. 하지만 오류를 소비한 뒤 명시적으로 제거해야 하며, 단순한 저장·해제 실패 안내에는 `BookmarkEffect`가 더 적합하다.

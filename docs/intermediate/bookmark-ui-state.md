@@ -20,7 +20,7 @@ data class BookmarkUiState(
 )
 ```
 
-`BookmarkEffect.ShowError`는 `SharedFlow`로 전달한다. 추천 결과와 여행 상세 ViewModel은 다음 구현 단계에서 각자의 `effect`를 통해 이 값을 내보내고, Composable은 문자열 리소스로 변환해 안내한다.
+`BookmarkEffect.ShowError`는 `SharedFlow`로 전달한다. [`OnboardingResultViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultViewModel.kt)은 추천 카드별 상태를 `Map<courseId, BookmarkUiState>`로 보관하고, [`OnboardingResultScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultScreen.kt)은 이 효과를 Snackbar 문구로 변환해 안내한다.
 
 ## 흐름과 영향 범위
 

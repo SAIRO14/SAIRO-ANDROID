@@ -2,6 +2,7 @@ package com.example.sairo14.feature.onboarding.result
 
 import androidx.compose.runtime.Immutable
 import com.example.sairo14.domain.model.OnboardingRecommendation
+import com.example.sairo14.feature.bookmark.BookmarkUiState
 
 /** 온보딩 추천 결과 화면의 조회·콘텐츠·오류 상태를 나타낸다. */
 sealed interface OnboardingResultUiState {
@@ -13,6 +14,7 @@ sealed interface OnboardingResultUiState {
     @Immutable
     data class Content(
         val recommendations: List<OnboardingRecommendation>,
+        val bookmarks: Map<String, BookmarkUiState>,
     ) : OnboardingResultUiState
 
     /** 완료 상태 저장 또는 추천 결과 조회에 실패해 재시도가 필요한 상태다. */

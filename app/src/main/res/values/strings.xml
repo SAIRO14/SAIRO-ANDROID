@@ -26,6 +26,7 @@
     <string name="sairo_place_list_item_preview_image">말티재 전망대 이미지</string>
     <string name="sairo_bookmark_saved">저장됨</string>
     <string name="sairo_bookmark_unsaved">저장 안 됨</string>
+    <string name="bookmark_request_error">북마크를 변경하지 못했어요. 다시 시도해 주세요.</string>
     <string name="sairo_place_folder_card_preview_region">충북 보은권</string>
     <string name="sairo_place_folder_card_preview_description">고요한 자연과 전통의 분위기</string>
     <string name="sairo_place_folder_card_preview_first_place">말티재 전망대</string>

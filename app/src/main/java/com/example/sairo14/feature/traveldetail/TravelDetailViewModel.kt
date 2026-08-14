@@ -9,6 +9,8 @@ import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import com.example.sairo14.domain.usecase.SaveTripUseCase
 import com.example.sairo14.feature.bookmark.BookmarkUiState
+import com.example.sairo14.feature.bookmark.BookmarkChange
+import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -30,6 +32,7 @@ class TravelDetailViewModel @Inject constructor(
     private val getCourseDetail: GetCourseDetailUseCase,
     private val saveTripUseCase: SaveTripUseCase,
     private val deleteSavedTripUseCase: DeleteSavedTripUseCase,
+    private val bookmarkChangeNotifier: BookmarkChangeNotifier = BookmarkChangeNotifier(),
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<TravelDetailUiState>(TravelDetailUiState.Loading)
 
@@ -137,7 +140,7 @@ class TravelDetailViewModel @Inject constructor(
 
         if (bookmark.isSaved) {
             bookmark.savedTripId?.let { savedTripId ->
-                deleteSavedTrip(savedTripId)
+                deleteSavedTrip(content.course.courseId, savedTripId)
             }
         } else {
             saveTrip(content.course.courseId)
@@ -154,6 +157,14 @@ class TravelDetailViewModel @Inject constructor(
                         savedTripId = result.value.savedTripId,
                         isRequesting = false,
                     )
+                }.also {
+                    bookmarkChangeNotifier.notify(
+                        BookmarkChange(
+                            courseId = courseId,
+                            isSaved = true,
+                            savedTripId = result.value.savedTripId,
+                        ),
+                    )
                 }
 
                 is AppResult.Failure -> setBookmarkRequesting(isRequesting = false)
@@ -161,7 +172,7 @@ class TravelDetailViewModel @Inject constructor(
         }
     }
 
-    private fun deleteSavedTrip(savedTripId: String) {
+    private fun deleteSavedTrip(courseId: String, savedTripId: String) {
         setBookmarkRequesting(isRequesting = true)
         viewModelScope.launch {
             when (deleteSavedTripUseCase(savedTripId)) {
@@ -170,6 +181,14 @@ class TravelDetailViewModel @Inject constructor(
                         isSaved = false,
                         savedTripId = null,
                         isRequesting = false,
+                    )
+                }.also {
+                    bookmarkChangeNotifier.notify(
+                        BookmarkChange(
+                            courseId = courseId,
+                            isSaved = false,
+                            savedTripId = null,
+                        ),
                     )
                 }
 

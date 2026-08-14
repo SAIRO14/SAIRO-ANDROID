@@ -14,7 +14,10 @@ import com.example.sairo14.domain.repository.SavedTripRepository
 import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import com.example.sairo14.domain.usecase.SaveTripUseCase
+import com.example.sairo14.feature.bookmark.BookmarkChange
+import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -24,6 +27,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -188,10 +192,17 @@ class TravelDetailViewModelTest {
     @Test
     fun `저장 성공 후 savedTripId를 보관하고 삭제 성공 후 제거한다`() = runTest(dispatcher) {
         val savedTripRepo = SavedTripRepo()
-        val viewModel = createViewModel(AppResult.Success(course()), savedTripRepo)
+        val notifier = BookmarkChangeNotifier()
+        val viewModel = createViewModel(
+            result = AppResult.Success(course()),
+            savedTripRepo = savedTripRepo,
+            bookmarkChangeNotifier = notifier,
+        )
         viewModel.load("course-boeun")
         advanceUntilIdle()
 
+        val saveChange = async { notifier.changes.first() }
+        runCurrent()
         viewModel.onBookmarkClick()
         advanceUntilIdle()
 
@@ -199,7 +210,13 @@ class TravelDetailViewModelTest {
         assertTrue(savedBookmark.isSaved)
         assertEquals("saved-trip-1", savedBookmark.savedTripId)
         assertEquals(listOf("course-boeun"), savedTripRepo.savedCourseIds)
+        assertEquals(
+            BookmarkChange("course-boeun", isSaved = true, savedTripId = "saved-trip-1"),
+            saveChange.await(),
+        )
 
+        val deleteChange = async { notifier.changes.first() }
+        runCurrent()
         viewModel.onBookmarkClick()
         advanceUntilIdle()
 
@@ -207,6 +224,10 @@ class TravelDetailViewModelTest {
         assertFalse(deletedBookmark.isSaved)
         assertNull(deletedBookmark.savedTripId)
         assertEquals(listOf("saved-trip-1"), savedTripRepo.deletedSavedTripIds)
+        assertEquals(
+            BookmarkChange("course-boeun", isSaved = false, savedTripId = null),
+            deleteChange.await(),
+        )
     }
 
     @Test
@@ -302,6 +323,7 @@ class TravelDetailViewModelTest {
     private fun createViewModel(
         result: AppResult<Course>,
         savedTripRepo: SavedTripRepo = SavedTripRepo(),
+        bookmarkChangeNotifier: BookmarkChangeNotifier = BookmarkChangeNotifier(),
     ): TravelDetailViewModel =
         TravelDetailViewModel(
             getCourseDetail = GetCourseDetailUseCase(
@@ -310,6 +332,7 @@ class TravelDetailViewModelTest {
             ),
             saveTripUseCase = SaveTripUseCase(savedTripRepo),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(savedTripRepo),
+            bookmarkChangeNotifier = bookmarkChangeNotifier,
         )
 
     private class CourseResultRepository(

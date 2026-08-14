@@ -9,6 +9,8 @@ import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.SaveTripUseCase
 import com.example.sairo14.domain.usecase.UpdateOnboardingCompletionUseCase
 import com.example.sairo14.feature.bookmark.BookmarkEffect
+import com.example.sairo14.feature.bookmark.BookmarkChange
+import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import com.example.sairo14.feature.bookmark.BookmarkUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -37,6 +40,7 @@ class OnboardingResultViewModel @Inject constructor(
     private val updateOnboardingCompletion: UpdateOnboardingCompletionUseCase,
     private val saveTripUseCase: SaveTripUseCase,
     private val deleteSavedTripUseCase: DeleteSavedTripUseCase,
+    private val bookmarkChangeNotifier: BookmarkChangeNotifier = BookmarkChangeNotifier(),
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<OnboardingResultUiState>(OnboardingResultUiState.Loading)
 
@@ -50,6 +54,12 @@ class OnboardingResultViewModel @Inject constructor(
     private var searchSessionId: String? = null
     private var loadJob: Job? = null
     private var loadGeneration = 0L
+
+    init {
+        viewModelScope.launch {
+            bookmarkChangeNotifier.changes.collect(::applyBookmarkChange)
+        }
+    }
 
     /** 세션의 분석 결과를 한 번 읽고 결과 수에 맞게 온보딩 완료 상태를 갱신한다. */
     fun load(searchSessionId: String, force: Boolean = false) {
@@ -179,6 +189,15 @@ class OnboardingResultViewModel @Inject constructor(
             val content = state as? OnboardingResultUiState.Content ?: return@update state
             val bookmark = content.bookmarks[courseId] ?: return@update content
             content.copy(bookmarks = content.bookmarks + (courseId to transform(bookmark)))
+        }
+    }
+
+    private fun applyBookmarkChange(change: BookmarkChange) {
+        updateBookmark(change.courseId) {
+            BookmarkUiState(
+                isSaved = change.isSaved,
+                savedTripId = change.savedTripId?.takeIf { change.isSaved },
+            )
         }
     }
 

@@ -40,6 +40,18 @@ flowchart LR
 
 [`TravelDetailViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt)은 `initialSaved`가 있으면 그 값을, 없으면 `Course.isSaved`를 사용해 상세 북마크를 초기화한다. 저장·삭제 요청 중에는 `isRequesting`만 먼저 바꾸고, 실패하면 이 값만 다시 해제해 기존 체크 상태와 `savedTripId`를 유지한다. 이 화면은 현재 오류 효과를 표시하지 않는다.
 
+상세에서 성공한 변경은 [`BookmarkChangeNotifier.kt`](../../app/src/main/java/com/example/sairo14/feature/bookmark/BookmarkChangeNotifier.kt)를 통해 이전 추천 결과 화면에만 전달한다.
+
+```kotlin
+BookmarkChange(
+    courseId = "course-1",
+    isSaved = false,
+    savedTripId = null,
+)
+```
+
+이 통지자는 앱 메모리에서 살아 있는 화면만 갱신하며, DataStore나 서버 상태 캐시가 아니다. 추천 결과 ViewModel은 현재 목록에 포함된 같은 `courseId`만 반영하고, 화면을 다시 로드할 때는 서버 응답을 다시 사용한다.
+
 ## 트레이드오프와 주의점
 
 `SharedFlow`는 구독 중인 화면에만 단발성 오류를 전달하므로, 화면이 없는 동안 발생한 오류를 나중에 다시 보여 주지 않는다. 이는 이미 사라진 화면의 Snackbar가 다시 나타나는 문제를 막지만, 오류 이력을 보존해야 하는 요구에는 적합하지 않다. `isRequesting` 검사는 버튼의 `enabled` 처리뿐 아니라 ViewModel에도 있어야 중복 이벤트를 막을 수 있다.

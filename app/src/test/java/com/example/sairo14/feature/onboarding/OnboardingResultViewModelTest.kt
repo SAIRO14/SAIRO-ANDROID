@@ -15,6 +15,8 @@ import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.SaveTripUseCase
 import com.example.sairo14.domain.usecase.UpdateOnboardingCompletionUseCase
 import com.example.sairo14.feature.bookmark.BookmarkEffect
+import com.example.sairo14.feature.bookmark.BookmarkChange
+import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import com.example.sairo14.feature.onboarding.result.OnboardingResultUiState
 import com.example.sairo14.feature.onboarding.result.OnboardingResultViewModel
 import kotlinx.coroutines.CompletableDeferred
@@ -205,6 +207,30 @@ class OnboardingResultViewModelTest {
         assertTrue(savedTripRepo.deletedSavedTripIds.isEmpty())
     }
 
+    @Test fun `상세 화면의 성공 결과는 같은 코스의 추천 카드에만 반영한다`() = runTest(dispatcher) {
+        val notifier = BookmarkChangeNotifier()
+        val viewModel = createLoadedViewModel(
+            recommendations = listOf(recommendation("1"), recommendation("2")),
+            savedTripRepo = SavedTripRepo(),
+            bookmarkChangeNotifier = notifier,
+        )
+
+        notifier.notify(
+            BookmarkChange(
+                courseId = "course-1",
+                isSaved = true,
+                savedTripId = "saved-trip-from-detail",
+            ),
+        )
+        runCurrent()
+
+        assertEquals(
+            "saved-trip-from-detail",
+            viewModel.content().bookmarks.getValue("course-1").savedTripId,
+        )
+        assertFalse(viewModel.content().bookmarks.getValue("course-2").isSaved)
+    }
+
     private class OnboardingRepo : OnboardingRepository {
         private var token = 0L
         override suspend fun getHasCompletedOnboarding() = AppResult.Success(false)
@@ -264,6 +290,7 @@ class OnboardingResultViewModelTest {
     private suspend fun TestScope.createLoadedViewModel(
         recommendations: List<OnboardingRecommendation>,
         savedTripRepo: SavedTripRepo,
+        bookmarkChangeNotifier: BookmarkChangeNotifier = BookmarkChangeNotifier(),
     ): OnboardingResultViewModel {
         val store = InMemoryOnboardingAnalysisSessionStore()
         store.saveResult(searchSessionId = "session-1", recommendations = recommendations)
@@ -273,6 +300,7 @@ class OnboardingResultViewModelTest {
             updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(OnboardingRepo()),
             saveTripUseCase = SaveTripUseCase(savedTripRepo),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(savedTripRepo),
+            bookmarkChangeNotifier = bookmarkChangeNotifier,
         ).also { viewModel ->
             viewModel.load("session-1")
             advanceUntilIdle()

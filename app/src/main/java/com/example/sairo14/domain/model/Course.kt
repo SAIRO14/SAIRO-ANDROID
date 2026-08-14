@@ -6,11 +6,13 @@ package com.example.sairo14.domain.model
  * @param courseId 코스를 식별하는 안정적인 ID
  * @param regionName 사용자에게 표시할 지역명
  * @param days 여행 일차 순서대로 정렬된 장소 목록
+ * @param isSaved 서버가 조회 시점에 반환한 현재 기기의 저장 여부
  */
 data class Course(
     val courseId: String,
     val regionName: String,
     val days: List<CourseDay>,
+    val isSaved: Boolean = false,
 )
 
 /** 코스의 한 일차와 방문 순서가 있는 장소 목록을 표현한다.

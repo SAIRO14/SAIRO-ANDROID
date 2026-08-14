@@ -85,9 +85,18 @@ class TasteAnalysisMapperTest {
         assertNull(result.courses.getValue("course-1").days.first().places.single().coordinate)
     }
 
+    @Test
+    fun `preserves saved state in both recommendation and course detail models`() {
+        val result = response(saved = true).toDomain()
+
+        assertEquals(true, result.recommendations.single().isSaved)
+        assertEquals(true, result.courses.getValue("course-1").isSaved)
+    }
+
     private fun response(
         reason: String? = null,
         day1: List<SpotSummaryDto> = emptyList(),
+        saved: Boolean = false,
     ): TasteAnalysisResponseDto = TasteAnalysisResponseDto(
         moodTags = listOf(" 고요한 ", "따뜻한", "고요한", " "),
         summary = "분석 요약",
@@ -98,7 +107,7 @@ class TasteAnalysisMapperTest {
                 regionArea = "제주특별자치도",
                 imageUrl = " https://example.com/course.jpg ",
                 reason = reason,
-                saved = false,
+                saved = saved,
                 day1 = day1,
                 day2 = emptyList(),
             ),

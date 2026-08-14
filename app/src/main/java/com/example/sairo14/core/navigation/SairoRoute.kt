@@ -15,11 +15,21 @@ data object HomeRoute : SairoRoute
 @Serializable
 data object SavedTripsRoute : SairoRoute
 
-/** 코스 ID에 해당하는 일차별 지도와 장소 목록 화면을 식별한다. */
+/** 코스 ID에 해당하는 일차별 지도와 장소 목록 화면을 식별한다.
+ *
+ * [initialSaved]가 `null`이면 상세 코스 응답의 저장 상태를 사용한다. [savedTripId]는 저장 해제 요청에만
+ * 사용하며, Route를 다시 만들 때 서버 상태를 대체하는 영구 저장값으로 사용하지 않는다.
+ * @param courseId 표시할 코스의 안정적인 ID
+ * @param onboardingSessionId 온보딩 분석 결과를 보관한 세션 ID. 있으면 해당 세션의 코스를 우선 사용한다
+ * @param initialSaved 이전 화면에서 전달한 최신 저장 표시 상태. 없으면 `null`
+ * @param savedTripId 이전 화면이 보관한 저장 항목 ID. 없으면 `null`
+ */
 @Serializable
 data class TravelDetailRoute(
     val courseId: String,
     val onboardingSessionId: String? = null,
+    val initialSaved: Boolean? = null,
+    val savedTripId: String? = null,
 ) : SairoRoute
 
 /** 온보딩 인트로 화면의 진입 출처를 구분한다. */

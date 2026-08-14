@@ -188,11 +188,13 @@ fun SairoNavDisplay(
                     onRequestAgainClick = {
                         navigator.startNewOnboardingSearch(newOnboardingSearchSessionId())
                     },
-                    onRecommendationClick = { courseId ->
+                    onRecommendationClick = { courseId, isSaved, savedTripId ->
                         navigator.navigateSingleTop(
                             TravelDetailRoute(
                                 courseId = courseId,
                                 onboardingSessionId = route.searchSessionId,
+                                initialSaved = isSaved,
+                                savedTripId = savedTripId,
                             ),
                         )
                     },
@@ -202,6 +204,8 @@ fun SairoNavDisplay(
                 TravelDetailScreenRoute(
                     courseId = route.courseId,
                     onboardingSessionId = route.onboardingSessionId,
+                    initialSaved = route.initialSaved,
+                    savedTripId = route.savedTripId,
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
                     onShareClick = {},

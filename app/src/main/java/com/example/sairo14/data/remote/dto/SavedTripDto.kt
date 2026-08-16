@@ -31,5 +31,7 @@ data class SavedTripResponseDto(
     val regionArea: String? = null,
     val imageUrl: String? = null,
     val reason: String? = null,
+    val spotNames: List<String> = emptyList(),
+    val imageUrls: List<String> = emptyList(),
     val createdAt: String,
 )

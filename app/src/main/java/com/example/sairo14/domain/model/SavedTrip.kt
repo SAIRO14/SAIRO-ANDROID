@@ -8,5 +8,7 @@ data class SavedTrip(
     val regionArea: String?,
     val imageUrl: String?,
     val reason: String?,
+    val spotNames: List<String> = emptyList(),
+    val imageUrls: List<String> = emptyList(),
     val createdAt: String,
 )

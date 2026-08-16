@@ -26,13 +26,18 @@ sealed interface SavedTripsUiState {
     data object Error : SavedTripsUiState
 }
 
-/** 저장 목록 폴더 카드에 전달할 UI 전용 여행지 정보다. */
+/** 저장 목록 폴더 카드에 전달할 UI 전용 여행지 정보다.
+ *
+ * 이미지와 장소 목록은 서버 응답이 비었을 때 ViewModel이 기존 대표 정보로 보완해 전달한다.
+ * @param spotNames 카드 하단에 표시할 장소명 목록
+ * @param imageUrls 겹쳐 표시할 여행지 이미지 주소 목록
+ */
 @Immutable
 data class SavedTripUiModel(
     val savedTripId: String,
     val courseId: String,
     val regionName: String,
-    val regionArea: String?,
-    val imageUrl: String?,
     val reason: String?,
+    val spotNames: List<String>,
+    val imageUrls: List<String>,
 )

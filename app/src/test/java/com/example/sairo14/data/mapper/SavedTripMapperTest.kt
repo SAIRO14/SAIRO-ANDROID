@@ -25,16 +25,18 @@ class SavedTripMapperTest {
     }
 
     @Test
-    fun `목록 응답의 nullable 값과 다음 커서를 보존한다`() {
+    fun `목록 응답의 카드 정보와 다음 커서를 보존한다`() {
         val result = SavedTripListResponseDto(
             items = listOf(
                 SavedTripResponseDto(
                     savedTripId = "saved-trip-1",
                     courseId = "course-1",
                     regionName = "제주",
-                    regionArea = null,
-                    imageUrl = null,
-                    reason = null,
+                    regionArea = "의성군",
+                    imageUrl = "https://example.com/hanok.jpg",
+                    reason = "역사 속 고즈넉한 감성",
+                    spotNames = listOf("덕양서원(의성)", "연일향교"),
+                    imageUrls = listOf("https://example.com/a.jpg", "https://example.com/b.jpg"),
                     createdAt = "2026-08-14T10:00:00Z",
                 ),
             ),
@@ -48,9 +50,11 @@ class SavedTripMapperTest {
                         savedTripId = "saved-trip-1",
                         courseId = "course-1",
                         regionName = "제주",
-                        regionArea = null,
-                        imageUrl = null,
-                        reason = null,
+                        regionArea = "의성군",
+                        imageUrl = "https://example.com/hanok.jpg",
+                        reason = "역사 속 고즈넉한 감성",
+                        spotNames = listOf("덕양서원(의성)", "연일향교"),
+                        imageUrls = listOf("https://example.com/a.jpg", "https://example.com/b.jpg"),
                         createdAt = "2026-08-14T10:00:00Z",
                     ),
                 ),

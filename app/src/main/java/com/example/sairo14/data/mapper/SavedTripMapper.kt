@@ -27,5 +27,7 @@ fun SavedTripResponseDto.toDomain(): SavedTrip = SavedTrip(
     regionArea = regionArea,
     imageUrl = imageUrl,
     reason = reason,
+    spotNames = spotNames,
+    imageUrls = imageUrls,
     createdAt = createdAt,
 )

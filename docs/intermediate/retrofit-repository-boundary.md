@@ -70,7 +70,7 @@ suspend fun getSavedTrips(
 ): SavedTripListResponseDto
 ```
 
-[`RemoteSavedTripRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteSavedTripRepository.kt)는 먼저 `DeviceIdProvider`에서 ID를 읽고, 그 성공 뒤에만 `runRemoteOperation` 안에서 API와 `SavedTripMapper`를 호출한다. 따라서 DataStore 접근 실패가 네트워크 실패로 잘못 분류되지 않는다. 목록 DTO의 `regionArea`, `imageUrl`, `reason`, `nextCursor`는 nullable 상태를 Domain까지 보존한다.
+[`RemoteSavedTripRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteSavedTripRepository.kt)는 먼저 `DeviceIdProvider`에서 ID를 읽고, 그 성공 뒤에만 `runRemoteOperation` 안에서 API와 `SavedTripMapper`를 호출한다. 따라서 DataStore 접근 실패가 네트워크 실패로 잘못 분류되지 않는다. 목록 DTO의 `regionArea`, `imageUrl`, `reason`, `nextCursor`는 nullable 상태를 Domain까지 보존하고, `spotNames`, `imageUrls`는 목록 순서를 유지한 채 전달한다. 화면 전용 mapper는 새 목록이 비었을 때만 기존 지역·대표 이미지로 표시를 보완한다.
 
 ## 흐름과 영향 범위
 

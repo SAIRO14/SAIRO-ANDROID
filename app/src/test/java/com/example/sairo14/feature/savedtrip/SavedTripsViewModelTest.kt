@@ -60,6 +60,44 @@ class SavedTripsViewModelTest {
     }
 
     @Test
+    fun `서버의 이미지와 장소 목록을 카드 UI 모델로 전달한다`() = runTest(dispatcher) {
+        val savedTrip = trip("saved-1").copy(
+            regionArea = "의성군",
+            imageUrl = "https://example.com/legacy.jpg",
+            spotNames = listOf("덕양서원(의성)", "연일향교"),
+            imageUrls = listOf("https://example.com/a.jpg", "https://example.com/b.jpg"),
+        )
+        val repository = RecordingSavedTripRepository(
+            results = listOf(AppResult.Success(page(listOf(savedTrip), null))),
+        )
+        val viewModel = createViewModel(repository)
+
+        advanceUntilIdle()
+
+        val trip = viewModel.content().trips.single()
+        assertEquals(listOf("덕양서원(의성)", "연일향교"), trip.spotNames)
+        assertEquals(listOf("https://example.com/a.jpg", "https://example.com/b.jpg"), trip.imageUrls)
+    }
+
+    @Test
+    fun `새 목록이 비면 기존 지역과 대표 이미지를 카드 UI 모델에 사용한다`() = runTest(dispatcher) {
+        val savedTrip = trip("saved-1").copy(
+            regionArea = "의성군",
+            imageUrl = "https://example.com/legacy.jpg",
+        )
+        val repository = RecordingSavedTripRepository(
+            results = listOf(AppResult.Success(page(listOf(savedTrip), null))),
+        )
+        val viewModel = createViewModel(repository)
+
+        advanceUntilIdle()
+
+        val trip = viewModel.content().trips.single()
+        assertEquals(listOf("의성군"), trip.spotNames)
+        assertEquals(listOf("https://example.com/legacy.jpg"), trip.imageUrls)
+    }
+
+    @Test
     fun `다음 페이지를 추가하고 savedTripId 기준 중복 항목을 제거한다`() = runTest(dispatcher) {
         val repository = RecordingSavedTripRepository(
             results = listOf(

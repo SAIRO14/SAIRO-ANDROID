@@ -305,17 +305,14 @@ private fun SavedTripCard(
     onBookmarkClick: () -> Unit,
     onClick: () -> Unit,
 ) {
-    val remoteImagePainter = rememberSairoBackdropImagePainter(
-        model = trip.imageUrl,
-        backdropState = backdropState,
-    )
-    val imagePainters = listOf(
-        if (trip.imageUrl.isNullOrBlank()) {
-            painterResource(R.drawable.img_dummy_view)
-        } else {
-            remoteImagePainter
-        },
-    )
+    val imagePainters = trip.imageUrls.take(MaxFolderImageCount).map { imageUrl ->
+        rememberSairoBackdropImagePainter(
+            model = imageUrl,
+            backdropState = backdropState,
+        )
+    }.ifEmpty {
+        listOf(painterResource(R.drawable.img_dummy_view))
+    }
 
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -325,7 +322,7 @@ private fun SavedTripCard(
             imagePainters = imagePainters,
             regionLabel = trip.regionName,
             description = trip.reason.orEmpty(),
-            placeNames = listOfNotNull(trip.regionArea),
+            placeNames = trip.spotNames,
             saved = true,
             onClick = onClick,
             onBookmarkClick = onBookmarkClick,
@@ -442,6 +439,7 @@ private val EmptyIllustrationSpacing = 24.dp
 private val EmptySectionSpacing = 32.dp
 private val ErrorSectionSpacing = 16.dp
 private const val LoadMoreThreshold = 1
+private const val MaxFolderImageCount = 2
 
 @Preview(name = "Saved Trips / Content", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
@@ -482,8 +480,11 @@ private val previewSavedTrips = listOf(
         savedTripId = "preview-boeun",
         courseId = "course-boeun",
         regionName = "충북 보은권",
-        regionArea = "보은군",
-        imageUrl = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
         reason = "고요한 자연과 전통의 분위기",
+        spotNames = listOf("법주사", "세조길"),
+        imageUrls = listOf(
+            "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
+            "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
+        ),
     ),
 )

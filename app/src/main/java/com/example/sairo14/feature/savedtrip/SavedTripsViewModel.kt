@@ -247,7 +247,11 @@ private fun SavedTrip.toUiModel(): SavedTripUiModel = SavedTripUiModel(
     savedTripId = savedTripId,
     courseId = courseId,
     regionName = regionName,
-    regionArea = regionArea,
-    imageUrl = imageUrl,
     reason = reason,
+    spotNames = spotNames
+        .filter(String::isNotBlank)
+        .ifEmpty { listOfNotNull(regionArea?.takeIf(String::isNotBlank)) },
+    imageUrls = imageUrls
+        .filter(String::isNotBlank)
+        .ifEmpty { listOfNotNull(imageUrl?.takeIf(String::isNotBlank)) },
 )

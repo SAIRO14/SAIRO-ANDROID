@@ -65,7 +65,7 @@ class SavedTripsViewModelTest {
             regionArea = "의성군",
             imageUrl = "https://example.com/legacy.jpg",
             spotNames = listOf("덕양서원(의성)", "연일향교"),
-            imageUrls = listOf("https://example.com/a.jpg", "https://example.com/b.jpg"),
+            spotImageUrls = listOf("https://example.com/a.jpg", "https://example.com/b.jpg"),
         )
         val repository = RecordingSavedTripRepository(
             results = listOf(AppResult.Success(page(listOf(savedTrip), null))),
@@ -76,7 +76,7 @@ class SavedTripsViewModelTest {
 
         val trip = viewModel.content().trips.single()
         assertEquals(listOf("덕양서원(의성)", "연일향교"), trip.spotNames)
-        assertEquals(listOf("https://example.com/a.jpg", "https://example.com/b.jpg"), trip.imageUrls)
+        assertEquals(listOf("https://example.com/a.jpg", "https://example.com/b.jpg"), trip.spotImageUrls)
     }
 
     @Test
@@ -94,7 +94,7 @@ class SavedTripsViewModelTest {
 
         val trip = viewModel.content().trips.single()
         assertEquals(listOf("의성군"), trip.spotNames)
-        assertEquals(listOf("https://example.com/legacy.jpg"), trip.imageUrls)
+        assertEquals(listOf("https://example.com/legacy.jpg"), trip.spotImageUrls)
     }
 
     @Test

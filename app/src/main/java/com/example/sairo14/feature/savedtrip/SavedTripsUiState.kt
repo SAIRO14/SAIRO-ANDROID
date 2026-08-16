@@ -30,7 +30,7 @@ sealed interface SavedTripsUiState {
  *
  * 이미지와 장소 목록은 서버 응답이 비었을 때 ViewModel이 기존 대표 정보로 보완해 전달한다.
  * @param spotNames 카드 하단에 표시할 장소명 목록
- * @param imageUrls 겹쳐 표시할 여행지 이미지 주소 목록
+ * @param spotImageUrls 겹쳐 표시할 여행지 장소 이미지 주소 목록
  */
 @Immutable
 data class SavedTripUiModel(
@@ -39,5 +39,5 @@ data class SavedTripUiModel(
     val regionName: String,
     val reason: String?,
     val spotNames: List<String>,
-    val imageUrls: List<String>,
+    val spotImageUrls: List<String>,
 )

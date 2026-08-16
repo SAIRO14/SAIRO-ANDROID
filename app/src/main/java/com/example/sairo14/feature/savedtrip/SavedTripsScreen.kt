@@ -305,7 +305,7 @@ private fun SavedTripCard(
     onBookmarkClick: () -> Unit,
     onClick: () -> Unit,
 ) {
-    val imagePainters = trip.imageUrls.take(MaxFolderImageCount).map { imageUrl ->
+    val imagePainters = trip.spotImageUrls.take(MaxFolderImageCount).map { imageUrl ->
         rememberSairoBackdropImagePainter(
             model = imageUrl,
             backdropState = backdropState,
@@ -482,7 +482,7 @@ private val previewSavedTrips = listOf(
         regionName = "충북 보은권",
         reason = "고요한 자연과 전통의 분위기",
         spotNames = listOf("법주사", "세조길"),
-        imageUrls = listOf(
+        spotImageUrls = listOf(
             "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
             "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
         ),

@@ -251,7 +251,7 @@ private fun SavedTrip.toUiModel(): SavedTripUiModel = SavedTripUiModel(
     spotNames = spotNames
         .filter(String::isNotBlank)
         .ifEmpty { listOfNotNull(regionArea?.takeIf(String::isNotBlank)) },
-    imageUrls = imageUrls
+    spotImageUrls = spotImageUrls
         .filter(String::isNotBlank)
         .ifEmpty { listOfNotNull(imageUrl?.takeIf(String::isNotBlank)) },
 )

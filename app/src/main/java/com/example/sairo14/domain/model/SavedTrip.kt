@@ -9,6 +9,6 @@ data class SavedTrip(
     val imageUrl: String?,
     val reason: String?,
     val spotNames: List<String> = emptyList(),
-    val imageUrls: List<String> = emptyList(),
+    val spotImageUrls: List<String> = emptyList(),
     val createdAt: String,
 )

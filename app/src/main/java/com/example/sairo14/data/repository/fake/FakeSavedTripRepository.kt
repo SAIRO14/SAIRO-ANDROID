@@ -32,7 +32,7 @@ class FakeSavedTripRepository @Inject constructor(
             imageUrl = null,
             reason = "저장 API 계약 검증용 여행지",
             spotNames = emptyList(),
-            imageUrls = emptyList(),
+            spotImageUrls = emptyList(),
             createdAt = "2026-08-14T00:00:00Z",
         ).also { newTrip ->
             savedTripsByDeviceId[deviceId] = listOf(newTrip) + currentTrips
@@ -104,7 +104,7 @@ class FakeSavedTripRepository @Inject constructor(
                 imageUrl = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
                 reason = "고요한 자연과 전통의 분위기",
                 spotNames = listOf("법주사", "세조길"),
-                imageUrls = listOf(
+                spotImageUrls = listOf(
                     "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
                     "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
                 ),
@@ -118,7 +118,7 @@ class FakeSavedTripRepository @Inject constructor(
                 imageUrl = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=85",
                 reason = "바다와 골목이 어우러진 느긋한 풍경",
                 spotNames = listOf("안목해변", "강릉 중앙시장"),
-                imageUrls = listOf(
+                spotImageUrls = listOf(
                     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=85",
                     "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
                 ),
@@ -132,7 +132,7 @@ class FakeSavedTripRepository @Inject constructor(
                 imageUrl = "https://images.unsplash.com/photo-1439853949127-fa647821eba0?auto=format&fit=crop&w=900&q=85",
                 reason = "빛과 바람을 따라 걷는 한적한 하루",
                 spotNames = listOf("협재해수욕장", "곽지해수욕장"),
-                imageUrls = listOf(
+                spotImageUrls = listOf(
                     "https://images.unsplash.com/photo-1439853949127-fa647821eba0?auto=format&fit=crop&w=900&q=85",
                     "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
                 ),

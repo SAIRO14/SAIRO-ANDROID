@@ -190,6 +190,30 @@ class TravelDetailViewModelTest {
     }
 
     @Test
+    fun `저장 목록 Route가 전달한 저장 항목 ID로 코스를 해제한다`() = runTest(dispatcher) {
+        val savedTripRepo = SavedTripRepo()
+        val viewModel = createViewModel(
+            result = AppResult.Success(course()),
+            savedTripRepo = savedTripRepo,
+        )
+
+        viewModel.load(
+            courseId = "course-boeun",
+            initialSaved = true,
+            savedTripId = "saved-trip-from-list",
+        )
+        advanceUntilIdle()
+
+        viewModel.onBookmarkClick()
+        advanceUntilIdle()
+
+        val bookmark = (viewModel.uiState.value as TravelDetailUiState.Content).bookmark
+        assertFalse(bookmark.isSaved)
+        assertNull(bookmark.savedTripId)
+        assertEquals(listOf("saved-trip-from-list"), savedTripRepo.deletedSavedTripIds)
+    }
+
+    @Test
     fun `저장 성공 후 savedTripId를 보관하고 삭제 성공 후 제거한다`() = runTest(dispatcher) {
         val savedTripRepo = SavedTripRepo()
         val notifier = BookmarkChangeNotifier()

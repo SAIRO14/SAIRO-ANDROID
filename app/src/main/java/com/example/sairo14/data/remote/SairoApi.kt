@@ -1,6 +1,7 @@
 package com.example.sairo14.data.remote
 
 import com.example.sairo14.data.remote.dto.PhotoResponseDto
+import com.example.sairo14.data.remote.dto.SavedTripListResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveRequestDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveResponseDto
 import com.example.sairo14.data.remote.dto.TasteAnalysisRequestDto
@@ -14,6 +15,20 @@ import retrofit2.http.Query
 
 /** SAIRO 서버와 통신하는 Retrofit 계약이다. */
 interface SairoApi {
+
+    /** 현재 기기에 저장된 여행지를 최신 저장순으로 한 페이지 조회한다.
+     *
+     * 첫 페이지는 [cursor]를 전달하지 않고, 다음 페이지는 직전 응답의 커서를 수정 없이 전달한다.
+     * @param deviceId 현재 기기의 UUID v4 익명 식별자
+     * @param cursor 다음 페이지 조회에 사용할 서버 제공 커서. 첫 페이지면 `null`
+     * @param size 한 번에 조회할 항목 수. 서버 허용 범위는 1~50이며 앱 기본값은 20이다
+     */
+    @GET("saved-trips")
+    suspend fun getSavedTrips(
+        @Header("X-Device-Id") deviceId: String,
+        @Query("cursor") cursor: String? = null,
+        @Query("size") size: Int = DefaultSavedTripPageSize,
+    ): SavedTripListResponseDto
 
     /** 현재 기기에 코스를 저장하고 이후 해제에 필요한 저장 항목 ID를 반환한다.
      *
@@ -63,3 +78,4 @@ interface SairoApi {
 }
 
 private const val DefaultPhotoLimit = 40
+private const val DefaultSavedTripPageSize = 20

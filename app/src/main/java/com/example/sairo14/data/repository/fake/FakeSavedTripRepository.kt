@@ -4,6 +4,7 @@ import com.example.sairo14.core.datastore.DeviceIdProvider
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripPage
 import com.example.sairo14.domain.model.SavedTripSaveResult
 import com.example.sairo14.domain.repository.SavedTripRepository
 import javax.inject.Inject
@@ -27,9 +28,12 @@ class FakeSavedTripRepository @Inject constructor(
             savedTripId = "saved-trip-$courseId",
             courseId = courseId,
             regionName = "새로 저장한 여행지",
-            description = "저장 API 계약 검증용 여행지",
-            imageUrls = emptyList(),
-            placeNames = emptyList(),
+            regionArea = null,
+            imageUrl = null,
+            reason = "저장 API 계약 검증용 여행지",
+            spotNames = emptyList(),
+            spotImageUrls = emptyList(),
+            createdAt = "2026-08-14T00:00:00Z",
         ).also { newTrip ->
             savedTripsByDeviceId[deviceId] = listOf(newTrip) + currentTrips
         }
@@ -42,9 +46,33 @@ class FakeSavedTripRepository @Inject constructor(
         )
     }
 
-    override suspend fun getSavedTrips(): AppResult<List<SavedTrip>> = mutex.withLock {
+    override suspend fun getSavedTrips(
+        cursor: String?,
+        size: Int,
+    ): AppResult<SavedTripPage> = mutex.withLock {
         val deviceId = deviceIdProvider.getDeviceId()
-        AppResult.Success(savedTripsByDeviceId.getOrPut(deviceId) { sampleSavedTrips })
+        if (size !in MinPageSize..MaxPageSize) {
+            return@withLock AppResult.Failure(AppError.InvalidRequest)
+        }
+
+        val currentTrips = savedTripsByDeviceId.getOrPut(deviceId) { sampleSavedTrips }
+        val startIndex = when (cursor) {
+            null -> 0
+            else -> cursor.toStartIndexOrNull()
+                ?: return@withLock AppResult.Failure(AppError.InvalidCursor)
+        }
+        if (cursor != null && startIndex !in currentTrips.indices) {
+            return@withLock AppResult.Failure(AppError.InvalidCursor)
+        }
+
+        val endIndexExclusive = (startIndex + size).coerceAtMost(currentTrips.size)
+        AppResult.Success(
+            SavedTripPage(
+                items = currentTrips.subList(startIndex, endIndexExclusive).toList(),
+                nextCursor = endIndexExclusive.takeIf { it < currentTrips.size }
+                    ?.let(::toCursor),
+            ),
+        )
     }
 
     override suspend fun deleteSavedTrip(savedTripId: String): AppResult<Unit> = mutex.withLock {
@@ -61,40 +89,60 @@ class FakeSavedTripRepository @Inject constructor(
     }
 
     private companion object {
+        const val MinPageSize = 1
+        const val MaxPageSize = 50
+        const val CursorPrefix = "fake-saved-trip-cursor-"
+
+        fun toCursor(startIndex: Int): String = "$CursorPrefix$startIndex"
+
         val sampleSavedTrips = listOf(
             SavedTrip(
                 savedTripId = "saved-trip-boeun",
                 courseId = "course-boeun",
                 regionName = "충북 보은권",
-                description = "고요한 자연과 전통의 분위기",
-                imageUrls = listOf(
+                regionArea = "보은군",
+                imageUrl = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
+                reason = "고요한 자연과 전통의 분위기",
+                spotNames = listOf("법주사", "세조길"),
+                spotImageUrls = listOf(
                     "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=900&q=85",
                     "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
                 ),
-                placeNames = listOf("말티재 전망대", "세조길 숲 산책"),
+                createdAt = "2026-08-14T10:00:00Z",
             ),
             SavedTrip(
                 savedTripId = "saved-trip-gangneung",
                 courseId = "course-gangneung",
                 regionName = "강원 강릉권",
-                description = "바다와 골목이 어우러진 느긋한 풍경",
-                imageUrls = listOf(
+                regionArea = "강릉시",
+                imageUrl = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=85",
+                reason = "바다와 골목이 어우러진 느긋한 풍경",
+                spotNames = listOf("안목해변", "강릉 중앙시장"),
+                spotImageUrls = listOf(
                     "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=85",
-                    "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=85",
+                    "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
                 ),
-                placeNames = listOf("안목해변", "명주동 골목"),
+                createdAt = "2026-08-13T10:00:00Z",
             ),
             SavedTrip(
                 savedTripId = "saved-trip-jeju",
                 courseId = "course-jeju",
                 regionName = "제주 서부권",
-                description = "빛과 바람을 따라 걷는 한적한 하루",
-                imageUrls = listOf(
+                regionArea = "제주시",
+                imageUrl = "https://images.unsplash.com/photo-1439853949127-fa647821eba0?auto=format&fit=crop&w=900&q=85",
+                reason = "빛과 바람을 따라 걷는 한적한 하루",
+                spotNames = listOf("협재해수욕장", "곽지해수욕장"),
+                spotImageUrls = listOf(
                     "https://images.unsplash.com/photo-1439853949127-fa647821eba0?auto=format&fit=crop&w=900&q=85",
-                    "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=85",
+                    "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=900&q=85",
                 ),
-                placeNames = listOf("협재해수욕장", "금능해안"),
+                createdAt = "2026-08-12T10:00:00Z",
             ),
         )
     }
+
+    private fun String.toStartIndexOrNull(): Int? =
+        removePrefix(CursorPrefix)
+            .takeIf { startsWith(CursorPrefix) }
+            ?.toIntOrNull()
 }

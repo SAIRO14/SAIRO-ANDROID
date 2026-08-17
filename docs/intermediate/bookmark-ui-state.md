@@ -45,6 +45,7 @@ flowchart LR
     DELETE --> REPO
     DVM --> CHANGE[BookmarkChangeNotifier]
     CHANGE --> RVM
+    CHANGE --> SVM[SavedTripsViewModel]
 ```
 
 성공하면 ViewModel이 `isSaved`와 필요한 경우 `savedTripId`를 갱신한다. 실패하면 기존 상태는 유지하고 `isRequesting`만 해제한 뒤 효과만 전달한다.
@@ -65,7 +66,7 @@ POST /saved-trips 응답
 
 [`TravelDetailViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt)은 `initialSaved`가 있으면 그 값을, 없으면 `Course.isSaved`를 사용해 상세 북마크를 초기화한다. 저장·삭제 요청 중에는 `isRequesting`만 먼저 바꾸고, 실패하면 이 값만 다시 해제해 기존 체크 상태와 `savedTripId`를 유지한다. 이 화면은 현재 오류 효과를 표시하지 않는다.
 
-상세에서 성공한 변경은 [`BookmarkChangeNotifier.kt`](../../app/src/main/java/com/example/sairo14/feature/bookmark/BookmarkChangeNotifier.kt)를 통해 이전 추천 결과 화면에만 전달한다.
+상세에서 성공한 변경은 [`BookmarkChangeNotifier.kt`](../../app/src/main/java/com/example/sairo14/feature/bookmark/BookmarkChangeNotifier.kt)를 통해 이전 추천 결과와 저장 목록 화면에 전달한다.
 
 ```kotlin
 BookmarkChange(
@@ -75,7 +76,7 @@ BookmarkChange(
 )
 ```
 
-이 통지자는 앱 메모리에서 살아 있는 화면만 갱신하며, DataStore나 서버 상태 캐시가 아니다. 추천 결과 ViewModel은 현재 목록에 포함된 같은 `courseId`만 반영하고, 화면을 다시 로드할 때는 서버 응답을 다시 사용한다.
+이 통지자는 앱 메모리에서 살아 있는 화면만 갱신하며, DataStore나 서버 상태 캐시가 아니다. 추천 결과 ViewModel은 현재 목록에 포함된 같은 `courseId`만 반영하고, 화면을 다시 로드할 때는 서버 응답을 다시 사용한다. [`SavedTripsViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/savedtrip/SavedTripsViewModel.kt)는 저장 해제 알림을 받으면 해당 `courseId` 카드를 즉시 제거한 뒤 첫 페이지를 다시 조회한다. 이 재조회가 실패하면 방금 제거한 로컬 목록을 유지한다.
 
 ## 트레이드오프와 주의점
 

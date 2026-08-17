@@ -113,8 +113,14 @@ fun SairoNavDisplay(
                             ),
                         )
                     },
-                    onTripClick = { courseId ->
-                        navigator.navigateSingleTop(TravelDetailRoute(courseId))
+                    onTripClick = { courseId, savedTripId ->
+                        navigator.navigateSingleTop(
+                            TravelDetailRoute(
+                                courseId = courseId,
+                                initialSaved = true,
+                                savedTripId = savedTripId,
+                            ),
+                        )
                     },
                 )
             }

@@ -8,7 +8,7 @@ import com.example.sairo14.data.remote.dto.SavedTripSaveRequestDto
 import com.example.sairo14.data.remote.runRemoteOperation
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
-import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripPage
 import com.example.sairo14.domain.model.SavedTripSaveResult
 import com.example.sairo14.domain.repository.SavedTripRepository
 import java.io.IOException
@@ -18,7 +18,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 
-/** SAIRO 저장 여행지 API를 저장·해제 Domain 계약으로 제공한다. */
+/** SAIRO 저장 여행지 API를 저장·조회·해제 Domain 계약으로 제공한다. */
 @Singleton
 class RemoteSavedTripRepository @Inject constructor(
     private val api: SairoApi,
@@ -60,8 +60,26 @@ class RemoteSavedTripRepository @Inject constructor(
         }
     }
 
-    override suspend fun getSavedTrips(): AppResult<List<SavedTrip>> =
-        AppResult.Failure(AppError.Unknown)
+    override suspend fun getSavedTrips(
+        cursor: String?,
+        size: Int,
+    ): AppResult<SavedTripPage> {
+        val deviceId = when (val result = getDeviceId()) {
+            is AppResult.Success -> result.value
+            is AppResult.Failure -> return result
+        }
+
+        return runRemoteOperation(
+            action = "저장한 여행지를 불러오지 못했습니다.",
+            json = json,
+        ) {
+            api.getSavedTrips(
+                deviceId = deviceId,
+                cursor = cursor,
+                size = size,
+            ).toDomain()
+        }
+    }
 
     private suspend fun getDeviceId(): AppResult<String> = try {
         AppResult.Success(deviceIdProvider.getDeviceId())

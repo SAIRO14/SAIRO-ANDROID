@@ -20,7 +20,7 @@ SAIRO API는 성공 응답을 공통 래퍼로 감싸지 않고 각 엔드포인
 - 관련 파일: [`RemoteSavedTripRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteSavedTripRepository.kt)
 - 관련 파일: [`RemoteApiModule.kt`](../../app/src/main/java/com/example/sairo14/data/remote/di/RemoteApiModule.kt)
 
-현재 `SairoApi`에는 사진 풀 조회, 온보딩 취향 분석, 온보딩 화면에서 사용하는 저장·해제 작업만 선언한다. 사용하지 않는 Swagger API는 미리 추가하지 않는다.
+현재 `SairoApi`에는 사진 풀 조회, 온보딩 취향 분석, 저장·해제, 저장 목록 조회 작업만 선언한다. 사용하지 않는 Swagger API는 미리 추가하지 않는다.
 
 ```kotlin
 @GET("photos")
@@ -58,6 +58,19 @@ suspend fun deleteSavedTrip(
 ```
 
 삭제 API는 본문 없는 `204 No Content`를 반환하므로 Retrofit 메서드의 반환형을 `Unit`으로 둔다. 정상 삭제뿐 아니라 이미 삭제된 ID도 서버가 `204`로 응답하는 계약이므로, Repository는 모두 `AppResult.Success(Unit)`으로 전달한다.
+
+저장 목록 조회는 항목과 다음 페이지 커서를 함께 반환한다. 첫 요청은 `cursor = null`로 보내 Retrofit이 cursor 쿼리를 생략하고, 이후에는 응답의 `nextCursor`를 수정하지 않고 그대로 전달한다.
+
+```kotlin
+@GET("saved-trips")
+suspend fun getSavedTrips(
+    @Header("X-Device-Id") deviceId: String,
+    @Query("cursor") cursor: String? = null,
+    @Query("size") size: Int = 20,
+): SavedTripListResponseDto
+```
+
+[`RemoteSavedTripRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteSavedTripRepository.kt)는 먼저 `DeviceIdProvider`에서 ID를 읽고, 그 성공 뒤에만 `runRemoteOperation` 안에서 API와 `SavedTripMapper`를 호출한다. 따라서 DataStore 접근 실패가 네트워크 실패로 잘못 분류되지 않는다. 목록 DTO의 `regionArea`, `imageUrl`, `reason`, `nextCursor`는 nullable 상태를 Domain까지 보존하고, `spotNames`, `spotImageUrls`는 목록 순서를 유지한 채 전달한다. 화면 전용 mapper는 새 목록이 비었을 때만 기존 지역·대표 이미지로 표시를 보완한다.
 
 ## 흐름과 영향 범위
 

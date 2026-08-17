@@ -6,7 +6,7 @@ import com.example.sairo14.domain.model.Course
 import com.example.sairo14.domain.model.CourseDay
 import com.example.sairo14.domain.model.CoursePlace
 import com.example.sairo14.domain.model.MapCoordinate
-import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripPage
 import com.example.sairo14.domain.model.SavedTripSaveResult
 import com.example.sairo14.domain.repository.CourseRepository
 import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
@@ -371,7 +371,10 @@ class TravelDetailViewModelTest {
             return saveResult
         }
 
-        override suspend fun getSavedTrips(): AppResult<List<SavedTrip>> = AppResult.Success(emptyList())
+        override suspend fun getSavedTrips(
+            cursor: String?,
+            size: Int,
+        ): AppResult<SavedTripPage> = AppResult.Success(SavedTripPage(emptyList(), null))
 
         override suspend fun deleteSavedTrip(savedTripId: String): AppResult<Unit> {
             deletedSavedTripIds += savedTripId

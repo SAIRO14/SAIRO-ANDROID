@@ -1,7 +1,7 @@
 package com.example.sairo14.domain.usecase
 
 import com.example.sairo14.domain.model.AppResult
-import com.example.sairo14.domain.model.SavedTrip
+import com.example.sairo14.domain.model.SavedTripPage
 import com.example.sairo14.domain.model.SavedTripSaveResult
 import com.example.sairo14.domain.repository.SavedTripRepository
 import kotlinx.coroutines.test.runTest
@@ -42,7 +42,10 @@ class SaveTripUseCaseTest {
             return result
         }
 
-        override suspend fun getSavedTrips(): AppResult<List<SavedTrip>> = AppResult.Success(emptyList())
+        override suspend fun getSavedTrips(
+            cursor: String?,
+            size: Int,
+        ): AppResult<SavedTripPage> = AppResult.Success(SavedTripPage(emptyList(), null))
 
         override suspend fun deleteSavedTrip(savedTripId: String): AppResult<Unit> = AppResult.Success(Unit)
     }

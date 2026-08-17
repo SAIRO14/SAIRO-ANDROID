@@ -1,6 +1,7 @@
 package com.example.sairo14.feature.savedtrip
 
 import androidx.compose.runtime.Immutable
+import com.example.sairo14.domain.model.AppError
 
 /** 저장된 여행지 목록 화면이 표시할 조회 상태를 나타낸다. */
 sealed interface SavedTripsUiState {
@@ -12,6 +13,9 @@ sealed interface SavedTripsUiState {
     @Immutable
     data class Content(
         val trips: List<SavedTripUiModel>,
+        val nextCursor: String?,
+        val isLoadingMore: Boolean = false,
+        val loadMoreError: AppError? = null,
         val removingSavedTripIds: Set<String> = emptySet(),
     ) : SavedTripsUiState
 
@@ -22,13 +26,18 @@ sealed interface SavedTripsUiState {
     data object Error : SavedTripsUiState
 }
 
-/** 저장 목록 폴더 카드에 전달할 UI 전용 여행지 정보다. */
+/** 저장 목록 폴더 카드에 전달할 UI 전용 여행지 정보다.
+ *
+ * 이미지와 장소 목록은 서버 응답이 비었을 때 ViewModel이 기존 대표 정보로 보완해 전달한다.
+ * @param spotNames 카드 하단에 표시할 장소명 목록
+ * @param spotImageUrls 겹쳐 표시할 여행지 장소 이미지 주소 목록
+ */
 @Immutable
 data class SavedTripUiModel(
     val savedTripId: String,
     val courseId: String,
     val regionName: String,
-    val description: String,
-    val imageUrls: List<String>,
-    val placeNames: List<String>,
+    val reason: String?,
+    val spotNames: List<String>,
+    val spotImageUrls: List<String>,
 )

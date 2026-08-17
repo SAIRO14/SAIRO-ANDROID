@@ -1,5 +1,6 @@
 package com.example.sairo14.data.remote
 
+import com.example.sairo14.data.remote.dto.CourseResponseDto
 import com.example.sairo14.data.remote.dto.PhotoResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripListResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveRequestDto
@@ -10,11 +11,24 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Path
 import retrofit2.http.POST
 import retrofit2.http.Query
 
 /** SAIRO 서버와 통신하는 Retrofit 계약이다. */
 interface SairoApi {
+
+    /** 현재 기기에서 생성한 코스의 지역과 일차별 장소 스냅샷을 조회한다.
+     *
+     * 장소 정보는 코스 생성 시점의 값이며, 누락된 운영 정보는 이 요청에서 보완하지 않는다.
+     * @param courseId 조회할 코스의 안정적인 ID
+     * @param deviceId 현재 기기의 UUID v4 익명 식별자
+     */
+    @GET("courses/{courseId}")
+    suspend fun getCourse(
+        @Path("courseId") courseId: String,
+        @Header("X-Device-Id") deviceId: String,
+    ): CourseResponseDto
 
     /** 현재 기기에 저장된 여행지를 최신 저장순으로 한 페이지 조회한다.
      *

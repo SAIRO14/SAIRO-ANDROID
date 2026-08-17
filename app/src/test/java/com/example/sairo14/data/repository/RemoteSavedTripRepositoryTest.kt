@@ -3,6 +3,7 @@ package com.example.sairo14.data.repository
 import androidx.datastore.core.CorruptionException
 import com.example.sairo14.core.datastore.DeviceIdProvider
 import com.example.sairo14.data.remote.SairoApi
+import com.example.sairo14.data.remote.dto.CourseResponseDto
 import com.example.sairo14.data.remote.dto.PhotoResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripListResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripResponseDto
@@ -187,6 +188,11 @@ class RemoteSavedTripRepositoryTest {
             private set
         var savedTripsSize: Int? = null
             private set
+
+        override suspend fun getCourse(
+            courseId: String,
+            deviceId: String,
+        ): CourseResponseDto = error("호출되지 않아야 합니다.")
 
         override suspend fun saveTrip(
             deviceId: String,

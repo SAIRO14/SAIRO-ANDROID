@@ -120,6 +120,73 @@ class TravelDetailViewModelTest {
     }
 
     @Test
+    fun `좌표 없는 API 장소도 목록 정보와 운영 문구를 유지한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-without-coordinate",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        CoursePlace(
+                            placeId = "place-without-coordinate",
+                            name = "좌표 없는 장소",
+                            imageUrl = "https://example.com/place.jpg",
+                            tags = emptyList(),
+                            coordinate = null,
+                            operatingHours = "09:00~18:00",
+                            closedDays = "월요일",
+                            parking = "불가능",
+                            contact = "000-0000-0000",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-without-coordinate")
+        advanceUntilIdle()
+
+        val place = (viewModel.uiState.value as TravelDetailUiState.Content)
+            .selectedDay
+            ?.places
+            ?.single()
+        assertEquals("https://example.com/place.jpg", place?.imageUrl)
+        assertNull(place?.latitude)
+        assertNull(place?.longitude)
+        assertEquals(
+            listOf("09:00~18:00", "월요일", "주차 불가능", "000-0000-0000"),
+            place?.tags,
+        )
+    }
+
+    @Test
+    fun `빈 첫째 날에서도 둘째 날 장소를 선택해 표시한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-with-empty-day-one",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(dayNumber = 1, places = emptyList()),
+                CourseDay(
+                    dayNumber = 2,
+                    places = listOf(place("day-two-place", "둘째 날 장소")),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-with-empty-day-one")
+        advanceUntilIdle()
+        viewModel.selectDay(2)
+
+        val content = viewModel.uiState.value as TravelDetailUiState.Content
+        assertEquals(2, content.selectedDayNumber)
+        assertEquals("day-two-place", content.selectedPlaceId)
+        assertEquals("둘째 날 장소", content.selectedDay?.places?.single()?.name)
+    }
+
+    @Test
     fun `일차를 선택하면 지도와 목록이 함께 사용할 선택 일차를 변경한다`() = runTest(dispatcher) {
         val viewModel = createViewModel(AppResult.Success(course()))
         viewModel.load("course-boeun")

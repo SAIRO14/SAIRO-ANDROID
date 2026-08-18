@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,19 +27,26 @@ import com.example.sairo14.core.navigation.OnboardingIntroEntryPoint
 import com.example.sairo14.core.navigation.OnboardingIntroRoute
 import com.example.sairo14.core.navigation.SairoNavDisplay
 import com.example.sairo14.core.navigation.SairoNavigator
+import com.example.sairo14.core.navigation.SharedCourseRoute
 
 /** Sairo의 시작 상태를 확인한 뒤 최초 Nav3 백스택을 조립한다. */
 @Composable
 fun SairoApp(
     viewModel: AppStartViewModel = hiltViewModel(),
+    appLinkViewModel: AppLinkViewModel = hiltViewModel(),
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+    val pendingSharedCourseId = appLinkViewModel.pendingSharedCourseId
+        .collectAsStateWithLifecycle()
+        .value
 
     when (uiState) {
         AppStartUiState.Loading -> AppStartLoadingScreen()
         is AppStartUiState.Error -> AppStartErrorScreen(onRetryClick = viewModel::retry)
         is AppStartUiState.Ready -> SairoNavigation(
             startDestination = uiState.destination,
+            pendingSharedCourseId = pendingSharedCourseId,
+            onSharedCourseConsumed = appLinkViewModel::consumeSharedCourse,
         )
     }
 }
@@ -46,9 +54,14 @@ fun SairoApp(
 @Composable
 private fun SairoNavigation(
     startDestination: AppStartDestination,
+    pendingSharedCourseId: String?,
+    onSharedCourseConsumed: (String) -> Unit,
     sessionCleanupViewModel: OnboardingSessionCleanupViewModel = hiltViewModel(),
 ) {
-    val backStack = when (startDestination) {
+    val initialBackStackDestination = pendingSharedCourseId
+        ?.let { AppStartDestination.Home }
+        ?: startDestination
+    val backStack = when (initialBackStackDestination) {
         AppStartDestination.Home -> rememberNavBackStack(HomeRoute)
         AppStartDestination.OnboardingIntro -> rememberNavBackStack(
             HomeRoute,
@@ -60,6 +73,13 @@ private fun SairoNavigation(
             backStack = backStack,
             onOnboardingSessionEnded = sessionCleanupViewModel::clear,
         )
+    }
+
+    LaunchedEffect(pendingSharedCourseId) {
+        pendingSharedCourseId?.let { shareId ->
+            navigator.navigateSingleTop(SharedCourseRoute(shareId))
+            onSharedCourseConsumed(shareId)
+        }
     }
 
     SairoNavDisplay(

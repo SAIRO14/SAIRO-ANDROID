@@ -5,44 +5,73 @@ import androidx.lifecycle.viewModelScope
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.HomeContent
 import com.example.sairo14.domain.usecase.GetHomeContentUseCase
+import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /**
  * 홈 화면의 로딩·콘텐츠·오류 상태를 관리한다.
  *
- * [GetHomeContentUseCase]의 결과를 UI 모델로 변환해 [HomeUiState]로 노출한다. 데이터 출처는
- * Repository가 담당하며, 실패 시 [HomeUiState.Error]로 전환하고 재시도 시 다시 조회한다.
+ * [GetHomeContentUseCase]의 결과를 UI 모델로 변환해 [HomeUiState]로 노출한다. 저장 상태 변경 알림을
+ * 받으면 기존 콘텐츠를 유지한 채 최신 목록을 다시 조회하며, 최초 조회 실패만 [HomeUiState.Error]로
+ * 전환한다.
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val getHomeContent: GetHomeContentUseCase,
+    private val bookmarkChangeNotifier: BookmarkChangeNotifier,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
+    private var homeContentJob: Job? = null
+    private var homeContentRequestId = 0L
 
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
-        loadHomeContent()
+        observeBookmarkChanges()
+        loadHomeContent(showLoading = true)
     }
 
     /** 오류 상태에서 홈 콘텐츠를 다시 조회한다. */
     fun retry() {
         if (_uiState.value is HomeUiState.Error) {
-            loadHomeContent()
+            loadHomeContent(showLoading = true)
         }
     }
 
-    private fun loadHomeContent() {
+    private fun observeBookmarkChanges() {
         viewModelScope.launch {
-            _uiState.value = HomeUiState.Loading
-            _uiState.value = when (val result = getHomeContent()) {
-                is AppResult.Success -> result.value.toUiModel()
-                is AppResult.Failure -> HomeUiState.Error
+            bookmarkChangeNotifier.changes.collect {
+                loadHomeContent(showLoading = false)
+            }
+        }
+    }
+
+    private fun loadHomeContent(showLoading: Boolean) {
+        val requestId = ++homeContentRequestId
+        val keepsExistingContent = !showLoading && _uiState.value is HomeUiState.Content
+        homeContentJob?.cancel()
+        homeContentJob = viewModelScope.launch {
+            if (showLoading) _uiState.value = HomeUiState.Loading
+
+            when (val result = getHomeContent()) {
+                is AppResult.Success -> {
+                    if (requestId == homeContentRequestId) {
+                        _uiState.value = result.value.toUiModel()
+                    }
+                }
+
+                is AppResult.Failure -> {
+                    if (requestId == homeContentRequestId && !keepsExistingContent) {
+                        _uiState.value = HomeUiState.Error
+                    }
+                }
             }
         }
     }

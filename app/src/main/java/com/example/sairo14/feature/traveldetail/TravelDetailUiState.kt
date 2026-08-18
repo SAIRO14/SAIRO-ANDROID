@@ -2,6 +2,7 @@ package com.example.sairo14.feature.traveldetail
 
 import androidx.compose.runtime.Immutable
 import com.example.sairo14.feature.bookmark.BookmarkUiState
+import java.time.DayOfWeek
 
 /** 여행 상세 화면이 표시할 코스 조회 상태를 나타낸다. */
 sealed interface TravelDetailUiState {
@@ -50,7 +51,41 @@ data class TravelDetailPlaceUiModel(
     val placeId: String,
     val name: String,
     val imageUrl: String?,
-    val tags: List<String>,
+    val tags: List<TravelDetailPlaceTagUiModel>,
     val latitude: Double?,
     val longitude: Double?,
+)
+
+/** 상세 화면의 장소 태그를 리소스 문구와 동적 값으로 구분해 표현한다. */
+sealed interface TravelDetailPlaceTagUiModel {
+    data object AlwaysOpen : TravelDetailPlaceTagUiModel
+
+    data object OpenAllYear : TravelDetailPlaceTagUiModel
+
+    data object PublicHolidayClosed : TravelDetailPlaceTagUiModel
+
+    data object BadWeatherClosed : TravelDetailPlaceTagUiModel
+
+    data object ParkingAvailable : TravelDetailPlaceTagUiModel
+
+    data object ParkingUnavailable : TravelDetailPlaceTagUiModel
+
+    data object PhoneInquiry : TravelDetailPlaceTagUiModel
+
+    data class Text(val value: String) : TravelDetailPlaceTagUiModel
+
+    data class Periods(val values: List<PeriodHoursUiModel>) : TravelDetailPlaceTagUiModel
+
+    data class WeekdayWeekend(
+        val weekday: String?,
+        val weekend: String?,
+    ) : TravelDetailPlaceTagUiModel
+
+    data class WeeklyClosed(val dayOfWeek: DayOfWeek) : TravelDetailPlaceTagUiModel
+}
+
+/** 기간 라벨과 시간을 상세 화면 태그에 전달한다. */
+data class PeriodHoursUiModel(
+    val label: String,
+    val hours: String,
 )

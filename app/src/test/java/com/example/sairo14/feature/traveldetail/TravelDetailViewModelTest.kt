@@ -14,6 +14,7 @@ import com.example.sairo14.domain.repository.SavedTripRepository
 import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import com.example.sairo14.domain.usecase.SaveTripUseCase
+import com.example.sairo14.domain.usecase.SummarizePlaceInfoUseCase
 import com.example.sairo14.feature.bookmark.BookmarkChange
 import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import kotlinx.coroutines.CancellationException
@@ -65,7 +66,7 @@ class TravelDetailViewModelTest {
     }
 
     @Test
-    fun `구조화된 주차 정보는 상세 화면용 문구로 변환한다`() = runTest(dispatcher) {
+    fun `구조화된 장소 정보는 UI 태그 순서로 변환한다`() = runTest(dispatcher) {
         val course = Course(
             courseId = "course-parking",
             regionName = "제주도",
@@ -80,7 +81,9 @@ class TravelDetailViewModelTest {
                             tags = listOf("기존 태그"),
                             coordinate = null,
                             operatingHours = "09:00~18:00",
+                            closedDays = "연중무휴",
                             parking = "가능",
+                            contact = "제주관광정보센터 064-740-6000",
                         ),
                     ),
                 ),
@@ -93,7 +96,12 @@ class TravelDetailViewModelTest {
 
         val content = viewModel.uiState.value as TravelDetailUiState.Content
         assertEquals(
-            listOf("09:00~18:00", "주차 가능"),
+            listOf(
+                TravelDetailPlaceTagUiModel.Text("09:00~18:00"),
+                TravelDetailPlaceTagUiModel.OpenAllYear,
+                TravelDetailPlaceTagUiModel.ParkingAvailable,
+                TravelDetailPlaceTagUiModel.Text("064-740-6000"),
+            ),
             content.selectedDay?.places?.single()?.tags,
         )
     }
@@ -116,7 +124,13 @@ class TravelDetailViewModelTest {
         advanceUntilIdle()
 
         val content = viewModel.uiState.value as TravelDetailUiState.Content
-        assertEquals(listOf("상시 개방", "주차가능"), content.selectedDay?.places?.single()?.tags)
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.Text("상시 개방"),
+                TravelDetailPlaceTagUiModel.Text("주차가능"),
+            ),
+            content.selectedDay?.places?.single()?.tags,
+        )
     }
 
     @Test
@@ -398,6 +412,7 @@ class TravelDetailViewModelTest {
                 courseRepository = OutOfOrderCourseRepository(),
                 onboardingAnalysisSessionStore = EmptySessionStore,
             ),
+            summarizePlaceInfo = SummarizePlaceInfoUseCase(),
             saveTripUseCase = SaveTripUseCase(SavedTripRepo()),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(SavedTripRepo()),
             bookmarkChangeNotifier = BookmarkChangeNotifier(),
@@ -422,6 +437,7 @@ class TravelDetailViewModelTest {
                 courseRepository = CourseResultRepository(result),
                 onboardingAnalysisSessionStore = EmptySessionStore,
             ),
+            summarizePlaceInfo = SummarizePlaceInfoUseCase(),
             saveTripUseCase = SaveTripUseCase(savedTripRepo),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(savedTripRepo),
             bookmarkChangeNotifier = bookmarkChangeNotifier,

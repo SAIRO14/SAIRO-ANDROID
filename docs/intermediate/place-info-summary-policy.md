@@ -14,6 +14,8 @@ domain에서 요약하면 Android UI와 무관하게 규칙을 테스트할 수 
 
 - 관련 모델: [`app/src/main/java/com/example/sairo14/domain/model/PlaceInfoSummary.kt`](../../app/src/main/java/com/example/sairo14/domain/model/PlaceInfoSummary.kt)
 - 관련 UseCase: [`app/src/main/java/com/example/sairo14/domain/usecase/SummarizePlaceInfoUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/SummarizePlaceInfoUseCase.kt)
+- 관련 UI 변환: [`app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt)
+- 관련 리소스 변환: [`app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailScreen.kt)
 - 관련 테스트: [`app/src/test/java/com/example/sairo14/domain/usecase/SummarizePlaceInfoUseCaseTest.kt`](../../app/src/test/java/com/example/sairo14/domain/usecase/SummarizePlaceInfoUseCaseTest.kt)
 
 `SummarizePlaceInfoUseCase`는 `CoursePlace`의 원문을 받아 `PlaceInfoSummary`로 반환한다. 값이 없으면 해당 항목을 생략하고, 원문은 있지만 안전하게 해석할 수 없으면 `PhoneInquiry`를 반환한다.
@@ -39,6 +41,8 @@ flowchart LR
 - `data`는 HTML 줄바꿈과 공백처럼 전송 형식만 정규화한다.
 - `domain`은 원문의 표시 정책을 의미 타입으로 해석한다.
 - `feature`는 타입을 리소스 문구와 동적 시간·전화번호 텍스트로 변환하고 표시 순서를 정한다.
+
+상세 화면의 태그는 운영시간, 휴무일, 주차, 문의처 순서로 만든다. 동일한 `PhoneInquiry`는 UI 모델의 `distinct()` 처리로 한 번만 표시한다.
 
 운영시간 또는 휴무일에 기상·통제 조건이 있으면, 기본 운영 정보는 유지하면서 휴무일 목록에 `BadWeather`를 추가한다. 따라서 `연중무휴`와 `기상악화 시 휴무`를 함께 표시할 수 있다.
 

@@ -495,13 +495,30 @@ private fun HomeScreenPreview() {
     }
 }
 
-@Preview(name = "Home Eight Saved Trips", showBackground = true, widthDp = 360, heightDp = 800)
+@Preview(name = "Home One Saved Trip", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun HomeScreenSavedTripsPreview() {
+private fun HomeScreenOneSavedTripPreview() {
+    HomeScreenSavedTripsPreview(cardCount = 1)
+}
+
+@Preview(name = "Home Four Saved Trips", showBackground = true, widthDp = 360, heightDp = 800)
+@Composable
+private fun HomeScreenFourSavedTripsPreview() {
+    HomeScreenSavedTripsPreview(cardCount = 4)
+}
+
+@Preview(name = "Home Eight Saved Trips - Small", showBackground = true, widthDp = 320, heightDp = 568)
+@Composable
+private fun HomeScreenEightSavedTripsSmallPreview() {
+    HomeScreenSavedTripsPreview(cardCount = 8)
+}
+
+@Composable
+private fun HomeScreenSavedTripsPreview(cardCount: Int) {
     SairoTheme {
         HomeScreen(
             uiState = HomeUiState.Content(
-                savedTrips = List(8) { index ->
+                savedTrips = List(cardCount) { index ->
                     HomeSavedTripUiModel(
                         savedTripId = "saved-trip-$index",
                         courseId = "course-$index",

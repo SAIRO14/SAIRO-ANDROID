@@ -107,6 +107,52 @@ class TravelDetailViewModelTest {
     }
 
     @Test
+    fun `기상악화 휴무와 문의처를 포함한 다섯 태그를 모두 전달한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-weather",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        CoursePlace(
+                            placeId = "weather-place",
+                            name = "기상 장소",
+                            imageUrl = null,
+                            tags = emptyList(),
+                            coordinate = null,
+                            operatingHours = "상시 개방\n기상 악화 시 통제될 수 있습니다",
+                            closedDays = "연중무휴",
+                            parking = "가능",
+                            contact = "064-740-6000",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-weather")
+        advanceUntilIdle()
+
+        val tags = (viewModel.uiState.value as TravelDetailUiState.Content)
+            .selectedDay
+            ?.places
+            ?.single()
+            ?.tags
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.AlwaysOpen,
+                TravelDetailPlaceTagUiModel.OpenAllYear,
+                TravelDetailPlaceTagUiModel.BadWeatherClosed,
+                TravelDetailPlaceTagUiModel.ParkingAvailable,
+                TravelDetailPlaceTagUiModel.Text("064-740-6000"),
+            ),
+            tags,
+        )
+    }
+
+    @Test
     fun `구조화된 장소 정보가 없으면 기존 태그를 유지한다`() = runTest(dispatcher) {
         val course = course().copy(
             days = listOf(

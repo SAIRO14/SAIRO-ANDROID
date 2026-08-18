@@ -18,7 +18,9 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,7 +68,7 @@ import kotlinx.coroutines.launch
  * @param viewModel 홈 화면의 중앙 이미지 상태를 소유하는 ViewModel
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
- * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 함께 호출할 동작
+ * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 저장 항목 ID로 호출할 동작
  */
 @Composable
 fun HomeRoute(
@@ -74,7 +76,7 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
-    onSavedTripClick: (String) -> Unit = {},
+    onSavedTripClick: (courseId: String, savedTripId: String) -> Unit = { _, _ -> },
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
 
@@ -97,7 +99,7 @@ fun HomeRoute(
  * @param uiState 화면에 표시할 로딩·콘텐츠·오류 상태
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
- * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 함께 호출할 동작
+ * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 저장 항목 ID로 호출할 동작
  * @param onRetryClick 오류 화면의 재시도 버튼을 눌렀을 때 호출할 동작
  */
 @Composable
@@ -106,7 +108,7 @@ fun HomeScreen(
     uiState: HomeUiState = HomeUiState.Content(),
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
-    onSavedTripClick: (String) -> Unit = {},
+    onSavedTripClick: (courseId: String, savedTripId: String) -> Unit = { _, _ -> },
     onRetryClick: () -> Unit = {},
 ) {
     when (uiState) {
@@ -137,7 +139,7 @@ private fun HomeContentScreen(
     uiState: HomeUiState.Content,
     onFindTripClick: () -> Unit,
     onFolderClick: () -> Unit,
-    onSavedTripClick: (String) -> Unit,
+    onSavedTripClick: (courseId: String, savedTripId: String) -> Unit,
 ) {
     HomeContainer(
         modifier = modifier,
@@ -152,16 +154,64 @@ private fun HomeContentScreen(
             backdropState = backdropState,
         )
 
-        Box(
+        BoxWithConstraints(
             modifier = Modifier.fillMaxSize(),
         ) {
             if (uiState.savedTrips.isNotEmpty()) {
+                val density = LocalDensity.current
+                val canvasSize = remember(maxWidth, maxHeight, density) {
+                    with(density) {
+                        HomeCanvasSize(
+                            width = maxWidth.toPx(),
+                            height = maxHeight.toPx(),
+                        )
+                    }
+                }
+                val cardSize = remember(density) {
+                    with(density) {
+                        HomeCanvasSize(
+                            width = HomeSavedTripCardWidth.toPx(),
+                            height = HomeSavedTripCardHeight.toPx(),
+                        )
+                    }
+                }
+                val revealPadding = with(density) { HomeCanvasRevealPadding.toPx() }
+                val visualOverflow = with(density) { HomeSavedTripVisualOverflow.toPx() }
+                val savedTripLayout = remember(
+                    canvasSize,
+                    cardSize,
+                    density,
+                    headerHeight,
+                    uiState.savedTrips.size,
+                    revealPadding,
+                    visualOverflow,
+                ) {
+                    val visibleTop = with(density) { headerHeight.toPx() }
+                        .coerceIn(0f, canvasSize.height)
+                    HomeCanvasLayoutPolicy.calculate(
+                        canvasSize = canvasSize,
+                        visibleViewport = HomeCanvasRect(
+                            left = 0f,
+                            top = visibleTop,
+                            right = canvasSize.width,
+                            bottom = canvasSize.height,
+                        ),
+                        cardSize = cardSize,
+                        placements = HomeSavedTripPlacements.create(cardSize),
+                        cardCount = uiState.savedTrips.size,
+                        revealPadding = revealPadding,
+                        visualOverflow = visualOverflow,
+                    )
+                }
+
                 HomePannableCanvas(
                     backdropState = backdropState,
+                    panBounds = savedTripLayout.panBounds,
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     HomeSavedTripsLayer(
                         savedTrips = uiState.savedTrips,
+                        cardPlacements = savedTripLayout.cardPlacements,
                         backdropState = backdropState,
                         onSavedTripClick = onSavedTripClick,
                         modifier = Modifier.fillMaxSize(),
@@ -340,10 +390,10 @@ private fun HomeContainer(
 @Composable
 private fun HomePannableCanvas(
     backdropState: SairoBackdropState,
+    panBounds: HomeCanvasPanBounds,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
     var canvasOffset by remember { mutableStateOf(Offset.Zero) }
     val backdropInvalidationPending = remember(backdropState) { AtomicBoolean(false) }
@@ -363,94 +413,87 @@ private fun HomePannableCanvas(
         }
     }
 
-    BoxWithConstraints(
+    LaunchedEffect(panBounds) {
+        canvasOffset = Offset(
+            x = canvasOffset.x.coerceIn(panBounds.minX, panBounds.maxX),
+            y = canvasOffset.y.coerceIn(panBounds.minY, panBounds.maxY),
+        )
+    }
+
+    Box(
         modifier = modifier
             .clipToBounds()
+            .pointerInput(panBounds) {
+                detectDragGestures(
+                    onDragStart = { backdropState.invalidate() },
+                ) { change, dragAmount ->
+                    change.consume()
+                    canvasOffset = Offset(
+                        x = (canvasOffset.x + dragAmount.x)
+                            .coerceIn(panBounds.minX, panBounds.maxX),
+                        y = (canvasOffset.y + dragAmount.y)
+                            .coerceIn(panBounds.minY, panBounds.maxY),
+                    )
+                    scheduleBackdropInvalidation()
+                }
+            },
     ) {
-        val horizontalDragLimit = with(density) {
-            (maxWidth * CanvasHorizontalDragRange).toPx()
-        }
-        val verticalDragLimit = with(density) {
-            (maxHeight * CanvasVerticalDragRange).toPx()
-        }
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(maxWidth, maxHeight) {
-                    detectDragGestures(
-                        onDragStart = { backdropState.invalidate() },
-                    ) { change, dragAmount ->
-                        change.consume()
-                        canvasOffset = Offset(
-                            x = (canvasOffset.x + dragAmount.x)
-                                .coerceIn(-horizontalDragLimit, horizontalDragLimit),
-                            y = (canvasOffset.y + dragAmount.y)
-                                .coerceIn(-verticalDragLimit, verticalDragLimit),
-                        )
-                        scheduleBackdropInvalidation()
-                    }
+                .offset {
+                    IntOffset(
+                        x = canvasOffset.x.roundToInt(),
+                        y = canvasOffset.y.roundToInt(),
+                    )
                 },
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset {
-                        IntOffset(
-                            x = canvasOffset.x.roundToInt(),
-                            y = canvasOffset.y.roundToInt(),
-                        )
-                    },
-                content = content,
-            )
-        }
+            content = content,
+        )
     }
 }
 
 @Composable
 private fun HomeSavedTripsLayer(
     savedTrips: List<HomeSavedTripUiModel>,
+    cardPlacements: List<HomeResolvedSavedTripPlacement>,
     backdropState: SairoBackdropState,
-    onSavedTripClick: (String) -> Unit,
+    onSavedTripClick: (courseId: String, savedTripId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        savedTrips.take(SavedTripSlot.entries.size).forEachIndexed { index, savedTrip ->
-            val painter = rememberSairoBackdropImagePainter(
-                model = savedTrip.thumbnailImageUrl ?: R.drawable.img_dummy_view,
-                backdropState = backdropState,
-            )
-            val slot = SavedTripSlot.entries[index]
+        savedTrips.zip(cardPlacements).forEach { (savedTrip, resolvedPlacement) ->
+            key(savedTrip.savedTripId) {
+                val painter = rememberSairoBackdropImagePainter(
+                    model = savedTrip.thumbnailImageUrl ?: R.drawable.img_dummy_view,
+                    backdropState = backdropState,
+                )
 
-            HomeSavedTripCard(
-                savedTrip = savedTrip,
-                painter = painter,
-                onClick = { onSavedTripClick(savedTrip.courseId) },
-                modifier = Modifier
-                    .align(slot.alignment)
-                    .offset(x = slot.offsetX, y = slot.offsetY),
-            )
+                HomeSavedTripCard(
+                    savedTrip = savedTrip,
+                    painter = painter,
+                    onClick = {
+                        onSavedTripClick(savedTrip.courseId, savedTrip.savedTripId)
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset {
+                            IntOffset(
+                                x = resolvedPlacement.cardBounds.left.roundToInt(),
+                                y = resolvedPlacement.cardBounds.top.roundToInt(),
+                            )
+                        },
+                )
+            }
         }
     }
-}
-
-private enum class SavedTripSlot(
-    val alignment: Alignment,
-    val offsetX: Dp,
-    val offsetY: Dp,
-) {
-    TopStart(Alignment.TopStart, (-75).dp, (-39).dp),
-    TopEnd(Alignment.TopEnd, 159.dp, (-3).dp),
-    BottomEnd(Alignment.BottomEnd, 22.dp, 116.dp),
-    BottomStart(Alignment.BottomStart, (-42).dp, 49.dp),
 }
 
 private val HomeHorizontalPadding = 24.dp
 private val HomeContentMaxWidth = 294.dp
 private val HomeContentTopSpacing = 55.dp
 private val HomeContentGap = 20.dp
-private const val CanvasHorizontalDragRange = 0.5f
-private const val CanvasVerticalDragRange = 0.25f
+private val HomeCanvasRevealPadding = 24.dp
+private val HomeSavedTripVisualOverflow = 32.dp
 
 @Preview(name = "Home Empty", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
@@ -460,13 +503,30 @@ private fun HomeScreenPreview() {
     }
 }
 
-@Preview(name = "Home Saved Trips", showBackground = true, widthDp = 360, heightDp = 800)
+@Preview(name = "Home One Saved Trip", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
-private fun HomeScreenSavedTripsPreview() {
+private fun HomeScreenOneSavedTripPreview() {
+    HomeScreenSavedTripsPreview(cardCount = 1)
+}
+
+@Preview(name = "Home Four Saved Trips", showBackground = true, widthDp = 360, heightDp = 800)
+@Composable
+private fun HomeScreenFourSavedTripsPreview() {
+    HomeScreenSavedTripsPreview(cardCount = 4)
+}
+
+@Preview(name = "Home Eight Saved Trips - Small", showBackground = true, widthDp = 320, heightDp = 568)
+@Composable
+private fun HomeScreenEightSavedTripsSmallPreview() {
+    HomeScreenSavedTripsPreview(cardCount = 8)
+}
+
+@Composable
+private fun HomeScreenSavedTripsPreview(cardCount: Int) {
     SairoTheme {
         HomeScreen(
             uiState = HomeUiState.Content(
-                savedTrips = List(4) { index ->
+                savedTrips = List(cardCount) { index ->
                     HomeSavedTripUiModel(
                         savedTripId = "saved-trip-$index",
                         courseId = "course-$index",

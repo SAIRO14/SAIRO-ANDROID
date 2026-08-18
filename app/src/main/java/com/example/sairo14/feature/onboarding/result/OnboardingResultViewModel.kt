@@ -138,11 +138,20 @@ class OnboardingResultViewModel @Inject constructor(
         setRequesting(courseId, isRequesting = true)
         viewModelScope.launch {
             when (val result = saveTripUseCase(courseId)) {
-                is AppResult.Success -> updateBookmark(courseId) {
-                    it.copy(
-                        isSaved = true,
-                        savedTripId = result.value.savedTripId,
-                        isRequesting = false,
+                is AppResult.Success -> {
+                    updateBookmark(courseId) {
+                        it.copy(
+                            isSaved = true,
+                            savedTripId = result.value.savedTripId,
+                            isRequesting = false,
+                        )
+                    }
+                    bookmarkChangeNotifier.notify(
+                        BookmarkChange(
+                            courseId = courseId,
+                            isSaved = true,
+                            savedTripId = result.value.savedTripId,
+                        ),
                     )
                 }
 
@@ -158,11 +167,20 @@ class OnboardingResultViewModel @Inject constructor(
         setRequesting(courseId, isRequesting = true)
         viewModelScope.launch {
             when (val result = deleteSavedTripUseCase(savedTripId)) {
-                is AppResult.Success -> updateBookmark(courseId) {
-                    it.copy(
-                        isSaved = false,
-                        savedTripId = null,
-                        isRequesting = false,
+                is AppResult.Success -> {
+                    updateBookmark(courseId) {
+                        it.copy(
+                            isSaved = false,
+                            savedTripId = null,
+                            isRequesting = false,
+                        )
+                    }
+                    bookmarkChangeNotifier.notify(
+                        BookmarkChange(
+                            courseId = courseId,
+                            isSaved = false,
+                            savedTripId = null,
+                        ),
                     )
                 }
 

@@ -25,7 +25,8 @@ import kotlinx.coroutines.launch
  * 최초·추가 조회 결과를 [SavedTripsUiState]로 변환하고, 북마크 해제에 성공한 카드를 목록에서 제거한다.
  * 추가 조회는 서버 커서와 진행 상태를 이 ViewModel이 소유해 중복 요청을 막는다. 기기 식별과 API 헤더
  * 준비는 Repository 구현이 담당한다. 상세 화면의 저장 해제 성공은 [BookmarkChangeNotifier]를 통해
- * 반영하며, 화면 이동은 화면 호출자가 소유한다.
+ * 반영하며, 이 화면에서 해제한 결과도 같은 통지자로 다른 화면에 전달한다. 화면 이동은 화면 호출자가
+ * 소유한다.
  */
 @HiltViewModel
 class SavedTripsViewModel @Inject constructor(
@@ -92,9 +93,10 @@ class SavedTripsViewModel @Inject constructor(
         }
     }
 
-    /** 북마크 해제 요청이 성공하면 해당 카드를 목록에서 제거한다. */
+    /** 북마크 해제 요청이 성공하면 해당 카드를 목록에서 제거하고 다른 화면에 변경을 알린다. */
     fun removeSavedTrip(savedTripId: String) {
         val content = _uiState.value as? SavedTripsUiState.Content ?: return
+        val trip = content.trips.firstOrNull { it.savedTripId == savedTripId } ?: return
 
         if (savedTripId in content.removingSavedTripIds) return
 
@@ -111,6 +113,13 @@ class SavedTripsViewModel @Inject constructor(
                     if (removeSavedTripsFromState { trip -> trip.savedTripId == savedTripId }) {
                         refreshAfterRemoval()
                     }
+                    bookmarkChangeNotifier.notify(
+                        BookmarkChange(
+                            courseId = trip.courseId,
+                            isSaved = false,
+                            savedTripId = null,
+                        ),
+                    )
                 }
                 is AppResult.Failure -> clearRemovingState(savedTripId)
             }

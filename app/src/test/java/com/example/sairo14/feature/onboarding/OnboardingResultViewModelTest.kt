@@ -107,10 +107,14 @@ class OnboardingResultViewModelTest {
                 SavedTripSaveResult(savedTripId = "saved-trip-1", courseId = "unexpected-course"),
             ),
         )
+        val notifier = BookmarkChangeNotifier()
         val viewModel = createLoadedViewModel(
             recommendations = listOf(recommendation("1")),
             savedTripRepo = savedTripRepo,
+            bookmarkChangeNotifier = notifier,
         )
+        val change = async { notifier.changes.first() }
+        runCurrent()
 
         viewModel.onBookmarkClick("course-1")
         advanceUntilIdle()
@@ -120,17 +124,24 @@ class OnboardingResultViewModelTest {
         assertEquals("saved-trip-1", bookmark.savedTripId)
         assertFalse(bookmark.isRequesting)
         assertEquals(listOf("course-1"), savedTripRepo.savedCourseIds)
+        assertEquals(
+            BookmarkChange("course-1", isSaved = true, savedTripId = "saved-trip-1"),
+            change.await(),
+        )
     }
 
     @Test fun `저장 실패 시 기존 미체크 상태를 유지하고 오류 효과를 전달한다`() = runTest(dispatcher) {
         val savedTripRepo = SavedTripRepo(
             saveResult = AppResult.Failure(AppError.NetworkUnavailable),
         )
+        val notifier = BookmarkChangeNotifier()
         val viewModel = createLoadedViewModel(
             recommendations = listOf(recommendation("1")),
             savedTripRepo = savedTripRepo,
+            bookmarkChangeNotifier = notifier,
         )
         val effect = async { viewModel.bookmarkEffect.first() }
+        val change = async { notifier.changes.first() }
         runCurrent()
 
         viewModel.onBookmarkClick("course-1")
@@ -141,17 +152,23 @@ class OnboardingResultViewModelTest {
         assertNull(bookmark.savedTripId)
         assertFalse(bookmark.isRequesting)
         assertEquals(BookmarkEffect.ShowError(AppError.NetworkUnavailable), effect.await())
+        assertFalse(change.isCompleted)
+        change.cancel()
     }
 
     @Test fun `삭제 성공 후 체크 상태와 savedTripId를 제거한다`() = runTest(dispatcher) {
         val savedTripRepo = SavedTripRepo()
+        val notifier = BookmarkChangeNotifier()
         val viewModel = createLoadedViewModel(
             recommendations = listOf(recommendation("1")),
             savedTripRepo = savedTripRepo,
+            bookmarkChangeNotifier = notifier,
         )
 
         viewModel.onBookmarkClick("course-1")
         advanceUntilIdle()
+        val change = async { notifier.changes.first() }
+        runCurrent()
         viewModel.onBookmarkClick("course-1")
         advanceUntilIdle()
 
@@ -159,6 +176,10 @@ class OnboardingResultViewModelTest {
         assertFalse(bookmark.isSaved)
         assertNull(bookmark.savedTripId)
         assertEquals(listOf("saved-trip-1"), savedTripRepo.deletedSavedTripIds)
+        assertEquals(
+            BookmarkChange("course-1", isSaved = false, savedTripId = null),
+            change.await(),
+        )
     }
 
     @Test fun `삭제 실패 시 기존 체크 상태와 savedTripId를 유지한다`() = runTest(dispatcher) {

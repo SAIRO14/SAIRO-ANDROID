@@ -14,6 +14,8 @@ import java.util.ArrayDeque
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -232,8 +234,11 @@ class SavedTripsViewModelTest {
                 AppResult.Success(page(listOf(trip("saved-2")), null)),
             ),
         )
-        val viewModel = createViewModel(repository)
+        val notifier = BookmarkChangeNotifier()
+        val viewModel = createViewModel(repository, notifier)
         advanceUntilIdle()
+        val change = async { notifier.changes.first() }
+        runCurrent()
 
         viewModel.removeSavedTrip("saved-1")
         advanceUntilIdle()
@@ -242,6 +247,10 @@ class SavedTripsViewModelTest {
         assertEquals(listOf("saved-2"), content.trips.map { it.savedTripId })
         assertNull(content.nextCursor)
         assertEquals(listOf(null, null), repository.requestedCursors)
+        assertEquals(
+            BookmarkChange("course-saved-1", isSaved = false, savedTripId = null),
+            change.await(),
+        )
     }
 
     @Test

@@ -398,7 +398,9 @@ private fun TravelDetailMessageLayout(
             onActionClick = onHomeClick,
         )
         Box(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
             contentAlignment = Alignment.Center,
         ) {
             Column(

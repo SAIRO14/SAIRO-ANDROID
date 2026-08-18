@@ -53,7 +53,7 @@ class HomeCanvasLayoutPolicyTest {
 
         assertEquals(5, fiveCards.cardPlacements.size)
         assertEquals(fourCards.panBounds.minX, fiveCards.panBounds.minX)
-        assertEquals(126f, fiveCards.panBounds.maxX, FloatTolerance)
+        assertEquals(273f, fiveCards.panBounds.maxX, FloatTolerance)
         assertEquals(fourCards.panBounds.minY, fiveCards.panBounds.minY)
         assertEquals(fourCards.panBounds.maxY, fiveCards.panBounds.maxY)
     }
@@ -65,9 +65,9 @@ class HomeCanvasLayoutPolicyTest {
         assertEquals(8, layout.cardPlacements.size)
         assertPanBoundsEquals(
             HomeCanvasPanBounds(
-                minX = -159f,
-                maxX = 126f,
-                minY = -211f,
+                minX = -186f,
+                maxX = 273f,
+                minY = -332f,
                 maxY = 271f,
             ),
             layout.panBounds,
@@ -82,6 +82,25 @@ class HomeCanvasLayoutPolicyTest {
         assertEquals(8, moreThanEightCards.cardPlacements.size)
         assertEquals(eightCards.cardPlacements, moreThanEightCards.cardPlacements)
         assertPanBoundsEquals(eightCards.panBounds, moreThanEightCards.panBounds)
+    }
+
+    @Test
+    fun `카드 노출 여유와 시각 여유는 모든 방향의 드래그 범위를 확장한다`() {
+        val layout = calculate(
+            cardCount = 8,
+            revealPadding = 24f,
+            visualOverflow = 32f,
+        )
+
+        assertPanBoundsEquals(
+            HomeCanvasPanBounds(
+                minX = -242f,
+                maxX = 329f,
+                minY = -388f,
+                maxY = 327f,
+            ),
+            layout.panBounds,
+        )
     }
 
     @Test
@@ -103,9 +122,9 @@ class HomeCanvasLayoutPolicyTest {
             SmallScreenCase(
                 cardCount = 8,
                 panBounds = HomeCanvasPanBounds(
-                    minX = -159f,
-                    maxX = 126f,
-                    minY = -171f,
+                    minX = -186f,
+                    maxX = 273f,
+                    minY = -292f,
                     maxY = 243f,
                 ),
             ),
@@ -120,6 +139,10 @@ class HomeCanvasLayoutPolicyTest {
             assertPanBoundsEquals(expected.panBounds, layout.panBounds)
             layout.cardPlacements.forEach { placement ->
                 assertCanReachVisibleViewport(placement.cardBounds, layout.panBounds, SmallVisibleViewport)
+            }
+
+            if (expected.cardCount == 8) {
+                assertCardsHaveMinimumGap(layout.cardPlacements, MinimumCardGap)
             }
         }
     }
@@ -142,6 +165,7 @@ class HomeCanvasLayoutPolicyTest {
     private fun calculate(
         cardCount: Int,
         visualOverflow: Float = 0f,
+        revealPadding: Float = 0f,
         canvasSize: HomeCanvasSize = CanvasSize,
         visibleViewport: HomeCanvasRect = VisibleViewport,
     ): HomeCanvasLayout = HomeCanvasLayoutPolicy.calculate(
@@ -150,6 +174,7 @@ class HomeCanvasLayoutPolicyTest {
         cardSize = CardSize,
         placements = HomeSavedTripPlacements.create(CardSize),
         cardCount = cardCount,
+        revealPadding = revealPadding,
         visualOverflow = visualOverflow,
     )
 
@@ -185,6 +210,26 @@ class HomeCanvasLayoutPolicyTest {
         assertTrue(cardBounds.top + offsetY <= visibleViewport.bottom)
     }
 
+    private fun assertCardsHaveMinimumGap(
+        placements: List<HomeResolvedSavedTripPlacement>,
+        minimumGap: Float,
+    ) {
+        placements.forEachIndexed { index, placement ->
+            placements.drop(index + 1).forEach { other ->
+                val horizontalGap = maxOf(
+                    placement.cardBounds.left - other.cardBounds.right,
+                    other.cardBounds.left - placement.cardBounds.right,
+                )
+                val verticalGap = maxOf(
+                    placement.cardBounds.top - other.cardBounds.bottom,
+                    other.cardBounds.top - placement.cardBounds.bottom,
+                )
+
+                assertTrue(horizontalGap >= minimumGap || verticalGap >= minimumGap)
+            }
+        }
+    }
+
     private data class SmallScreenCase(
         val cardCount: Int,
         val panBounds: HomeCanvasPanBounds,
@@ -192,6 +237,7 @@ class HomeCanvasLayoutPolicyTest {
 
     private companion object {
         const val FloatTolerance = 0.001f
+        const val MinimumCardGap = 48f
         val CanvasSize = HomeCanvasSize(width = 360f, height = 800f)
         val VisibleViewport = HomeCanvasRect(
             left = 0f,

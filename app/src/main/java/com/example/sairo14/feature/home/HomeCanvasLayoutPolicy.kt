@@ -70,57 +70,66 @@ internal data class HomeSavedTripPlacement(
 /** 홈 캔버스에 저장 최신순으로 적용할 최대 여덟 개의 카드 배치를 제공한다. */
 internal object HomeSavedTripPlacements {
 
-    /** 카드 크기에 비례해 기존 네 슬롯과 바깥 네 슬롯의 위치를 만든다. */
-    fun create(cardSize: HomeCanvasSize): List<HomeSavedTripPlacement> = listOf(
-        HomeSavedTripPlacement(
-            horizontalAnchor = HomeCanvasAnchor.Start,
-            verticalAnchor = HomeCanvasAnchor.Start,
-            offsetX = cardSize.width * -0.5f,
-            offsetY = cardSize.height * -0.2f,
-        ),
-        HomeSavedTripPlacement(
-            horizontalAnchor = HomeCanvasAnchor.End,
-            verticalAnchor = HomeCanvasAnchor.Start,
-            offsetX = cardSize.width * 1.06f,
-            offsetY = cardSize.height * -(1f / 65f),
-        ),
-        HomeSavedTripPlacement(
-            horizontalAnchor = HomeCanvasAnchor.End,
-            verticalAnchor = HomeCanvasAnchor.End,
-            offsetX = cardSize.width * (11f / 75f),
-            offsetY = cardSize.height * (116f / 195f),
-        ),
-        HomeSavedTripPlacement(
-            horizontalAnchor = HomeCanvasAnchor.Start,
-            verticalAnchor = HomeCanvasAnchor.End,
-            offsetX = cardSize.width * -0.28f,
-            offsetY = cardSize.height * (49f / 195f),
-        ),
-        HomeSavedTripPlacement(
-            horizontalAnchor = HomeCanvasAnchor.Start,
-            verticalAnchor = HomeCanvasAnchor.Center,
-            offsetX = cardSize.width * -0.84f,
-            offsetY = 0f,
-        ),
-        HomeSavedTripPlacement(
-            horizontalAnchor = HomeCanvasAnchor.End,
-            verticalAnchor = HomeCanvasAnchor.Center,
-            offsetX = cardSize.width * 0.84f,
-            offsetY = 0f,
-        ),
-        HomeSavedTripPlacement(
-            horizontalAnchor = HomeCanvasAnchor.Center,
-            verticalAnchor = HomeCanvasAnchor.Start,
-            offsetX = 0f,
-            offsetY = cardSize.height * -(171f / 195f),
-        ),
-        HomeSavedTripPlacement(
-            horizontalAnchor = HomeCanvasAnchor.Center,
-            verticalAnchor = HomeCanvasAnchor.End,
-            offsetX = 0f,
-            offsetY = cardSize.height * (171f / 195f),
-        ),
-    )
+    /** 카드 크기에 비례해 카드 사이의 여유를 유지하는 최대 여덟 개 슬롯을 만든다. */
+    fun create(cardSize: HomeCanvasSize): List<HomeSavedTripPlacement> {
+        val horizontalGap = cardSize.width * (CardGapAtReferenceSize / ReferenceCardWidth)
+        val verticalGap = cardSize.height * (CardGapAtReferenceSize / ReferenceCardHeight)
+
+        return listOf(
+            HomeSavedTripPlacement(
+                horizontalAnchor = HomeCanvasAnchor.Start,
+                verticalAnchor = HomeCanvasAnchor.Start,
+                offsetX = cardSize.width * -0.5f,
+                offsetY = cardSize.height * -0.2f,
+            ),
+            HomeSavedTripPlacement(
+                horizontalAnchor = HomeCanvasAnchor.End,
+                verticalAnchor = HomeCanvasAnchor.Start,
+                offsetX = cardSize.width * 1.06f,
+                offsetY = cardSize.height * -(1f / 65f),
+            ),
+            HomeSavedTripPlacement(
+                horizontalAnchor = HomeCanvasAnchor.End,
+                verticalAnchor = HomeCanvasAnchor.End,
+                offsetX = cardSize.width * (113f / ReferenceCardWidth),
+                offsetY = cardSize.height * (116f / 195f),
+            ),
+            HomeSavedTripPlacement(
+                horizontalAnchor = HomeCanvasAnchor.Start,
+                verticalAnchor = HomeCanvasAnchor.End,
+                offsetX = cardSize.width * -0.28f,
+                offsetY = cardSize.height * (49f / 195f),
+            ),
+            HomeSavedTripPlacement(
+                horizontalAnchor = HomeCanvasAnchor.Start,
+                verticalAnchor = HomeCanvasAnchor.Center,
+                offsetX = cardSize.width * -1.5f - horizontalGap,
+                offsetY = cardSize.height * (6f / 195f),
+            ),
+            HomeSavedTripPlacement(
+                horizontalAnchor = HomeCanvasAnchor.End,
+                verticalAnchor = HomeCanvasAnchor.Center,
+                offsetX = cardSize.width * 1.24f,
+                offsetY = cardSize.height * (54f / 195f),
+            ),
+            HomeSavedTripPlacement(
+                horizontalAnchor = HomeCanvasAnchor.Center,
+                verticalAnchor = HomeCanvasAnchor.Start,
+                offsetX = cardSize.width * (38f / ReferenceCardWidth),
+                offsetY = cardSize.height * -(171f / 195f),
+            ),
+            HomeSavedTripPlacement(
+                horizontalAnchor = HomeCanvasAnchor.Center,
+                verticalAnchor = HomeCanvasAnchor.End,
+                offsetX = 0f,
+                offsetY = cardSize.height + cardSize.height * (49f / 195f) + verticalGap,
+            ),
+        )
+    }
+
+    private const val ReferenceCardWidth = 150f
+    private const val ReferenceCardHeight = 195f
+    private const val CardGapAtReferenceSize = 48f
 }
 
 /** 캔버스 Offset에 적용할 비대칭 가로·세로 이동 한계다. */

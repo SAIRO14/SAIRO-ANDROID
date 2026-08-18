@@ -175,12 +175,16 @@ private fun HomeContentScreen(
                         )
                     }
                 }
+                val revealPadding = with(density) { HomeCanvasRevealPadding.toPx() }
+                val visualOverflow = with(density) { HomeSavedTripVisualOverflow.toPx() }
                 val savedTripLayout = remember(
                     canvasSize,
                     cardSize,
                     density,
                     headerHeight,
                     uiState.savedTrips.size,
+                    revealPadding,
+                    visualOverflow,
                 ) {
                     val visibleTop = with(density) { headerHeight.toPx() }
                         .coerceIn(0f, canvasSize.height)
@@ -195,6 +199,8 @@ private fun HomeContentScreen(
                         cardSize = cardSize,
                         placements = HomeSavedTripPlacements.create(cardSize),
                         cardCount = uiState.savedTrips.size,
+                        revealPadding = revealPadding,
+                        visualOverflow = visualOverflow,
                     )
                 }
 
@@ -486,6 +492,8 @@ private val HomeHorizontalPadding = 24.dp
 private val HomeContentMaxWidth = 294.dp
 private val HomeContentTopSpacing = 55.dp
 private val HomeContentGap = 20.dp
+private val HomeCanvasRevealPadding = 24.dp
+private val HomeSavedTripVisualOverflow = 32.dp
 
 @Preview(name = "Home Empty", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable

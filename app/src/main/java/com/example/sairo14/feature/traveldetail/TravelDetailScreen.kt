@@ -41,6 +41,8 @@ import com.example.sairo14.core.map.SairoKakaoMap
 import com.example.sairo14.core.map.SairoMapCameraTarget
 import com.example.sairo14.core.map.SairoMapMarker
 import com.example.sairo14.core.map.SairoMapViewportPadding
+import com.example.sairo14.domain.model.isNetworkError
+import com.example.sairo14.feature.error.NetworkErrorRoute
 import java.time.DayOfWeek
 
 /**
@@ -121,6 +123,15 @@ fun TravelDetailScreen(
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (uiState is TravelDetailUiState.Error && uiState.error.isNetworkError()) {
+        NetworkErrorRoute(
+            onRetryClick = onRetryClick,
+            onHomeClick = onHomeClick,
+            modifier = modifier,
+        )
+        return
+    }
+
     val screenModifier = modifier.navigationBarsPadding()
 
     when (uiState) {

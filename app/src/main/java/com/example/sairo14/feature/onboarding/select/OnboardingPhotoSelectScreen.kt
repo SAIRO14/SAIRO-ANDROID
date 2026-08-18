@@ -59,6 +59,8 @@ import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
 import com.example.sairo14.core.extension.sairoDropShadow
+import com.example.sairo14.domain.model.isNetworkError
+import com.example.sairo14.feature.error.NetworkErrorRoute
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -68,16 +70,18 @@ import kotlinx.coroutines.coroutineScope
  * 온보딩 사진 선택 화면의 상태와 다음 단계 이동을 연결한다.
  *
  * 사진 선택·해제·재시도는 [OnboardingPhotoSelectViewModel]이 처리하고, 완료 결과를 받은 호출자가
- * 다음 목적지 이동을 결정한다.
+ * 다음 목적지와 홈 이동을 결정한다.
  * @param modifier 화면 컨테이너에 적용할 Modifier
  * @param viewModel 사진 후보와 선택 상태를 소유하는 ViewModel
  * @param onSelectionComplete 선택한 사진 ID와 애니메이션에 표시할 앞 5장을 전달받는 콜백
+ * @param onHomeClick 네트워크 오류 화면의 홈 이동 동작
  */
 @Composable
 fun OnboardingPhotoSelectRoute(
     modifier: Modifier = Modifier,
     viewModel: OnboardingPhotoSelectViewModel = hiltViewModel(),
     onSelectionComplete: (List<String>, List<OnboardingPhotoUiModel>) -> Unit = { _, _ -> },
+    onHomeClick: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -97,6 +101,7 @@ fun OnboardingPhotoSelectRoute(
         onPhotoRemoveClick = viewModel::removePhotoSelection,
         onRetryClick = viewModel::retry,
         onCompleteClick = viewModel::completeSelection,
+        onHomeClick = onHomeClick,
         modifier = modifier,
     )
 }
@@ -113,6 +118,7 @@ fun OnboardingPhotoSelectRoute(
  * @param onPhotoRemoveClick 선택 썸네일의 제거 버튼을 눌렀을 때 호출할 콜백
  * @param onRetryClick 오류 상태에서 재시도를 요청할 때 호출할 콜백
  * @param onCompleteClick 완료 버튼을 눌렀을 때 호출할 콜백
+ * @param onHomeClick 네트워크 오류 화면에서 홈으로 이동할 때 호출할 콜백
  * @param modifier 화면 컨테이너에 적용할 Modifier
  */
 @Composable
@@ -122,8 +128,18 @@ fun OnboardingPhotoSelectScreen(
     onPhotoRemoveClick: (String) -> Unit,
     onRetryClick: () -> Unit,
     onCompleteClick: () -> Unit,
+    onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (uiState is OnboardingPhotoSelectUiState.Error && uiState.error.isNetworkError()) {
+        NetworkErrorRoute(
+            onRetryClick = onRetryClick,
+            onHomeClick = onHomeClick,
+            modifier = modifier,
+        )
+        return
+    }
+
     val colors = SairoTheme.colors
     val content = uiState as? OnboardingPhotoSelectUiState.Content
 
@@ -628,6 +644,7 @@ private fun OnboardingPhotoSelectScreenDefaultPreview() {
             onPhotoRemoveClick = {},
             onRetryClick = {},
             onCompleteClick = {},
+            onHomeClick = {},
         )
     }
 }
@@ -645,6 +662,7 @@ private fun OnboardingPhotoSelectScreenSelectedPreview() {
             onPhotoRemoveClick = {},
             onRetryClick = {},
             onCompleteClick = {},
+            onHomeClick = {},
         )
     }
 }

@@ -57,6 +57,8 @@ import com.example.sairo14.core.designsystem.component.SairoTag
 import com.example.sairo14.core.designsystem.component.SairoTagVariant
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.domain.model.isNetworkError
+import com.example.sairo14.feature.error.NetworkErrorRoute
 import androidx.compose.ui.MotionDurationScale
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -73,6 +75,7 @@ import kotlinx.coroutines.CancellationException
  * @param animationPhotos 사진 선택 순서의 앞 5장으로 구성한 애니메이션 카드 정보
  * @param onFinished 로딩과 분석 대기가 끝났을 때 결과 화면으로 이동할 콜백
  * @param onBackClick 사진을 다시 선택해야 할 때 이전 화면으로 돌아가는 콜백
+ * @param onHomeClick 네트워크 오류 화면에서 홈으로 이동할 때 호출할 콜백
  */
 @Composable
 fun OnboardingLoadingRoute(
@@ -81,6 +84,7 @@ fun OnboardingLoadingRoute(
     animationPhotos: List<OnboardingAnimationPhoto>,
     onFinished: () -> Unit,
     onBackClick: () -> Unit,
+    onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: OnboardingLoadingViewModel = hiltViewModel(),
 ) {
@@ -95,6 +99,7 @@ fun OnboardingLoadingRoute(
         onFinished = onFinished,
         onBackClick = onBackClick,
         onRetryClick = viewModel::retry,
+        onHomeClick = onHomeClick,
         modifier = modifier,
     )
 }
@@ -107,6 +112,7 @@ fun OnboardingLoadingRoute(
  * @param uiState 사진 복원 상태와 카드에 표시할 사진 목록
  * @param onFinished 카드 모션과 분석 대기가 끝난 뒤 호출할 콜백
  * @param onBackClick 사진 복원 오류에서 이전 화면으로 돌아갈 때 호출할 콜백
+ * @param onHomeClick 네트워크 오류 화면에서 홈으로 이동할 때 호출할 콜백
  * @param modifier 화면 컨테이너에 적용할 Modifier
  */
 @Composable
@@ -115,8 +121,18 @@ fun OnboardingLoadingScreen(
     onFinished: () -> Unit,
     onBackClick: () -> Unit,
     onRetryClick: () -> Unit,
+    onHomeClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (uiState is OnboardingLoadingUiState.AnalysisError && uiState.error.isNetworkError()) {
+        NetworkErrorRoute(
+            onRetryClick = onRetryClick,
+            onHomeClick = onHomeClick,
+            modifier = modifier,
+        )
+        return
+    }
+
     val loadingPhotos = (uiState as? OnboardingLoadingUiState.Content)
         ?.photos
         ?.take(OnboardingLoadingCardCount)
@@ -636,6 +652,7 @@ private fun OnboardingLoadingScreenPreview() {
             onFinished = {},
             onBackClick = {},
             onRetryClick = {},
+            onHomeClick = {},
         )
     }
 }

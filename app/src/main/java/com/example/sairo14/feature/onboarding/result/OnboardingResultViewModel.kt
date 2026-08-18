@@ -86,7 +86,7 @@ class OnboardingResultViewModel @Inject constructor(
             val recommendations = sessionStore.getResult(searchSessionId)?.recommendations
             if (!isCurrentGeneration(generation)) return@launch
             if (recommendations == null) {
-                _uiState.value = OnboardingResultUiState.Error(AppError.StorageUnavailable)
+                _uiState.value = OnboardingResultUiState.Error(AppError.ResourceNotFound)
                 return@launch
             }
 
@@ -105,7 +105,7 @@ class OnboardingResultViewModel @Inject constructor(
                             },
                         )
                     } else {
-                        OnboardingResultUiState.Error(AppError.Unknown)
+                        OnboardingResultUiState.Error(AppError.Conflict)
                     }
                 }
                 is AppResult.Failure -> OnboardingResultUiState.Error(completionResult.error)

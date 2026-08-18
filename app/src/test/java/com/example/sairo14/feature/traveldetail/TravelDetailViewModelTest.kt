@@ -547,7 +547,10 @@ class TravelDetailViewModelTest {
         viewModel.load("missing-course")
         advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value is TravelDetailUiState.Error)
+        assertEquals(
+            TravelDetailUiState.Error(AppError.ResourceNotFound),
+            viewModel.uiState.value,
+        )
     }
 
     @Test

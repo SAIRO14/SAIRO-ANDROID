@@ -50,3 +50,6 @@ sealed interface AppError {
     /** 분류되지 않은 오류가 발생한 상태다. */
     data object Unknown : AppError
 }
+
+/** 네트워크 연결 확인과 재시도 안내를 표시해야 하는 오류인지 반환한다. */
+fun AppError.isNetworkError(): Boolean = this == AppError.NetworkUnavailable

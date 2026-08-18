@@ -1,6 +1,7 @@
 package com.example.sairo14.feature.traveldetail
 
 import androidx.compose.runtime.Immutable
+import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.feature.bookmark.BookmarkUiState
 import java.time.DayOfWeek
 
@@ -26,8 +27,10 @@ sealed interface TravelDetailUiState {
             get() = selectedDay?.places?.firstOrNull { place -> place.placeId == selectedPlaceId }
     }
 
-    /** 코스 상세 정보를 읽지 못해 재시도가 필요한 상태다. */
-    data object Error : TravelDetailUiState
+    /** 코스 상세 정보를 읽지 못해 오류 종류에 맞는 안내가 필요한 상태다. */
+    data class Error(
+        val error: AppError,
+    ) : TravelDetailUiState
 }
 
 /** 여행 상세 화면이 domain 모델에 의존하지 않고 표시할 코스 정보다. */

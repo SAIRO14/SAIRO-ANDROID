@@ -1,6 +1,7 @@
 package com.example.sairo14.feature.onboarding.result
 
 import androidx.compose.runtime.Immutable
+import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.OnboardingRecommendation
 import com.example.sairo14.feature.bookmark.BookmarkUiState
 
@@ -17,6 +18,8 @@ sealed interface OnboardingResultUiState {
         val bookmarks: Map<String, BookmarkUiState>,
     ) : OnboardingResultUiState
 
-    /** 완료 상태 저장 또는 추천 결과 조회에 실패해 재시도가 필요한 상태다. */
-    data object Error : OnboardingResultUiState
+    /** 완료 상태 저장 또는 추천 결과 조회에 실패해 오류 종류에 맞는 재시도가 필요한 상태다. */
+    data class Error(
+        val error: AppError,
+    ) : OnboardingResultUiState
 }

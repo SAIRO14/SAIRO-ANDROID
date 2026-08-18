@@ -84,7 +84,7 @@ class TravelDetailViewModel @Inject constructor(
                     savedTripId = savedTripId,
                     summarizePlaceInfo = summarizePlaceInfo,
                 )
-                is AppResult.Failure -> TravelDetailUiState.Error
+                is AppResult.Failure -> TravelDetailUiState.Error(result.error)
             }
             if (requestId == loadRequestId) {
                 _uiState.value = nextState

@@ -2,6 +2,9 @@ package com.example.sairo14.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.sairo14.R
+import com.example.sairo14.core.dummyimage.DummyImagePair
+import com.example.sairo14.core.dummyimage.SeasonalDummyImageProvider
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.HomeContent
 import com.example.sairo14.domain.usecase.GetHomeContentUseCase
@@ -26,10 +29,15 @@ import kotlinx.coroutines.launch
 class HomeViewModel @Inject constructor(
     private val getHomeContent: GetHomeContentUseCase,
     private val bookmarkChangeNotifier: BookmarkChangeNotifier,
+    private val seasonalDummyImageProvider: SeasonalDummyImageProvider,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     private var homeContentJob: Job? = null
     private var homeContentRequestId = 0L
+    private var discoveryFallbackImages = DummyImagePair(
+        backImageRes = R.drawable.img_dummy_view,
+        frontImageRes = R.drawable.img_dummy_view,
+    )
 
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -43,6 +51,18 @@ class HomeViewModel @Inject constructor(
         if (_uiState.value is HomeUiState.Error) {
             loadHomeContent(showLoading = true)
         }
+    }
+
+    /** 홈에 진입할 때 새 이미지 묶음을 선택하고, 이미 표시 중인 콘텐츠에 즉시 반영한다. */
+    fun onScreenEntered() {
+        discoveryFallbackImages = seasonalDummyImageProvider.createImageSet().homePair
+        val content = _uiState.value as? HomeUiState.Content ?: return
+        _uiState.value = content.copy(
+            discoveryImages = content.discoveryImages.copy(
+                backFallbackRes = discoveryFallbackImages.backImageRes,
+                frontFallbackRes = discoveryFallbackImages.frontImageRes,
+            ),
+        )
     }
 
     private fun observeBookmarkChanges() {
@@ -63,13 +83,15 @@ class HomeViewModel @Inject constructor(
             when (val result = getHomeContent()) {
                 is AppResult.Success -> {
                     if (requestId == homeContentRequestId) {
-                        _uiState.value = result.value.toUiModel()
+                        _uiState.value = result.value.toUiModel(
+                            fallbackImages = discoveryFallbackImages,
+                        )
                     }
                 }
 
                 is AppResult.Failure -> {
                     if (requestId == homeContentRequestId && !keepsExistingContent) {
-                        _uiState.value = HomeUiState.Error
+                        _uiState.value = HomeUiState.Error(result.error)
                     }
                 }
             }
@@ -77,11 +99,13 @@ class HomeViewModel @Inject constructor(
     }
 }
 
-private fun HomeContent.toUiModel(): HomeUiState.Content =
+private fun HomeContent.toUiModel(fallbackImages: DummyImagePair): HomeUiState.Content =
     HomeUiState.Content(
         discoveryImages = HomeDiscoveryImagesUiModel(
             backImageUrl = discoveryImages.backImageUrl,
             frontImageUrl = discoveryImages.frontImageUrl,
+            backFallbackRes = fallbackImages.backImageRes,
+            frontFallbackRes = fallbackImages.frontImageRes,
         ),
         savedTrips = savedTrips.map { savedTrip ->
             HomeSavedTripUiModel(

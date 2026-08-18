@@ -65,7 +65,7 @@ class OnboardingLoadingViewModel @Inject constructor(
             )) {
                 is AppResult.Failure -> {
                     if (generation != analysisGeneration) return@launch
-                    _uiState.value = OnboardingLoadingUiState.AnalysisError
+                    _uiState.value = OnboardingLoadingUiState.AnalysisError(result.error)
                 }
 
                 is AppResult.Success -> {

@@ -7,6 +7,7 @@ import com.example.sairo14.domain.model.HomeContent
 import com.example.sairo14.domain.model.SavedTripSummary
 import com.example.sairo14.domain.repository.HomeRepository
 import com.example.sairo14.domain.usecase.GetHomeContentUseCase
+import com.example.sairo14.core.dummyimage.SeasonalDummyImageProvider
 import com.example.sairo14.feature.bookmark.BookmarkChange
 import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import kotlinx.coroutines.CompletableDeferred
@@ -88,6 +89,32 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `최초 네트워크 오류에서 재시도하면 같은 홈 요청을 다시 실행한다`() = runTest(dispatcher) {
+        val repository = RecordingHomeRepository(
+            results = listOf(
+                AppResult.Failure(AppError.NetworkUnavailable),
+                AppResult.Success(homeContent("saved-after-retry")),
+            ),
+        )
+        val viewModel = createViewModel(repository, BookmarkChangeNotifier())
+        advanceUntilIdle()
+
+        assertEquals(
+            HomeUiState.Error(AppError.NetworkUnavailable),
+            viewModel.uiState.value,
+        )
+
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("saved-after-retry"),
+            viewModel.content().savedTrips.map { it.savedTripId },
+        )
+        assertEquals(2, repository.requestCount)
+    }
+
+    @Test
     fun `연속 변경 알림에서 늦은 이전 응답은 최신 홈 콘텐츠를 덮어쓰지 않는다`() = runTest(dispatcher) {
         val repository = OutOfOrderHomeRepository()
         val notifier = BookmarkChangeNotifier()
@@ -114,6 +141,7 @@ class HomeViewModelTest {
     ) = HomeViewModel(
         getHomeContent = GetHomeContentUseCase(repository),
         bookmarkChangeNotifier = bookmarkChangeNotifier,
+        seasonalDummyImageProvider = SeasonalDummyImageProvider(),
     )
 
     private fun HomeViewModel.content(): HomeUiState.Content =

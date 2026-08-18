@@ -96,7 +96,7 @@ class OnboardingPhotoSelectViewModel @Inject constructor(
                     ?.let(OnboardingPhotoSelectUiState::Content)
                     ?: OnboardingPhotoSelectUiState.Empty
 
-                is AppResult.Failure -> OnboardingPhotoSelectUiState.Error
+                is AppResult.Failure -> OnboardingPhotoSelectUiState.Error(result.error)
             }
         }
     }

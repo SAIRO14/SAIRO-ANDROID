@@ -84,6 +84,36 @@ class SairoNavigatorTest {
     }
 
     @Test
+    fun `popToHome closes child routes and clears the completed onboarding session`() {
+        val endedSessionIds = mutableListOf<String>()
+        val backStack = NavBackStack<NavKey>(
+            HomeRoute,
+            OnboardingIntroRoute(),
+            OnboardingPhotoSelectRoute(searchSessionId = "session"),
+            TravelDetailRoute(courseId = "course-1", onboardingSessionId = "session"),
+        )
+        val navigator = SairoNavigator(
+            backStack = backStack,
+            onOnboardingSessionEnded = endedSessionIds::add,
+        )
+
+        navigator.popToHome()
+
+        assertEquals(listOf<NavKey>(HomeRoute), backStack.toList())
+        assertEquals(listOf("session"), endedSessionIds)
+    }
+
+    @Test
+    fun `popToHome keeps the home route when it is already at the top`() {
+        val backStack = NavBackStack<NavKey>(HomeRoute)
+        val navigator = SairoNavigator(backStack)
+
+        navigator.popToHome()
+
+        assertEquals(listOf<NavKey>(HomeRoute), backStack.toList())
+    }
+
+    @Test
     fun `마지막 온보딩 Route가 제거되면 세션 정리를 요청한다`() {
         val endedSessionIds = mutableListOf<String>()
         val backStack = NavBackStack<NavKey>(

@@ -54,6 +54,8 @@ import com.example.sairo14.core.designsystem.component.rememberSairoBackdropStat
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.domain.model.AppError
+import com.example.sairo14.domain.model.isNetworkError
+import com.example.sairo14.feature.error.NetworkErrorRoute
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -122,6 +124,15 @@ fun SavedTripsScreen(
     onTripClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (uiState is SavedTripsUiState.Error && uiState.error.isNetworkError()) {
+        NetworkErrorRoute(
+            onRetryClick = onRetryClick,
+            onHomeClick = onHomeClick,
+            modifier = modifier,
+        )
+        return
+    }
+
     SavedTripsContainer(
         modifier = modifier,
         onBackClick = onBackClick,
@@ -158,7 +169,7 @@ fun SavedTripsScreen(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            SavedTripsUiState.Error -> SavedTripsError(
+            is SavedTripsUiState.Error -> SavedTripsError(
                 headerHeight = headerHeight,
                 onRetryClick = onRetryClick,
                 modifier = Modifier.fillMaxSize(),

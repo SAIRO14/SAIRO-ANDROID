@@ -32,4 +32,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build and test
-        run: ./gradlew :app:assembleDebug :app:testDebugUnitTest --stacktrace
+        run: |
+          for attempt in 1 2 3; do
+            if ./gradlew :app:assembleDebug :app:testDebugUnitTest \
+              --stacktrace \
+              --info \
+              --no-daemon; then
+              exit 0
+            fi
+
+            if [ "$attempt" -lt 3 ]; then
+              echo "의존성 다운로드 실패. 10초 후 재시도합니다. ($attempt/3)"
+              sleep 10
+            fi
+          done
+
+          exit 1

@@ -55,6 +55,8 @@ import com.example.sairo14.core.designsystem.component.rememberSairoBackdropStat
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.skydoves.cloudy.sky
+import com.example.sairo14.domain.model.isNetworkError
+import com.example.sairo14.feature.error.NetworkErrorRoute
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -69,6 +71,7 @@ import kotlinx.coroutines.launch
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
  * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 저장 항목 ID로 호출할 동작
+ * @param onHomeClick 네트워크 오류 화면에서 홈으로 이동할 때 호출할 동작
  */
 @Composable
 fun HomeRoute(
@@ -77,8 +80,13 @@ fun HomeRoute(
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
     onSavedTripClick: (courseId: String, savedTripId: String) -> Unit = { _, _ -> },
+    onHomeClick: () -> Unit = {},
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+
+    LaunchedEffect(viewModel) {
+        viewModel.onScreenEntered()
+    }
 
     HomeScreen(
         modifier = modifier,
@@ -86,6 +94,7 @@ fun HomeRoute(
         onFindTripClick = onFindTripClick,
         onFolderClick = onFolderClick,
         onSavedTripClick = onSavedTripClick,
+        onHomeClick = onHomeClick,
         onRetryClick = viewModel::retry,
     )
 }
@@ -100,6 +109,7 @@ fun HomeRoute(
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
  * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 저장 항목 ID로 호출할 동작
+ * @param onHomeClick 네트워크 오류 화면에서 홈으로 이동할 때 호출할 동작
  * @param onRetryClick 오류 화면의 재시도 버튼을 눌렀을 때 호출할 동작
  */
 @Composable
@@ -109,6 +119,7 @@ fun HomeScreen(
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
     onSavedTripClick: (courseId: String, savedTripId: String) -> Unit = { _, _ -> },
+    onHomeClick: () -> Unit = {},
     onRetryClick: () -> Unit = {},
 ) {
     when (uiState) {
@@ -125,11 +136,19 @@ fun HomeScreen(
             onSavedTripClick = onSavedTripClick,
         )
 
-        HomeUiState.Error -> HomeErrorScreen(
-            modifier = modifier,
-            onFolderClick = onFolderClick,
-            onRetryClick = onRetryClick,
-        )
+        is HomeUiState.Error -> if (uiState.error.isNetworkError()) {
+            NetworkErrorRoute(
+                modifier = modifier,
+                onRetryClick = onRetryClick,
+                onHomeClick = onHomeClick,
+            )
+        } else {
+            HomeGenericErrorScreen(
+                modifier = modifier,
+                onFolderClick = onFolderClick,
+                onRetryClick = onRetryClick,
+            )
+        }
     }
 }
 
@@ -146,11 +165,13 @@ private fun HomeContentScreen(
         onFolderClick = onFolderClick,
     ) { backdropState, headerHeight ->
         val backImagePainter = rememberSairoBackdropImagePainter(
-            model = uiState.discoveryImages.backImageUrl ?: R.drawable.img_dummy_view,
+            model = uiState.discoveryImages.backImageUrl
+                ?: uiState.discoveryImages.backFallbackRes,
             backdropState = backdropState,
         )
         val frontImagePainter = rememberSairoBackdropImagePainter(
-            model = uiState.discoveryImages.frontImageUrl ?: R.drawable.img_dummy_view,
+            model = uiState.discoveryImages.frontImageUrl
+                ?: uiState.discoveryImages.frontFallbackRes,
             backdropState = backdropState,
         )
 
@@ -308,7 +329,7 @@ private fun HomeLoadingScreen(
 }
 
 @Composable
-private fun HomeErrorScreen(
+private fun HomeGenericErrorScreen(
     modifier: Modifier,
     onFolderClick: () -> Unit,
     onRetryClick: () -> Unit,

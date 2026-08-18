@@ -18,10 +18,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.sairo14.R
+import com.example.sairo14.core.dummyimage.DummyImagePair
 import com.example.sairo14.core.designsystem.component.SairoButton
 import com.example.sairo14.core.designsystem.component.SairoBackdropHost
 import com.example.sairo14.core.designsystem.component.SairoHeader
@@ -63,6 +64,10 @@ fun OnboardingIntroRoute(
     onStartClick: () -> Unit = {},
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+
+    LaunchedEffect(viewModel) {
+        viewModel.onScreenEntered()
+    }
 
     OnboardingIntroScreen(
         modifier = modifier,
@@ -100,15 +105,6 @@ fun OnboardingIntroScreen(
     val navigationBarHeight = WindowInsets.navigationBars
         .asPaddingValues()
         .calculateBottomPadding()
-    val backImagePainter = rememberSairoBackdropImagePainter(
-        model = uiState.backImageUrl ?: R.drawable.img_dummy_view,
-        backdropState = backdropState,
-    )
-    val frontImagePainter = rememberSairoBackdropImagePainter(
-        model = uiState.frontImageUrl ?: R.drawable.img_dummy_view,
-        backdropState = backdropState,
-    )
-
     SairoBackdropHost(
         state = backdropState,
         modifier = modifier
@@ -127,8 +123,8 @@ fun OnboardingIntroScreen(
             )
 
             OnboardingIntroImageBackdrop(
-                backPainter = backImagePainter,
-                frontPainter = frontImagePainter,
+                imagePairs = uiState.imagePairs,
+                backdropState = backdropState,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -205,15 +201,24 @@ fun OnboardingIntroScreen(
 /** 온보딩 인트로 배경에 Figma와 같은 겹친 사진 카드 장식을 배치한다. */
 @Composable
 private fun OnboardingIntroImageBackdrop(
-    backPainter: Painter,
-    frontPainter: Painter,
+    imagePairs: List<DummyImagePair>,
+    backdropState: com.example.sairo14.core.designsystem.component.SairoBackdropState,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier) {
         val cardWidth = minOf(maxWidth * IntroCardWidthRatio, IntroCardMaxWidth)
         val scaleFactor = cardWidth.value / IntroCardMaxWidth.value
 
-        IntroCardPositions.forEach { position ->
+        IntroCardPositions.forEachIndexed { index, position ->
+            val imagePair = imagePairs.getOrNull(index) ?: return@forEachIndexed
+            val backPainter = rememberSairoBackdropImagePainter(
+                model = imagePair.backImageRes,
+                backdropState = backdropState,
+            )
+            val frontPainter = rememberSairoBackdropImagePainter(
+                model = imagePair.frontImageRes,
+                backdropState = backdropState,
+            )
             SairoOverlappingImageCards(
                 backPainter = backPainter,
                 frontPainter = frontPainter,

@@ -1,6 +1,7 @@
 package com.example.sairo14.feature.onboarding.select
 
 import androidx.compose.runtime.Immutable
+import com.example.sairo14.domain.model.AppError
 
 /** 온보딩 사진 선택 화면이 렌더링할 로딩, 빈 목록, 오류, 콘텐츠 상태를 나타낸다. */
 sealed interface OnboardingPhotoSelectUiState {
@@ -11,8 +12,10 @@ sealed interface OnboardingPhotoSelectUiState {
     /** 선택할 사진 후보가 없는 상태다. */
     data object Empty : OnboardingPhotoSelectUiState
 
-    /** 사진 후보를 불러오지 못해 재시도가 필요한 상태다. */
-    data object Error : OnboardingPhotoSelectUiState
+    /** 사진 후보를 불러오지 못해 오류 종류에 맞는 안내가 필요한 상태다. */
+    data class Error(
+        val error: AppError,
+    ) : OnboardingPhotoSelectUiState
 
     /** 사진 후보와 선택 순서를 표시할 수 있는 상태다.
      *

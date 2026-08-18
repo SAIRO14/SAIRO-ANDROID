@@ -3,6 +3,7 @@ package com.example.sairo14.feature.home
 import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
 import com.example.sairo14.R
+import com.example.sairo14.domain.model.AppError
 
 /** 홈 화면이 렌더링할 로딩, 콘텐츠, 오류 상태를 나타낸다. */
 sealed interface HomeUiState {
@@ -16,8 +17,10 @@ sealed interface HomeUiState {
         val savedTrips: List<HomeSavedTripUiModel> = emptyList(),
     ) : HomeUiState
 
-    /** 홈 데이터를 불러오지 못해 재시도가 필요한 상태다. */
-    data object Error : HomeUiState
+    /** 홈 데이터를 불러오지 못해 오류 종류에 맞는 사용자 안내가 필요한 상태다. */
+    data class Error(
+        val error: AppError,
+    ) : HomeUiState
 }
 
 /** 홈 중앙 탐색 CTA의 앞·뒤 사진 URL을 화면에 맞게 전달한다. */

@@ -74,6 +74,30 @@ class OnboardingResultViewModelTest {
         assertTrue(content.bookmarks.getValue("course").isSaved.not())
     }
 
+    @Test fun `완료 요청의 네트워크 실패 원인을 오류 상태에 보존한다`() = runTest(dispatcher) {
+        val store = InMemoryOnboardingAnalysisSessionStore()
+        store.saveResult("session-1", recommendations = listOf(recommendation("1")))
+        val repository = OnboardingRepo(
+            completionRequestResult = AppResult.Failure(AppError.NetworkUnavailable),
+        )
+        val viewModel = OnboardingResultViewModel(
+            sessionStore = store,
+            createOnboardingCompletionRequest = CreateOnboardingCompletionRequestUseCase(repository),
+            updateOnboardingCompletion = UpdateOnboardingCompletionUseCase(repository),
+            saveTripUseCase = SaveTripUseCase(SavedTripRepo()),
+            deleteSavedTripUseCase = DeleteSavedTripUseCase(SavedTripRepo()),
+            bookmarkChangeNotifier = BookmarkChangeNotifier(),
+        )
+
+        viewModel.load("session-1")
+        advanceUntilIdle()
+
+        assertEquals(
+            OnboardingResultUiState.Error(AppError.NetworkUnavailable),
+            viewModel.uiState.value,
+        )
+    }
+
     @Test fun `최신 세션 완료 상태 저장이 실패해도 이전 세션은 완료 상태를 덮어쓰지 않는다`() = runTest(dispatcher) {
         val store = InMemoryOnboardingAnalysisSessionStore()
         store.saveResult("session-A", recommendations = listOf(recommendation("A")))
@@ -97,7 +121,10 @@ class OnboardingResultViewModelTest {
         repository.completeFirstUpdate()
         advanceUntilIdle()
 
-        assertEquals(OnboardingResultUiState.Error, viewModel.uiState.value)
+        assertEquals(
+            OnboardingResultUiState.Error(AppError.StorageUnavailable),
+            viewModel.uiState.value,
+        )
         assertEquals(false, repository.completed)
     }
 
@@ -254,12 +281,13 @@ class OnboardingResultViewModelTest {
         assertFalse(viewModel.content().bookmarks.getValue("course-2").isSaved)
     }
 
-    private class OnboardingRepo : OnboardingRepository {
+    private class OnboardingRepo(
+        private val completionRequestResult: AppResult<OnboardingCompletionToken>? = null,
+    ) : OnboardingRepository {
         private var token = 0L
         override suspend fun getHasCompletedOnboarding() = AppResult.Success(false)
-        override suspend fun createCompletionRequest() = AppResult.Success(
-            OnboardingCompletionToken(++token),
-        )
+        override suspend fun createCompletionRequest(): AppResult<OnboardingCompletionToken> =
+            completionRequestResult ?: AppResult.Success(OnboardingCompletionToken(++token))
         override suspend fun updateCompletionIfCurrent(
             token: OnboardingCompletionToken,
             completed: Boolean,

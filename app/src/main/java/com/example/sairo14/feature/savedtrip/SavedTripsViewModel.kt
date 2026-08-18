@@ -47,7 +47,7 @@ class SavedTripsViewModel @Inject constructor(
     /** 현재 오류 상태에 맞춰 첫 페이지 또는 실패한 다음 페이지를 다시 조회한다. */
     fun retry() {
         when (_uiState.value) {
-            SavedTripsUiState.Error -> loadSavedTrips()
+            is SavedTripsUiState.Error -> loadSavedTrips()
             is SavedTripsUiState.Content -> {
                 val content = _uiState.value as SavedTripsUiState.Content
                 when (content.loadMoreError) {
@@ -132,7 +132,7 @@ class SavedTripsViewModel @Inject constructor(
             _uiState.value = SavedTripsUiState.Loading
 
             val nextState = when (val result = getSavedTrips()) {
-                is AppResult.Failure -> SavedTripsUiState.Error
+                is AppResult.Failure -> SavedTripsUiState.Error(result.error)
                 is AppResult.Success -> result.value.toUiState()
             }
             if (requestGeneration == pageRequestGeneration) _uiState.value = nextState

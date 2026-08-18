@@ -59,9 +59,11 @@ import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
 import com.example.sairo14.core.extension.sairoDropShadow
+import com.example.sairo14.domain.model.isNetworkError
 import com.example.sairo14.domain.model.OnboardingRecommendation
 import com.example.sairo14.feature.bookmark.BookmarkEffect
 import com.example.sairo14.feature.bookmark.BookmarkUiState
+import com.example.sairo14.feature.error.NetworkErrorRoute
 import kotlinx.coroutines.flow.collect
 
 /**
@@ -131,6 +133,15 @@ fun OnboardingResultScreen(
     bookmarkSnackbarHostState: SnackbarHostState? = null,
     modifier: Modifier = Modifier,
 ) {
+    if (uiState is OnboardingResultUiState.Error && uiState.error.isNetworkError()) {
+        NetworkErrorRoute(
+            onRetryClick = onRetryClick,
+            onHomeClick = onHomeClick,
+            modifier = modifier,
+        )
+        return
+    }
+
     Box(modifier = modifier) {
         OnboardingResultContainer(
             modifier = Modifier.fillMaxSize(),
@@ -143,7 +154,7 @@ fun OnboardingResultScreen(
                     modifier = Modifier.fillMaxSize(),
                 )
 
-                OnboardingResultUiState.Error -> ResultError(
+                is OnboardingResultUiState.Error -> ResultError(
                     headerHeight = headerHeight,
                     onRetryClick = onRetryClick,
                     modifier = Modifier.fillMaxSize(),

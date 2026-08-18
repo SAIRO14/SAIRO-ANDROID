@@ -97,6 +97,7 @@ fun SairoNavDisplay(
                     onFolderClick = {
                         navigator.navigateSingleTop(SavedTripsRoute)
                     },
+                    onHomeClick = navigator::popToHome,
                     onSavedTripClick = { courseId, savedTripId ->
                         navigator.navigateSingleTop(
                             TravelDetailRoute(
@@ -142,6 +143,7 @@ fun SairoNavDisplay(
             }
             entry<OnboardingPhotoSelectRoute> { route ->
                 OnboardingPhotoSelectScreenRoute(
+                    onHomeClick = navigator::popToHome,
                     onSelectionComplete = { photoIds, animationPhotos ->
                         navigator.navigateSingleTop(
                             OnboardingLoadingRoute(
@@ -172,6 +174,7 @@ fun SairoNavDisplay(
                         )
                     },
                     onBackClick = navigator::navigateUp,
+                    onHomeClick = navigator::popToHome,
                 )
             }
             entry<OnboardingResultRoute>(

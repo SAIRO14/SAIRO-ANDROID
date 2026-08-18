@@ -11,7 +11,7 @@
 ## 프로젝트 적용
 
 - 공통 Route와 Screen: [`NetworkErrorScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/error/NetworkErrorScreen.kt)
-- Home 오류 연결과 중복 재시도 방지: [`HomeScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/home/HomeScreen.kt), [`HomeViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/home/HomeViewModel.kt)
+- 오류 원인 보존과 공통 화면 연결: [`HomeScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/home/HomeScreen.kt), [`SavedTripsScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/savedtrip/SavedTripsScreen.kt), [`TravelDetailScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailScreen.kt), [`OnboardingPhotoSelectScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/select/OnboardingPhotoSelectScreen.kt), [`OnboardingLoadingScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/loading/OnboardingLoadingScreen.kt), [`OnboardingResultScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/onboarding/result/OnboardingResultScreen.kt)
 
 `NetworkErrorRoute`는 콜백을 `NetworkErrorScreen`으로 전달한다. `NetworkErrorScreen`은 버튼 클릭을 처리하지만 네트워크 요청을 직접 실행하거나 상태를 변경하지 않는다.
 
@@ -32,7 +32,7 @@ flowchart LR
     Screen -->|"홈 이동"| Nav["SairoNavigator"]
 ```
 
-Home은 이미 홈에 있으므로 `showHomeAction = false`로 홈 이동 버튼을 숨긴다. 다른 목적지에서는 기본값을 사용하고 `SairoNavigator.popToHome()`을 연결한다.
+모든 연결 화면은 기본 홈 버튼을 사용하고 `SairoNavigator.popToHome()`을 연결한다. Home은 이미 홈에 있으므로 이 호출이 백스택을 바꾸지 않아 네트워크 오류 화면이 그대로 유지된다.
 
 화면은 `WindowInsets.safeDrawing` 안에서 일반 높이에는 메시지를 중앙, 버튼을 하단에 배치한다. 작은 높이에서는 세로 스크롤 Column으로 전환해 큰 글꼴이나 가로 모드에서도 겹치지 않게 한다.
 

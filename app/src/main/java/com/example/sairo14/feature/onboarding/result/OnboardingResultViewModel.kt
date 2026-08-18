@@ -2,6 +2,7 @@ package com.example.sairo14.feature.onboarding.result
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import com.example.sairo14.domain.usecase.CreateOnboardingCompletionRequestUseCase
@@ -75,7 +76,7 @@ class OnboardingResultViewModel @Inject constructor(
                 is AppResult.Success -> tokenResult.value
                 is AppResult.Failure -> {
                     if (isCurrentGeneration(generation)) {
-                        _uiState.value = OnboardingResultUiState.Error
+                        _uiState.value = OnboardingResultUiState.Error(tokenResult.error)
                     }
                     return@launch
                 }
@@ -85,7 +86,7 @@ class OnboardingResultViewModel @Inject constructor(
             val recommendations = sessionStore.getResult(searchSessionId)?.recommendations
             if (!isCurrentGeneration(generation)) return@launch
             if (recommendations == null) {
-                _uiState.value = OnboardingResultUiState.Error
+                _uiState.value = OnboardingResultUiState.Error(AppError.StorageUnavailable)
                 return@launch
             }
 
@@ -104,10 +105,10 @@ class OnboardingResultViewModel @Inject constructor(
                             },
                         )
                     } else {
-                        OnboardingResultUiState.Error
+                        OnboardingResultUiState.Error(AppError.Unknown)
                     }
                 }
-                is AppResult.Failure -> OnboardingResultUiState.Error
+                is AppResult.Failure -> OnboardingResultUiState.Error(completionResult.error)
             }
         }
     }

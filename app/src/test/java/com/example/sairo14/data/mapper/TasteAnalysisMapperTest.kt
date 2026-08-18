@@ -69,6 +69,56 @@ class TasteAnalysisMapperTest {
     }
 
     @Test
+    fun `normalizes place info HTML breaks raw line breaks and line whitespace`() {
+        val result = response(
+            day1 = listOf(
+                SpotSummaryDto(
+                    spotId = "spot-1",
+                    name = "줄바꿈 장소",
+                    operatingHours = " [하절기]<br> \r\n 09:00~18:00 <br/>\n [동절기] <br />  \n09:00~17:00 ",
+                    closedDays = "  매주 월요일  \r\n\r\n 설·추석 연휴 ",
+                    parking = " 가능 <br> \n 요금 (무료) ",
+                    contact = " 관광안내소 \n 064-740-6000 ",
+                ),
+            ),
+        ).toDomain()
+
+        val place = result.courses.getValue("course-1").days.first().places.single()
+        assertEquals("[하절기]\n09:00~18:00\n[동절기]\n09:00~17:00", place.operatingHours)
+        assertEquals("매주 월요일\n설·추석 연휴", place.closedDays)
+        assertEquals("가능\n요금 (무료)", place.parking)
+        assertEquals("관광안내소\n064-740-6000", place.contact)
+        assertEquals(
+            listOf(
+                "[하절기]\n09:00~18:00\n[동절기]\n09:00~17:00",
+                "매주 월요일\n설·추석 연휴",
+                "가능\n요금 (무료)",
+                "관광안내소\n064-740-6000",
+            ),
+            place.tags,
+        )
+    }
+
+    @Test
+    fun `maps place info containing only whitespace and breaks to null`() {
+        val result = response(
+            day1 = listOf(
+                SpotSummaryDto(
+                    spotId = "spot-1",
+                    name = "정보 없는 장소",
+                    operatingHours = " <br> \n <br/> ",
+                    closedDays = " \r\n ",
+                ),
+            ),
+        ).toDomain()
+
+        val place = result.courses.getValue("course-1").days.first().places.single()
+        assertNull(place.operatingHours)
+        assertNull(place.closedDays)
+        assertEquals(emptyList<String>(), place.tags)
+    }
+
+    @Test
     fun `uses summary and keeps place when only one coordinate is missing`() {
         val result = response(
             reason = " ",

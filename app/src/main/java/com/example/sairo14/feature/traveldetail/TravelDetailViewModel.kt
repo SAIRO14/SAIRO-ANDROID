@@ -3,11 +3,17 @@ package com.example.sairo14.feature.traveldetail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sairo14.domain.model.AppResult
+import com.example.sairo14.domain.model.ClosedDaysSummary
+import com.example.sairo14.domain.model.ContactSummary
 import com.example.sairo14.domain.model.Course
 import com.example.sairo14.domain.model.CoursePlace
+import com.example.sairo14.domain.model.OperatingHoursSummary
+import com.example.sairo14.domain.model.ParkingSummary
+import com.example.sairo14.domain.model.PlaceInfoSummary
 import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import com.example.sairo14.domain.usecase.SaveTripUseCase
+import com.example.sairo14.domain.usecase.SummarizePlaceInfoUseCase
 import com.example.sairo14.feature.bookmark.BookmarkUiState
 import com.example.sairo14.feature.bookmark.BookmarkChange
 import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
@@ -30,6 +36,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class TravelDetailViewModel @Inject constructor(
     private val getCourseDetail: GetCourseDetailUseCase,
+    private val summarizePlaceInfo: SummarizePlaceInfoUseCase,
     private val saveTripUseCase: SaveTripUseCase,
     private val deleteSavedTripUseCase: DeleteSavedTripUseCase,
     private val bookmarkChangeNotifier: BookmarkChangeNotifier,
@@ -75,6 +82,7 @@ class TravelDetailViewModel @Inject constructor(
                 is AppResult.Success -> result.value.toUiState(
                     initialSaved = initialSaved,
                     savedTripId = savedTripId,
+                    summarizePlaceInfo = summarizePlaceInfo,
                 )
                 is AppResult.Failure -> TravelDetailUiState.Error
             }
@@ -214,6 +222,7 @@ class TravelDetailViewModel @Inject constructor(
 private fun Course.toUiState(
     initialSaved: Boolean?,
     savedTripId: String?,
+    summarizePlaceInfo: SummarizePlaceInfoUseCase,
 ): TravelDetailUiState {
     val saved = initialSaved ?: this.isSaved
 
@@ -229,7 +238,7 @@ private fun Course.toUiState(
                             placeId = place.placeId,
                             name = place.name,
                             imageUrl = place.imageUrl,
-                            tags = place.toDisplayTags(),
+                            tags = place.toDisplayTags(summarizePlaceInfo),
                             latitude = place.coordinate?.latitude,
                             longitude = place.coordinate?.longitude,
                         )
@@ -246,23 +255,63 @@ private fun Course.toUiState(
     )
 }
 
-private fun CoursePlace.toDisplayTags(): List<String> {
+private fun CoursePlace.toDisplayTags(
+    summarizePlaceInfo: SummarizePlaceInfoUseCase,
+): List<TravelDetailPlaceTagUiModel> {
     val hasStructuredPlaceInfo = operatingHours != null ||
         closedDays != null ||
         parking != null ||
         contact != null
-    if (!hasStructuredPlaceInfo) return tags
+    if (!hasStructuredPlaceInfo) return tags.map(TravelDetailPlaceTagUiModel::Text)
 
-    return listOfNotNull(
-        operatingHours,
-        closedDays,
-        parking?.toParkingDisplayText(),
-        contact,
-    ).distinct()
+    return summarizePlaceInfo(this).toUiTags()
 }
 
-private fun String.toParkingDisplayText(): String = when (this) {
-    "가능" -> "주차 가능"
-    "불가능" -> "주차 불가능"
-    else -> this
+private fun PlaceInfoSummary.toUiTags(): List<TravelDetailPlaceTagUiModel> {
+    val hasPlaceInfoTag = operatingHours != null || closedDays.isNotEmpty() || parking != null
+
+    return buildList {
+        operatingHours?.toUiTags()?.forEach(::add)
+        closedDays.map(ClosedDaysSummary::toUiTag).forEach(::add)
+        parking?.toUiTag()?.let(::add)
+        contact?.toUiTags(showPhoneInquiry = !hasPlaceInfoTag)?.forEach(::add)
+    }.distinct()
+}
+
+private fun OperatingHoursSummary.toUiTags(): List<TravelDetailPlaceTagUiModel> = when (this) {
+    OperatingHoursSummary.AlwaysOpen -> listOf(TravelDetailPlaceTagUiModel.AlwaysOpen)
+    OperatingHoursSummary.PhoneInquiry -> listOf(TravelDetailPlaceTagUiModel.PhoneInquiry)
+    is OperatingHoursSummary.TimeRange -> listOf(TravelDetailPlaceTagUiModel.Text(value))
+    is OperatingHoursSummary.Periods -> values.map { period ->
+        TravelDetailPlaceTagUiModel.PeriodHours(label = period.label, hours = period.hours)
+    }
+    is OperatingHoursSummary.WeekdayWeekend -> listOfNotNull(
+        weekday?.let(TravelDetailPlaceTagUiModel::WeekdayHours),
+        weekend?.let(TravelDetailPlaceTagUiModel::WeekendHours),
+    )
+}
+
+private fun ClosedDaysSummary.toUiTag(): TravelDetailPlaceTagUiModel = when (this) {
+    ClosedDaysSummary.OpenAllYear -> TravelDetailPlaceTagUiModel.OpenAllYear
+    ClosedDaysSummary.PublicHoliday -> TravelDetailPlaceTagUiModel.PublicHolidayClosed
+    ClosedDaysSummary.BadWeather -> TravelDetailPlaceTagUiModel.BadWeatherClosed
+    ClosedDaysSummary.PhoneInquiry -> TravelDetailPlaceTagUiModel.PhoneInquiry
+    is ClosedDaysSummary.Weekly -> TravelDetailPlaceTagUiModel.WeeklyClosed(dayOfWeek)
+    is ClosedDaysSummary.Literal -> TravelDetailPlaceTagUiModel.Text(value)
+}
+
+private fun ParkingSummary.toUiTag(): TravelDetailPlaceTagUiModel = when (this) {
+    ParkingSummary.Available -> TravelDetailPlaceTagUiModel.ParkingAvailable
+    ParkingSummary.Unavailable -> TravelDetailPlaceTagUiModel.ParkingUnavailable
+    ParkingSummary.PhoneInquiry -> TravelDetailPlaceTagUiModel.PhoneInquiry
+}
+
+private fun ContactSummary.toUiTags(
+    showPhoneInquiry: Boolean,
+): List<TravelDetailPlaceTagUiModel> = when (this) {
+    is ContactSummary.PhoneNumber -> buildList {
+        if (showPhoneInquiry) add(TravelDetailPlaceTagUiModel.PhoneInquiry)
+        add(TravelDetailPlaceTagUiModel.Text(value))
+    }
+    ContactSummary.PhoneInquiry -> listOf(TravelDetailPlaceTagUiModel.PhoneInquiry)
 }

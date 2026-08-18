@@ -2,23 +2,23 @@
 
 ## 개념
 
-기기 식별자 Provider는 현재 기기의 익명 UUID를 필요할 때 제공하는 작은 계약이다. 화면과 UseCase는 UUID의 생성·저장 위치를 알지 않고, Repository 구현만 Provider를 통해 서버 요청에 쓸 식별자를 얻는다.
+기기 식별자 Provider는 현재 기기의 익명 UUID를 필요할 때 제공하는 계약이다. ViewModel과 UseCase는 UUID의 생성·저장 방법을 알지 않고, 원격 Repository만 Provider를 통해 서버 요청에 사용할 식별자를 얻는다.
 
 ## 도입 이유
 
-SAIRO 서버의 일부 API는 `X-Device-Id` 헤더로 요청 기기를 구분한다. 이 값을 ViewModel에서 읽어 UseCase와 Repository로 전달하면 프레젠테이션 계층이 DataStore와 서버 헤더 정책을 모두 알게 된다. 또한 실제 Repository와 Fake Repository의 함수 모양이 달라져 교체가 어려워진다.
+SAIRO의 저장 여행지, 취향 분석, 코스 조회 API는 `X-Device-Id`로 요청 기기를 구분한다. 이 값을 ViewModel에서 읽어 전달하면 프레젠테이션 계층이 DataStore와 HTTP 헤더 정책을 함께 알게 된다.
 
-`DeviceIdProvider`로 책임을 분리하면 Domain 계약은 사용자가 의도한 동작만 표현하고, Data 계층이 식별자 준비 방법을 선택할 수 있다.
+코스 조회는 다른 기기가 만든 코스에 대해 404를 반환한다. 따라서 `GET /courses/{courseId}`에도 저장 여행지 API와 같은 UUID를 보내야, 사용자가 저장한 여행지에서 상세 코스를 다시 열 수 있다.
 
 ## 프로젝트 적용
 
-- 관련 파일: [`DeviceIdProvider.kt`](../../app/src/main/java/com/example/sairo14/core/datastore/DeviceIdProvider.kt)
-- 관련 파일: [`DeviceIdentityModule.kt`](../../app/src/main/java/com/example/sairo14/core/datastore/di/DeviceIdentityModule.kt)
-- 관련 파일: [`SavedTripRepository.kt`](../../app/src/main/java/com/example/sairo14/domain/repository/SavedTripRepository.kt)
-- 관련 파일: [`FakeSavedTripRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/FakeSavedTripRepository.kt)
-- 관련 파일: [`SavedTripsViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/savedtrip/SavedTripsViewModel.kt)
+- Provider 계약: [`DeviceIdProvider.kt`](../../app/src/main/java/com/example/sairo14/core/datastore/DeviceIdProvider.kt)
+- DataStore 구현: [`AnonymousIdentityDataStore.kt`](../../app/src/main/java/com/example/sairo14/core/datastore/AnonymousIdentityDataStore.kt)
+- Hilt 제공: [`DeviceIdentityModule.kt`](../../app/src/main/java/com/example/sairo14/core/datastore/di/DeviceIdentityModule.kt)
+- 코스 조회 소비자: [`RemoteCourseRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteCourseRepository.kt)
+- 저장 여행지 소비자: [`RemoteSavedTripRepository.kt`](../../app/src/main/java/com/example/sairo14/data/repository/remote/RemoteSavedTripRepository.kt)
 
-`DataStoreDeviceIdProvider`는 기존 `AnonymousIdentityDataStore`에 위임한다. 따라서 최초 요청에는 UUID v4를 생성해 저장하고, 이후에는 같은 값을 반환한다.
+`DataStoreDeviceIdProvider`는 최초 요청에 UUID v4를 만들고 보관하며, 이후 같은 값을 반환한다.
 
 ```kotlin
 class DataStoreDeviceIdProvider(
@@ -29,59 +29,60 @@ class DataStoreDeviceIdProvider(
 }
 ```
 
-저장 여행지 Domain 계약은 기기 ID를 받지 않는다. 기기별 구분은 Repository 구현이 담당한다.
+Domain의 `CourseRepository`는 기기 ID를 파라미터로 받지 않는다.
 
 ```kotlin
-interface SavedTripRepository {
-    suspend fun getSavedTrips(
-        cursor: String? = null,
-        size: Int = 20,
-    ): AppResult<SavedTripPage>
-    suspend fun deleteSavedTrip(savedTripId: String): AppResult<Unit>
+interface CourseRepository {
+    suspend fun getCourse(courseId: String): AppResult<Course>
 }
+```
+
+원격 구현이 Provider에서 값을 읽어 Retrofit header에 전달한다.
+
+```kotlin
+val deviceId = deviceIdProvider.getDeviceId()
+api.getCourse(courseId = courseId, deviceId = deviceId)
 ```
 
 ## 흐름과 영향 범위
 
 ```mermaid
 flowchart LR
-    UI[SavedTripsViewModel] --> UC[UseCase]
-    UC --> RI[SavedTripRepository]
-    RI --> FR[FakeSavedTripRepository]
-    RI --> RR[RemoteSavedTripRepository]
-    FR --> DP[DeviceIdProvider]
-    RR --> DP
-    DP --> DS[AnonymousIdentityDataStore]
-    RR --> API[X-Device-Id 헤더]
+    UI["TravelDetailViewModel"] --> UC["GetCourseDetailUseCase"]
+    UC --> REPO["CourseRepository"]
+    REPO --> REMOTE["RemoteCourseRepository"]
+    REMOTE --> PROVIDER["DeviceIdProvider"]
+    PROVIDER --> STORE["AnonymousIdentityDataStore"]
+    REMOTE --> HEADER["X-Device-Id"]
+    HEADER --> API["GET /courses/{courseId}"]
 ```
 
-1. ViewModel은 목록 조회 또는 저장 해제라는 사용자 행동만 UseCase에 전달한다.
-2. Repository는 `DeviceIdProvider.getDeviceId()`로 현재 기기의 UUID를 얻는다.
-3. Fake Repository는 UUID를 인메모리 목록의 키로 사용한다.
-4. Remote Repository는 같은 UUID를 Retrofit의 `X-Device-Id` 헤더 파라미터에 전달하고, cursor와 size는 Domain 계약에서 받은 값을 그대로 전달한다.
+1. 상세 ViewModel은 `courseId`만 전달한다.
+2. `RemoteCourseRepository`가 `DeviceIdProvider.getDeviceId()`를 호출한다.
+3. Provider는 DataStore에 저장된 UUID를 반환하거나 최초 값을 생성한다.
+4. Repository는 UUID를 `X-Device-Id` header로 전달한다.
+5. 기기 ID와 코스 ID가 모두 일치할 때 서버가 코스 스냅샷을 반환한다.
 
 ## 트레이드오프와 주의점
 
-- Provider 인터페이스가 하나 더 생기므로 간단한 화면에서는 코드가 늘어난다. 그러나 기기 식별 API가 여러 개이므로 헤더 정책을 ViewModel에 반복하지 않는 이점이 더 크다.
-- Provider는 `suspend` 함수다. DataStore를 네트워크 Interceptor에서 `runBlocking`으로 읽지 않아 UI·네트워크 스레드를 막는 일을 피한다.
-- 앱 데이터를 삭제하면 UUID도 사라져 기존 서버 데이터와 연결할 수 없다. 이는 익명 사용자 정책의 한계이며, 기기 간 복원이 필요하면 별도 계정 기능이 필요하다.
-- 서버 호출의 `CancellationException`은 오류 결과로 바꾸지 않고 그대로 전달해야 한다. 기존 `runRemoteOperation`이 이 정책을 담당한다.
+- Provider가 추가되므로 간단한 API도 생성자 의존성이 하나 늘어난다. 대신 기기 식별 정책이 모든 화면에 중복되는 것을 막는다.
+- Provider는 `suspend` 함수다. DataStore 값을 OkHttp Interceptor에서 `runBlocking`으로 읽으면 네트워크 스레드를 막을 수 있으므로 사용하지 않는다.
+- DataStore가 손상되거나 읽기 실패하면 `RemoteCourseRepository`는 각각 `StorageCorrupted`, `StorageUnavailable`을 반환한다. 이 실패는 `runRemoteOperation` 밖에서 처리해 네트워크 오류로 바꾸지 않는다.
+- 앱 데이터 삭제로 UUID가 바뀌면 이전 서버의 익명 저장 여행지와 코스를 다시 조회할 수 없다. 기기 간 복원이 필요하면 계정 기반 식별 기능이 필요하다.
 
 ## 추가 학습 및 대안
 
-> 아래 예시는 현재 프로젝트에 적용하지 않은 OkHttp Interceptor 기반 대안이다.
+> 아래 예시는 현재 프로젝트에 적용하지 않은, 메모리 캐시를 사용하는 대안이다.
 
 ```kotlin
-class DeviceIdInterceptor(
-    private val cachedDeviceId: String,
-) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response =
-        chain.proceed(
-            chain.request().newBuilder()
-                .header("X-Device-Id", cachedDeviceId)
-                .build(),
-        )
+class CachedDeviceIdProvider(
+    private val delegate: DeviceIdProvider,
+) : DeviceIdProvider {
+    private var cachedId: String? = null
+
+    override suspend fun getDeviceId(): String =
+        cachedId ?: delegate.getDeviceId().also { cachedId = it }
 }
 ```
 
-Interceptor는 헤더 누락을 줄이지만, DataStore의 suspend 읽기와 초기화 순서를 별도로 해결해야 하며 공개 API에도 헤더가 붙는다. 현재는 Repository가 Retrofit `@Header` 파라미터에 Provider 값을 전달하는 방식이 요청별 요구 사항을 가장 분명하게 표현한다.
+캐시는 반복 DataStore 읽기를 줄일 수 있다. 하지만 프로세스 생명주기와 DataStore 변경 동기화 정책이 추가되므로, 현재는 단순하고 일관된 Provider 호출 방식을 사용한다.

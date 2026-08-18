@@ -41,7 +41,7 @@ enum class SairoPlaceListItemVariant {
  * [SairoPlaceListItemVariant.Simple]은 56dp 썸네일과 정보를 가로로 배치하고,
  * [SairoPlaceListItemVariant.Detailed]는 제목·태그·이미지를 세로로 배치한다. 장소 정보와
  * 이미지의 소유·변경은 호출자에게 있으며, 선택 동작은 [onClick]으로 호출자에게 전달한다. 태그는
- * 공백·중복을 제거한 뒤 최대 세 개를 표시하고, 남은 태그 수는 `+N`으로 표시한다.
+ * 공백·중복을 제거한 뒤 한 줄 최대 네 개, 두 줄까지 표시하고 남은 태그 수는 `+N`으로 표시한다.
  * @param title 장소 순서와 이름을 포함한 제목
  * @param tags 운영 시간·휴무일처럼 장소에 표시할 태그 문구 목록
  * @param painter 장소 이미지를 표시할 Painter

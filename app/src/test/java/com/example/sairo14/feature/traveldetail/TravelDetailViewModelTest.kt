@@ -14,6 +14,7 @@ import com.example.sairo14.domain.repository.SavedTripRepository
 import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import com.example.sairo14.domain.usecase.SaveTripUseCase
+import com.example.sairo14.domain.usecase.SummarizePlaceInfoUseCase
 import com.example.sairo14.feature.bookmark.BookmarkChange
 import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import kotlinx.coroutines.CancellationException
@@ -65,7 +66,7 @@ class TravelDetailViewModelTest {
     }
 
     @Test
-    fun `구조화된 주차 정보는 상세 화면용 문구로 변환한다`() = runTest(dispatcher) {
+    fun `구조화된 장소 정보는 UI 태그 순서로 변환한다`() = runTest(dispatcher) {
         val course = Course(
             courseId = "course-parking",
             regionName = "제주도",
@@ -80,7 +81,9 @@ class TravelDetailViewModelTest {
                             tags = listOf("기존 태그"),
                             coordinate = null,
                             operatingHours = "09:00~18:00",
+                            closedDays = "연중무휴",
                             parking = "가능",
+                            contact = "제주관광정보센터 064-740-6000",
                         ),
                     ),
                 ),
@@ -93,8 +96,153 @@ class TravelDetailViewModelTest {
 
         val content = viewModel.uiState.value as TravelDetailUiState.Content
         assertEquals(
-            listOf("09:00~18:00", "주차 가능"),
+            listOf(
+                TravelDetailPlaceTagUiModel.Text("09:00~18:00"),
+                TravelDetailPlaceTagUiModel.OpenAllYear,
+                TravelDetailPlaceTagUiModel.ParkingAvailable,
+                TravelDetailPlaceTagUiModel.Text("064-740-6000"),
+            ),
             content.selectedDay?.places?.single()?.tags,
+        )
+    }
+
+    @Test
+    fun `기상악화 휴무와 문의처를 포함한 다섯 태그를 모두 전달한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-weather",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        CoursePlace(
+                            placeId = "weather-place",
+                            name = "기상 장소",
+                            imageUrl = null,
+                            tags = emptyList(),
+                            coordinate = null,
+                            operatingHours = "상시 개방\n기상 악화 시 통제될 수 있습니다",
+                            closedDays = "연중무휴",
+                            parking = "가능",
+                            contact = "064-740-6000",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-weather")
+        advanceUntilIdle()
+
+        val tags = (viewModel.uiState.value as TravelDetailUiState.Content)
+            .selectedDay
+            ?.places
+            ?.single()
+            ?.tags
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.AlwaysOpen,
+                TravelDetailPlaceTagUiModel.OpenAllYear,
+                TravelDetailPlaceTagUiModel.BadWeatherClosed,
+                TravelDetailPlaceTagUiModel.ParkingAvailable,
+                TravelDetailPlaceTagUiModel.Text("064-740-6000"),
+            ),
+            tags,
+        )
+    }
+
+    @Test
+    fun `기간별과 평일 주말 운영시간을 각각의 태그로 전달한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-hours",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        CoursePlace(
+                            placeId = "seasonal-place",
+                            name = "절기 장소",
+                            imageUrl = null,
+                            tags = emptyList(),
+                            coordinate = null,
+                            operatingHours = "[하절기] 09:00~18:00\n[동절기] 09:00~17:00",
+                        ),
+                        CoursePlace(
+                            placeId = "weekday-place",
+                            name = "요일 장소",
+                            imageUrl = null,
+                            tags = emptyList(),
+                            coordinate = null,
+                            operatingHours = "평일 12:00~20:00\n주말 12:00~21:00",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-hours")
+        advanceUntilIdle()
+
+        val places = (viewModel.uiState.value as TravelDetailUiState.Content)
+            .selectedDay
+            ?.places
+            .orEmpty()
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.PeriodHours("하절기", "09:00~18:00"),
+                TravelDetailPlaceTagUiModel.PeriodHours("동절기", "09:00~17:00"),
+            ),
+            places[0].tags,
+        )
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.WeekdayHours("12:00~20:00"),
+                TravelDetailPlaceTagUiModel.WeekendHours("12:00~21:00"),
+            ),
+            places[1].tags,
+        )
+    }
+
+    @Test
+    fun `문의처만 있는 장소에는 전화문의 태그와 전화번호를 함께 전달한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-contact-only",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        CoursePlace(
+                            placeId = "contact-place",
+                            name = "문의처 장소",
+                            imageUrl = null,
+                            tags = emptyList(),
+                            coordinate = null,
+                            contact = "제주관광정보센터 064-740-6000",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-contact-only")
+        advanceUntilIdle()
+
+        val tags = (viewModel.uiState.value as TravelDetailUiState.Content)
+            .selectedDay
+            ?.places
+            ?.single()
+            ?.tags
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.PhoneInquiry,
+                TravelDetailPlaceTagUiModel.Text("064-740-6000"),
+            ),
+            tags,
         )
     }
 
@@ -116,7 +264,85 @@ class TravelDetailViewModelTest {
         advanceUntilIdle()
 
         val content = viewModel.uiState.value as TravelDetailUiState.Content
-        assertEquals(listOf("상시 개방", "주차가능"), content.selectedDay?.places?.single()?.tags)
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.Text("상시 개방"),
+                TravelDetailPlaceTagUiModel.Text("주차가능"),
+            ),
+            content.selectedDay?.places?.single()?.tags,
+        )
+    }
+
+    @Test
+    fun `좌표 없는 API 장소도 목록 정보와 운영 문구를 유지한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-without-coordinate",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        CoursePlace(
+                            placeId = "place-without-coordinate",
+                            name = "좌표 없는 장소",
+                            imageUrl = "https://example.com/place.jpg",
+                            tags = emptyList(),
+                            coordinate = null,
+                            operatingHours = "09:00~18:00",
+                            closedDays = "월요일",
+                            parking = "불가능",
+                            contact = "000-0000-0000",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-without-coordinate")
+        advanceUntilIdle()
+
+        val place = (viewModel.uiState.value as TravelDetailUiState.Content)
+            .selectedDay
+            ?.places
+            ?.single()
+        assertEquals("https://example.com/place.jpg", place?.imageUrl)
+        assertNull(place?.latitude)
+        assertNull(place?.longitude)
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.Text("09:00~18:00"),
+                TravelDetailPlaceTagUiModel.WeeklyClosed(java.time.DayOfWeek.MONDAY),
+                TravelDetailPlaceTagUiModel.ParkingUnavailable,
+                TravelDetailPlaceTagUiModel.Text("000-0000-0000"),
+            ),
+            place?.tags,
+        )
+    }
+
+    @Test
+    fun `빈 첫째 날에서도 둘째 날 장소를 선택해 표시한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-with-empty-day-one",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(dayNumber = 1, places = emptyList()),
+                CourseDay(
+                    dayNumber = 2,
+                    places = listOf(place("day-two-place", "둘째 날 장소")),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-with-empty-day-one")
+        advanceUntilIdle()
+        viewModel.selectDay(2)
+
+        val content = viewModel.uiState.value as TravelDetailUiState.Content
+        assertEquals(2, content.selectedDayNumber)
+        assertEquals("day-two-place", content.selectedPlaceId)
+        assertEquals("둘째 날 장소", content.selectedDay?.places?.single()?.name)
     }
 
     @Test
@@ -187,6 +413,30 @@ class TravelDetailViewModelTest {
         val bookmark = (viewModel.uiState.value as TravelDetailUiState.Content).bookmark
         assertFalse(bookmark.isSaved)
         assertNull(bookmark.savedTripId)
+    }
+
+    @Test
+    fun `저장 목록 Route가 전달한 저장 항목 ID로 코스를 해제한다`() = runTest(dispatcher) {
+        val savedTripRepo = SavedTripRepo()
+        val viewModel = createViewModel(
+            result = AppResult.Success(course()),
+            savedTripRepo = savedTripRepo,
+        )
+
+        viewModel.load(
+            courseId = "course-boeun",
+            initialSaved = true,
+            savedTripId = "saved-trip-from-list",
+        )
+        advanceUntilIdle()
+
+        viewModel.onBookmarkClick()
+        advanceUntilIdle()
+
+        val bookmark = (viewModel.uiState.value as TravelDetailUiState.Content).bookmark
+        assertFalse(bookmark.isSaved)
+        assertNull(bookmark.savedTripId)
+        assertEquals(listOf("saved-trip-from-list"), savedTripRepo.deletedSavedTripIds)
     }
 
     @Test
@@ -307,6 +557,7 @@ class TravelDetailViewModelTest {
                 courseRepository = OutOfOrderCourseRepository(),
                 onboardingAnalysisSessionStore = EmptySessionStore,
             ),
+            summarizePlaceInfo = SummarizePlaceInfoUseCase(),
             saveTripUseCase = SaveTripUseCase(SavedTripRepo()),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(SavedTripRepo()),
             bookmarkChangeNotifier = BookmarkChangeNotifier(),
@@ -331,6 +582,7 @@ class TravelDetailViewModelTest {
                 courseRepository = CourseResultRepository(result),
                 onboardingAnalysisSessionStore = EmptySessionStore,
             ),
+            summarizePlaceInfo = SummarizePlaceInfoUseCase(),
             saveTripUseCase = SaveTripUseCase(savedTripRepo),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(savedTripRepo),
             bookmarkChangeNotifier = bookmarkChangeNotifier,

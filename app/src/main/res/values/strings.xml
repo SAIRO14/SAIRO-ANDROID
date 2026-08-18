@@ -83,4 +83,22 @@
     <string name="travel_detail_load_error">여행 코스를 불러오지 못했어요.</string>
     <string name="travel_detail_retry">다시 시도</string>
     <string name="travel_detail_empty_day">표시할 여행 장소가 없어요.</string>
+    <string name="travel_detail_tag_always_open">상시 개방</string>
+    <string name="travel_detail_tag_open_all_year">연중무휴</string>
+    <string name="travel_detail_tag_public_holiday_closed">공휴일 휴무</string>
+    <string name="travel_detail_tag_bad_weather_closed">기상악화 시 휴무</string>
+    <string name="travel_detail_tag_parking_available">주차 가능</string>
+    <string name="travel_detail_tag_parking_unavailable">주차 불가능</string>
+    <string name="travel_detail_tag_phone_inquiry">전화문의</string>
+    <string name="travel_detail_tag_period_hours">%1$s %2$s</string>
+    <string name="travel_detail_tag_weekday_hours">평일 %1$s</string>
+    <string name="travel_detail_tag_weekend_hours">주말 %1$s</string>
+    <string name="travel_detail_tag_weekly_closed">매주 %1$s요일</string>
+    <string name="travel_detail_tag_monday">월</string>
+    <string name="travel_detail_tag_tuesday">화</string>
+    <string name="travel_detail_tag_wednesday">수</string>
+    <string name="travel_detail_tag_thursday">목</string>
+    <string name="travel_detail_tag_friday">금</string>
+    <string name="travel_detail_tag_saturday">토</string>
+    <string name="travel_detail_tag_sunday">일</string>
 </resources>

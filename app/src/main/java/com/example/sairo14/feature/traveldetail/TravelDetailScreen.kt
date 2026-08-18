@@ -41,6 +41,7 @@ import com.example.sairo14.core.map.SairoKakaoMap
 import com.example.sairo14.core.map.SairoMapCameraTarget
 import com.example.sairo14.core.map.SairoMapMarker
 import com.example.sairo14.core.map.SairoMapViewportPadding
+import java.time.DayOfWeek
 
 /**
  * Route의 코스 ID와 여행 상세 화면의 상태·행동을 연결한다.
@@ -239,7 +240,7 @@ private fun TravelDetailContent(
                                 index + 1,
                                 place.name,
                             ),
-                            tags = place.tags,
+                            tags = place.tags.map { tag -> tag.toDisplayText() },
                             painter = rememberAsyncImagePainter(
                                 model = place.imageUrl ?: R.drawable.img_dummy_view,
                             ),
@@ -267,6 +268,43 @@ private fun TravelDetailContent(
             onActionClick = onHomeClick,
         )
     }
+}
+
+@Composable
+private fun TravelDetailPlaceTagUiModel.toDisplayText(): String = when (this) {
+    TravelDetailPlaceTagUiModel.AlwaysOpen -> stringResource(R.string.travel_detail_tag_always_open)
+    TravelDetailPlaceTagUiModel.OpenAllYear -> stringResource(R.string.travel_detail_tag_open_all_year)
+    TravelDetailPlaceTagUiModel.PublicHolidayClosed ->
+        stringResource(R.string.travel_detail_tag_public_holiday_closed)
+    TravelDetailPlaceTagUiModel.BadWeatherClosed ->
+        stringResource(R.string.travel_detail_tag_bad_weather_closed)
+    TravelDetailPlaceTagUiModel.ParkingAvailable ->
+        stringResource(R.string.travel_detail_tag_parking_available)
+    TravelDetailPlaceTagUiModel.ParkingUnavailable ->
+        stringResource(R.string.travel_detail_tag_parking_unavailable)
+    TravelDetailPlaceTagUiModel.PhoneInquiry -> stringResource(R.string.travel_detail_tag_phone_inquiry)
+    is TravelDetailPlaceTagUiModel.Text -> value
+    is TravelDetailPlaceTagUiModel.PeriodHours ->
+        stringResource(R.string.travel_detail_tag_period_hours, label, hours)
+    is TravelDetailPlaceTagUiModel.WeekdayHours ->
+        stringResource(R.string.travel_detail_tag_weekday_hours, value)
+    is TravelDetailPlaceTagUiModel.WeekendHours ->
+        stringResource(R.string.travel_detail_tag_weekend_hours, value)
+    is TravelDetailPlaceTagUiModel.WeeklyClosed -> stringResource(
+        R.string.travel_detail_tag_weekly_closed,
+        dayOfWeek.toKoreanDayName(),
+    )
+}
+
+@Composable
+private fun DayOfWeek.toKoreanDayName(): String = when (this) {
+    DayOfWeek.MONDAY -> stringResource(R.string.travel_detail_tag_monday)
+    DayOfWeek.TUESDAY -> stringResource(R.string.travel_detail_tag_tuesday)
+    DayOfWeek.WEDNESDAY -> stringResource(R.string.travel_detail_tag_wednesday)
+    DayOfWeek.THURSDAY -> stringResource(R.string.travel_detail_tag_thursday)
+    DayOfWeek.FRIDAY -> stringResource(R.string.travel_detail_tag_friday)
+    DayOfWeek.SATURDAY -> stringResource(R.string.travel_detail_tag_saturday)
+    DayOfWeek.SUNDAY -> stringResource(R.string.travel_detail_tag_sunday)
 }
 
 @Composable

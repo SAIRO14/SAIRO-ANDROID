@@ -56,6 +56,7 @@ enum class ParkingSummary {
 
 /** 장소 문의처의 표시 정책에 필요한 유형을 표현한다. */
 sealed interface ContactSummary {
+    /** 원문에서 처음 추출한 전화번호를 표현한다. */
     data class PhoneNumber(val value: String) : ContactSummary
 
     data object PhoneInquiry : ContactSummary

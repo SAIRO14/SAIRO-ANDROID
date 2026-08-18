@@ -133,14 +133,14 @@ class SummarizePlaceInfoUseCaseTest {
     @Test
     fun `문의처에서 첫 번째 전화번호만 요약하고 없으면 전화문의로 처리한다`() {
         assertEquals(
-            ContactSummary.PhoneNumber("064-740-6000"),
+            ContactSummary.PhoneNumber(value = "064-740-6000"),
             summarize(
                 place(contact = "제주관광정보센터 064-740-6000\n한림읍 사무소 064-728-1521"),
             ).contact,
         )
         assertEquals(
-            ContactSummary.PhoneNumber("1670-1188"),
-            summarize(place(contact = "대표번호 1670-1188")).contact,
+            ContactSummary.PhoneNumber(value = "1670-1188"),
+            summarize(place(contact = "1670-1188")).contact,
         )
         assertEquals(ContactSummary.PhoneInquiry, summarize(place(contact = "관광안내소로 문의")).contact)
     }

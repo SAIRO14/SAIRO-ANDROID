@@ -267,12 +267,16 @@ private fun CoursePlace.toDisplayTags(
     return summarizePlaceInfo(this).toUiTags()
 }
 
-private fun PlaceInfoSummary.toUiTags(): List<TravelDetailPlaceTagUiModel> = buildList {
-    operatingHours?.toUiTags()?.forEach(::add)
-    closedDays.map(ClosedDaysSummary::toUiTag).forEach(::add)
-    parking?.toUiTag()?.let(::add)
-    contact?.toUiTag()?.let(::add)
-}.distinct()
+private fun PlaceInfoSummary.toUiTags(): List<TravelDetailPlaceTagUiModel> {
+    val hasPlaceInfoTag = operatingHours != null || closedDays.isNotEmpty() || parking != null
+
+    return buildList {
+        operatingHours?.toUiTags()?.forEach(::add)
+        closedDays.map(ClosedDaysSummary::toUiTag).forEach(::add)
+        parking?.toUiTag()?.let(::add)
+        contact?.toUiTags(showPhoneInquiry = !hasPlaceInfoTag)?.forEach(::add)
+    }.distinct()
+}
 
 private fun OperatingHoursSummary.toUiTags(): List<TravelDetailPlaceTagUiModel> = when (this) {
     OperatingHoursSummary.AlwaysOpen -> listOf(TravelDetailPlaceTagUiModel.AlwaysOpen)
@@ -302,7 +306,12 @@ private fun ParkingSummary.toUiTag(): TravelDetailPlaceTagUiModel = when (this) 
     ParkingSummary.PhoneInquiry -> TravelDetailPlaceTagUiModel.PhoneInquiry
 }
 
-private fun ContactSummary.toUiTag(): TravelDetailPlaceTagUiModel = when (this) {
-    is ContactSummary.PhoneNumber -> TravelDetailPlaceTagUiModel.Text(value)
-    ContactSummary.PhoneInquiry -> TravelDetailPlaceTagUiModel.PhoneInquiry
+private fun ContactSummary.toUiTags(
+    showPhoneInquiry: Boolean,
+): List<TravelDetailPlaceTagUiModel> = when (this) {
+    is ContactSummary.PhoneNumber -> buildList {
+        if (showPhoneInquiry) add(TravelDetailPlaceTagUiModel.PhoneInquiry)
+        add(TravelDetailPlaceTagUiModel.Text(value))
+    }
+    ContactSummary.PhoneInquiry -> listOf(TravelDetailPlaceTagUiModel.PhoneInquiry)
 }

@@ -207,6 +207,46 @@ class TravelDetailViewModelTest {
     }
 
     @Test
+    fun `문의처만 있는 장소에는 전화문의 태그와 전화번호를 함께 전달한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-contact-only",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        CoursePlace(
+                            placeId = "contact-place",
+                            name = "문의처 장소",
+                            imageUrl = null,
+                            tags = emptyList(),
+                            coordinate = null,
+                            contact = "제주관광정보센터 064-740-6000",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-contact-only")
+        advanceUntilIdle()
+
+        val tags = (viewModel.uiState.value as TravelDetailUiState.Content)
+            .selectedDay
+            ?.places
+            ?.single()
+            ?.tags
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.PhoneInquiry,
+                TravelDetailPlaceTagUiModel.Text("064-740-6000"),
+            ),
+            tags,
+        )
+    }
+
+    @Test
     fun `구조화된 장소 정보가 없으면 기존 태그를 유지한다`() = runTest(dispatcher) {
         val course = course().copy(
             days = listOf(

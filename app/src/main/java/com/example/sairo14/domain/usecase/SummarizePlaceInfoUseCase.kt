@@ -89,10 +89,9 @@ private fun String?.toParkingSummary(): ParkingSummary? {
 
 private fun String?.toContactSummary(): ContactSummary? {
     val value = this?.trim()?.takeIf(String::isNotEmpty) ?: return null
-    return phoneNumberRegex.find(value)
-        ?.value
-        ?.let(ContactSummary::PhoneNumber)
-        ?: ContactSummary.PhoneInquiry
+    val phoneNumber = phoneNumberRegex.find(value)?.value ?: return ContactSummary.PhoneInquiry
+
+    return ContactSummary.PhoneNumber(value = phoneNumber)
 }
 
 private fun String.toWeekdayWeekendSummary(): OperatingHoursSummary.WeekdayWeekend? {

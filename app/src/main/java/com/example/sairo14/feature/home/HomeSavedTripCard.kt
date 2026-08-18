@@ -45,8 +45,8 @@ fun HomeSavedTripCard(
 ) {
     val rotation = remember(savedTrip.savedTripId) {
         Random.nextDouble(
-            from = -MaxCardRotationDegrees.toDouble(),
-            until = MaxCardRotationDegrees.toDouble(),
+            from = -MaxSubtleCardRotationDegrees.toDouble(),
+            until = MaxSubtleCardRotationDegrees.toDouble(),
         ).toFloat()
     }
     val colors = SairoTheme.colors
@@ -103,4 +103,4 @@ internal val HomeSavedTripCardHeight = 195.dp
 private val CaptionHeight = 40.dp
 private val CaptionHorizontalPadding = 12.dp
 private val SavedTripCardShape = RoundedCornerShape(4.dp)
-private const val MaxCardRotationDegrees = 8f
+private const val MaxSubtleCardRotationDegrees = 7f

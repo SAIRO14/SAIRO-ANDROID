@@ -53,8 +53,8 @@ fun HomeSavedTripCard(
 
     Box(
         modifier = modifier
-            .width(SavedTripCardWidth)
-            .height(SavedTripCardHeight)
+            .width(HomeSavedTripCardWidth)
+            .height(HomeSavedTripCardHeight)
             .rotate(rotation)
             .sairoDropShadow(
                 shape = SavedTripCardShape,
@@ -79,7 +79,7 @@ fun HomeSavedTripCard(
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .width(SavedTripCardWidth)
+                .width(HomeSavedTripCardWidth)
                 .height(CaptionHeight)
                 .background(colors.overlayScrim)
                 .padding(horizontal = CaptionHorizontalPadding),
@@ -94,8 +94,12 @@ fun HomeSavedTripCard(
     }
 }
 
-private val SavedTripCardWidth = 150.dp
-private val SavedTripCardHeight = 195.dp
+/** 홈 캔버스 배치 정책과 사진 카드가 공유하는 카드의 고정 너비다. */
+internal val HomeSavedTripCardWidth = 150.dp
+
+/** 홈 캔버스 배치 정책과 사진 카드가 공유하는 카드의 고정 높이다. */
+internal val HomeSavedTripCardHeight = 195.dp
+
 private val CaptionHeight = 40.dp
 private val CaptionHorizontalPadding = 12.dp
 private val SavedTripCardShape = RoundedCornerShape(4.dp)

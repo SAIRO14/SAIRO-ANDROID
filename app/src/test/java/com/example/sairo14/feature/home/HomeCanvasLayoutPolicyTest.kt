@@ -74,6 +74,16 @@ class HomeCanvasLayoutPolicyTest {
     }
 
     @Test
+    fun `여덟 장을 초과해도 제공된 최대 여덟 개 슬롯만 반환한다`() {
+        val eightCards = calculate(cardCount = 8)
+        val moreThanEightCards = calculate(cardCount = 9)
+
+        assertEquals(8, moreThanEightCards.cardPlacements.size)
+        assertEquals(eightCards.cardPlacements, moreThanEightCards.cardPlacements)
+        assertPanBoundsEquals(eightCards.panBounds, moreThanEightCards.panBounds)
+    }
+
+    @Test
     fun `시각 여유는 카드 그림자와 회전을 포함해 이동 한계를 확장한다`() {
         val layout = calculate(cardCount = 1, visualOverflow = 12f)
 

@@ -19,6 +19,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -414,37 +415,65 @@ private fun HomeSavedTripsLayer(
     onSavedTripClick: (courseId: String, savedTripId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
-        savedTrips.take(SavedTripSlot.entries.size).forEachIndexed { index, savedTrip ->
-            val painter = rememberSairoBackdropImagePainter(
-                model = savedTrip.thumbnailImageUrl ?: R.drawable.img_dummy_view,
-                backdropState = backdropState,
-            )
-            val slot = SavedTripSlot.entries[index]
+    val density = LocalDensity.current
 
-            HomeSavedTripCard(
-                savedTrip = savedTrip,
-                painter = painter,
-                onClick = {
-                    onSavedTripClick(savedTrip.courseId, savedTrip.savedTripId)
-                },
-                modifier = Modifier
-                    .align(slot.alignment)
-                    .offset(x = slot.offsetX, y = slot.offsetY),
+    BoxWithConstraints(modifier = modifier) {
+        val canvasSize = remember(maxWidth, maxHeight, density) {
+            with(density) {
+                HomeCanvasSize(
+                    width = maxWidth.toPx(),
+                    height = maxHeight.toPx(),
+                )
+            }
+        }
+        val cardSize = remember(density) {
+            with(density) {
+                HomeCanvasSize(
+                    width = HomeSavedTripCardWidth.toPx(),
+                    height = HomeSavedTripCardHeight.toPx(),
+                )
+            }
+        }
+        val layout = remember(canvasSize, cardSize, savedTrips.size) {
+            HomeCanvasLayoutPolicy.calculate(
+                canvasSize = canvasSize,
+                visibleViewport = HomeCanvasRect(
+                    left = 0f,
+                    top = 0f,
+                    right = canvasSize.width,
+                    bottom = canvasSize.height,
+                ),
+                cardSize = cardSize,
+                placements = HomeSavedTripPlacements.create(cardSize),
+                cardCount = savedTrips.size,
             )
         }
-    }
-}
 
-private enum class SavedTripSlot(
-    val alignment: Alignment,
-    val offsetX: Dp,
-    val offsetY: Dp,
-) {
-    TopStart(Alignment.TopStart, (-75).dp, (-39).dp),
-    TopEnd(Alignment.TopEnd, 159.dp, (-3).dp),
-    BottomEnd(Alignment.BottomEnd, 22.dp, 116.dp),
-    BottomStart(Alignment.BottomStart, (-42).dp, 49.dp),
+        savedTrips.zip(layout.cardPlacements).forEach { (savedTrip, resolvedPlacement) ->
+            key(savedTrip.savedTripId) {
+                val painter = rememberSairoBackdropImagePainter(
+                    model = savedTrip.thumbnailImageUrl ?: R.drawable.img_dummy_view,
+                    backdropState = backdropState,
+                )
+
+                HomeSavedTripCard(
+                    savedTrip = savedTrip,
+                    painter = painter,
+                    onClick = {
+                        onSavedTripClick(savedTrip.courseId, savedTrip.savedTripId)
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset {
+                            IntOffset(
+                                x = resolvedPlacement.cardBounds.left.roundToInt(),
+                                y = resolvedPlacement.cardBounds.top.roundToInt(),
+                            )
+                        },
+                )
+            }
+        }
+    }
 }
 
 private val HomeHorizontalPadding = 24.dp
@@ -462,13 +491,13 @@ private fun HomeScreenPreview() {
     }
 }
 
-@Preview(name = "Home Saved Trips", showBackground = true, widthDp = 360, heightDp = 800)
+@Preview(name = "Home Eight Saved Trips", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable
 private fun HomeScreenSavedTripsPreview() {
     SairoTheme {
         HomeScreen(
             uiState = HomeUiState.Content(
-                savedTrips = List(4) { index ->
+                savedTrips = List(8) { index ->
                     HomeSavedTripUiModel(
                         savedTripId = "saved-trip-$index",
                         courseId = "course-$index",

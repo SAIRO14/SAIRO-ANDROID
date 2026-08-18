@@ -13,7 +13,7 @@ import org.junit.Test
 class DefaultHomeRepositoryTest {
 
     @Test
-    fun `홈에는 최신 저장 여행지를 최대 네 개 요청해 카드 요약으로 반환한다`() = runTest {
+    fun `홈에는 최신 저장 여행지를 최대 여덟 개 요청해 카드 요약으로 반환한다`() = runTest {
         val savedTripRepository = StubSavedTripRepository(
             result = AppResult.Success(
                 SavedTripPage(
@@ -31,7 +31,7 @@ class DefaultHomeRepositoryTest {
 
         val result = repository.getHomeContent() as AppResult.Success
 
-        assertEquals(4, savedTripRepository.requestedSize)
+        assertEquals(8, savedTripRepository.requestedSize)
         assertEquals(1, result.value.savedTrips.size)
         assertEquals("saved-trip-1", result.value.savedTrips.single().savedTripId)
         assertEquals("course-1", result.value.savedTrips.single().courseId)

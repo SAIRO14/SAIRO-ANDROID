@@ -40,4 +40,4 @@ private fun SavedTrip.toHomeSummary(): SavedTripSummary = SavedTripSummary(
         ?: spotImageUrls.firstOrNull(String::isNotBlank),
 )
 
-private const val HomeSavedTripLimit = 4
+private const val HomeSavedTripLimit = 8

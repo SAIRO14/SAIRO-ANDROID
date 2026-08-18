@@ -42,7 +42,7 @@ stateless 화면은 재사용하기 쉽지만, 호출한 Feature가 재시도 �
 
 [`AppError`](../../app/src/main/java/com/example/sairo14/domain/model/AppResult.kt)는 네트워크 연결 불가, 잘못된 요청·커서, 찾을 수 없는 리소스, 충돌, 서버 실패, 저장소 실패를 구분한다. [`RemoteErrorMapper.kt`](../../app/src/main/java/com/example/sairo14/data/remote/RemoteErrorMapper.kt)의 `runRemoteOperation`이 실제 Retrofit 호출을 이 계약으로 변환하고, `CancellationException`은 다시 던진다. `IOException`의 하위 타입인 시간 초과도 `NetworkUnavailable`로 통일한다. 화면은 이 오류에만 공통 네트워크 오류 화면을 사용하며, 서버·저장소 오류는 일반 오류 UI를 표시한다.
 
-[`AndroidNetworkStatusRepository`](../../app/src/main/java/com/example/sairo14/core/network/AndroidNetworkStatusRepository.kt)는 `ConnectivityManager`의 검증된 인터넷 연결 상태를 `Flow`로 제공한다. [`NetworkErrorViewModel`](../../app/src/main/java/com/example/sairo14/feature/error/NetworkErrorViewModel.kt)은 이 상태로 오프라인 중 재시도 버튼만 비활성화하고, 연결이 복구되면 다시 활성화한다. 이 값은 실제 서버 요청의 성공을 보장하지 않으므로 일반 요청을 미리 차단하거나 오류 화면을 먼저 표시하지 않는다.
+[`AndroidNetworkStatusRepository`](../../app/src/main/java/com/example/sairo14/core/network/AndroidNetworkStatusRepository.kt)는 `ConnectivityManager`의 검증된 인터넷 연결 상태를 `Flow`로 제공한다. 이를 위해 매니페스트에 `ACCESS_NETWORK_STATE` 권한이 필요하다. [`NetworkErrorViewModel`](../../app/src/main/java/com/example/sairo14/feature/error/NetworkErrorViewModel.kt)은 이 상태로 오프라인 중 재시도 버튼만 비활성화하고, 연결이 복구되면 다시 활성화한다. 이 값은 실제 서버 요청의 성공을 보장하지 않으므로 일반 요청을 미리 차단하거나 오류 화면을 먼저 표시하지 않는다.
 
 ## 추가 학습 및 대안
 

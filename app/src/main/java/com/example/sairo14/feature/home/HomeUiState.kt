@@ -1,6 +1,8 @@
 package com.example.sairo14.feature.home
 
+import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Immutable
+import com.example.sairo14.R
 import com.example.sairo14.domain.model.AppError
 
 /** 홈 화면이 렌더링할 로딩, 콘텐츠, 오류 상태를 나타낸다. */
@@ -26,6 +28,8 @@ sealed interface HomeUiState {
 data class HomeDiscoveryImagesUiModel(
     val backImageUrl: String? = null,
     val frontImageUrl: String? = null,
+    @DrawableRes val backFallbackRes: Int = R.drawable.img_dummy_view,
+    @DrawableRes val frontFallbackRes: Int = R.drawable.img_dummy_view,
 )
 
 /** 저장한 여행지 카드 하나를 그리는 데 필요한 UI 전용 요약 정보다. */

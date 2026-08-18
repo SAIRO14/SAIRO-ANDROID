@@ -32,6 +32,16 @@ data class TravelDetailRoute(
     val savedTripId: String? = null,
 ) : SairoRoute
 
+/** 외부 공유 링크로 전달받은 읽기 전용 코스 스냅샷 화면을 식별한다.
+ *
+ * [shareId]만 백스택에 보관하며 원본 코스의 저장 상태나 소유자 식별자는 전달하지 않는다.
+ * @param shareId 공유 URL에서 파싱한 스냅샷 식별자
+ */
+@Serializable
+data class SharedCourseRoute(
+    val shareId: String,
+) : SairoRoute
+
 /** 온보딩 인트로 화면의 진입 출처를 구분한다. */
 @Serializable
 enum class OnboardingIntroEntryPoint {

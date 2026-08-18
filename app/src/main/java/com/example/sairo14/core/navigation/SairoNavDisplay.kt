@@ -24,6 +24,7 @@ import com.example.sairo14.feature.onboarding.loading.OnboardingLoadingRoute as 
 import com.example.sairo14.feature.onboarding.select.OnboardingPhotoSelectRoute as OnboardingPhotoSelectScreenRoute
 import com.example.sairo14.feature.onboarding.result.OnboardingResultRoute as OnboardingResultScreenRoute
 import com.example.sairo14.feature.savedtrip.SavedTripsRoute as SavedTripsScreenRoute
+import com.example.sairo14.feature.sharedcourse.SharedCourseRoute as SharedCourseScreenRoute
 import com.example.sairo14.feature.traveldetail.TravelDetailRoute as TravelDetailScreenRoute
 import java.util.UUID
 
@@ -221,6 +222,13 @@ fun SairoNavDisplay(
                     onboardingSessionId = route.onboardingSessionId,
                     initialSaved = route.initialSaved,
                     savedTripId = route.savedTripId,
+                    onBackClick = navigator::navigateUp,
+                    onHomeClick = navigator::popToHome,
+                )
+            }
+            entry<SharedCourseRoute> { route ->
+                SharedCourseScreenRoute(
+                    shareId = route.shareId,
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
                 )

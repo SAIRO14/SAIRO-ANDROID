@@ -165,4 +165,21 @@ class SairoNavigatorTest {
         assertEquals(true, route.initialSaved)
         assertEquals("saved-trip-1", route.savedTripId)
     }
+
+    @Test
+    fun `공유 코스 Route는 공유 스냅샷 식별자만 보존한다`() {
+        val route = SharedCourseRoute(shareId = "7429b36b9d")
+
+        assertEquals("7429b36b9d", route.shareId)
+    }
+
+    @Test
+    fun `공유 코스 화면을 닫으면 이전 홈 화면으로 돌아간다`() {
+        val backStack = NavBackStack<NavKey>(HomeRoute, SharedCourseRoute("share-1"))
+        val navigator = SairoNavigator(backStack)
+
+        navigator.navigateUp()
+
+        assertEquals(listOf<NavKey>(HomeRoute), backStack.toList())
+    }
 }

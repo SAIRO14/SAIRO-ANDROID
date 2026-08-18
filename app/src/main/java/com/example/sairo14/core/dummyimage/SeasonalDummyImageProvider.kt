@@ -30,19 +30,17 @@ data class SeasonalDummyImageSet(
     val homePair: DummyImagePair,
 )
 
-/** 현재 날짜에 맞는 계절·공통 더미 이미지를 중복 없이 화면별로 배정한다. */
+/** 현재 계절의 로컬 더미 이미지를 중복 없이 화면별로 새로 배정한다. */
 @Singleton
 class SeasonalDummyImageProvider @Inject constructor() {
-    /** 같은 날짜에는 동일한 카드 배정을 반환하며 날짜가 바뀌면 새 조합을 선택한다. */
-    fun imagesForToday(): SeasonalDummyImageSet {
+    /** 호출할 때마다 현재 계절 이미지와 공통 이미지로 새 카드 배정을 생성한다. */
+    fun createImageSet(): SeasonalDummyImageSet {
         val calendar = Calendar.getInstance()
         val month = calendar.get(Calendar.MONTH) + 1
-        val dateSeed = calendar.get(Calendar.YEAR) * DaysPerYearSeedMultiplier +
-            calendar.get(Calendar.DAY_OF_YEAR)
 
         return SeasonalDummyImageSelector.select(
             season = seasonOf(month),
-            random = Random(dateSeed),
+            random = Random.Default,
         )
     }
 }
@@ -151,7 +149,6 @@ private object SeasonalDummyImageCatalog {
     )
 }
 
-private const val DaysPerYearSeedMultiplier = 400
 private const val RequiredImagesPerCategory = 4
 private const val OnboardingImagesPerCategory = 3
 private const val ImagesPerPair = 2

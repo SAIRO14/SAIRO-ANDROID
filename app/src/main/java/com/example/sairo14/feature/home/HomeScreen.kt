@@ -80,6 +80,10 @@ fun HomeRoute(
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
 
+    LaunchedEffect(viewModel) {
+        viewModel.onScreenEntered()
+    }
+
     HomeScreen(
         modifier = modifier,
         uiState = uiState,

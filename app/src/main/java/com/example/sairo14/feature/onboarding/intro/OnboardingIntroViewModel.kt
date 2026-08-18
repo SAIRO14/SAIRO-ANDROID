@@ -17,13 +17,16 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 @HiltViewModel
 class OnboardingIntroViewModel @Inject constructor(
-    seasonalDummyImageProvider: SeasonalDummyImageProvider,
+    private val seasonalDummyImageProvider: SeasonalDummyImageProvider,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(
-        OnboardingIntroUiState(
-            imagePairs = seasonalDummyImageProvider.imagesForToday().onboardingPairs,
-        ),
-    )
+    private val _uiState = MutableStateFlow(OnboardingIntroUiState())
 
     val uiState: StateFlow<OnboardingIntroUiState> = _uiState.asStateFlow()
+
+    /** 온보딩 인트로에 진입할 때 새 이미지 묶음을 표시한다. */
+    fun onScreenEntered() {
+        _uiState.value = OnboardingIntroUiState(
+            imagePairs = seasonalDummyImageProvider.createImageSet().onboardingPairs,
+        )
+    }
 }

@@ -7,6 +7,7 @@ import com.example.sairo14.domain.model.HomeContent
 import com.example.sairo14.domain.model.SavedTripSummary
 import com.example.sairo14.domain.repository.HomeRepository
 import com.example.sairo14.domain.usecase.GetHomeContentUseCase
+import com.example.sairo14.core.dummyimage.SeasonalDummyImageProvider
 import com.example.sairo14.feature.bookmark.BookmarkChange
 import com.example.sairo14.feature.bookmark.BookmarkChangeNotifier
 import kotlinx.coroutines.CompletableDeferred
@@ -114,6 +115,7 @@ class HomeViewModelTest {
     ) = HomeViewModel(
         getHomeContent = GetHomeContentUseCase(repository),
         bookmarkChangeNotifier = bookmarkChangeNotifier,
+        seasonalDummyImageProvider = SeasonalDummyImageProvider(),
     )
 
     private fun HomeViewModel.content(): HomeUiState.Content =

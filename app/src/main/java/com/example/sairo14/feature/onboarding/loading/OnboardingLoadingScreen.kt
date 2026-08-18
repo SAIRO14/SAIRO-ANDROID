@@ -132,7 +132,7 @@ fun OnboardingLoadingScreen(
             modifier = modifier,
         )
 
-        OnboardingLoadingUiState.AnalysisError -> OnboardingLoadingErrorScreen(
+        is OnboardingLoadingUiState.AnalysisError -> OnboardingLoadingErrorScreen(
             messageResId = R.string.onboarding_result_error,
             onBackClick = onBackClick,
             onRetryClick = onRetryClick,

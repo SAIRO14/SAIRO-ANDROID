@@ -141,7 +141,7 @@ fun TravelDetailScreen(
             modifier = screenModifier,
         )
 
-        TravelDetailUiState.Error -> TravelDetailError(
+        is TravelDetailUiState.Error -> TravelDetailError(
             onBackClick = onBackClick,
             onHomeClick = onHomeClick,
             onRetryClick = onRetryClick,

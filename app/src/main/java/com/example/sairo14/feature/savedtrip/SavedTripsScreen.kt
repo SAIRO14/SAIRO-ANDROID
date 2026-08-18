@@ -158,7 +158,7 @@ fun SavedTripsScreen(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            SavedTripsUiState.Error -> SavedTripsError(
+            is SavedTripsUiState.Error -> SavedTripsError(
                 headerHeight = headerHeight,
                 onRetryClick = onRetryClick,
                 modifier = Modifier.fillMaxSize(),

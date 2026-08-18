@@ -189,7 +189,7 @@ fun OnboardingPhotoSelectScreen(
                             text = stringResource(R.string.onboarding_photo_select_empty),
                         )
 
-                        OnboardingPhotoSelectUiState.Error -> PhotoSelectErrorContent(
+                        is OnboardingPhotoSelectUiState.Error -> PhotoSelectErrorContent(
                             onRetryClick = onRetryClick,
                         )
 

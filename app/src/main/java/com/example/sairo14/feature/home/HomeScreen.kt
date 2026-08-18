@@ -18,6 +18,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -153,16 +154,58 @@ private fun HomeContentScreen(
             backdropState = backdropState,
         )
 
-        Box(
+        BoxWithConstraints(
             modifier = Modifier.fillMaxSize(),
         ) {
             if (uiState.savedTrips.isNotEmpty()) {
+                val density = LocalDensity.current
+                val canvasSize = remember(maxWidth, maxHeight, density) {
+                    with(density) {
+                        HomeCanvasSize(
+                            width = maxWidth.toPx(),
+                            height = maxHeight.toPx(),
+                        )
+                    }
+                }
+                val cardSize = remember(density) {
+                    with(density) {
+                        HomeCanvasSize(
+                            width = HomeSavedTripCardWidth.toPx(),
+                            height = HomeSavedTripCardHeight.toPx(),
+                        )
+                    }
+                }
+                val savedTripLayout = remember(
+                    canvasSize,
+                    cardSize,
+                    density,
+                    headerHeight,
+                    uiState.savedTrips.size,
+                ) {
+                    val visibleTop = with(density) { headerHeight.toPx() }
+                        .coerceIn(0f, canvasSize.height)
+                    HomeCanvasLayoutPolicy.calculate(
+                        canvasSize = canvasSize,
+                        visibleViewport = HomeCanvasRect(
+                            left = 0f,
+                            top = visibleTop,
+                            right = canvasSize.width,
+                            bottom = canvasSize.height,
+                        ),
+                        cardSize = cardSize,
+                        placements = HomeSavedTripPlacements.create(cardSize),
+                        cardCount = uiState.savedTrips.size,
+                    )
+                }
+
                 HomePannableCanvas(
                     backdropState = backdropState,
+                    panBounds = savedTripLayout.panBounds,
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     HomeSavedTripsLayer(
                         savedTrips = uiState.savedTrips,
+                        cardPlacements = savedTripLayout.cardPlacements,
                         backdropState = backdropState,
                         onSavedTripClick = onSavedTripClick,
                         modifier = Modifier.fillMaxSize(),
@@ -341,10 +384,10 @@ private fun HomeContainer(
 @Composable
 private fun HomePannableCanvas(
     backdropState: SairoBackdropState,
+    panBounds: HomeCanvasPanBounds,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
     var canvasOffset by remember { mutableStateOf(Offset.Zero) }
     val backdropInvalidationPending = remember(backdropState) { AtomicBoolean(false) }
@@ -364,92 +407,55 @@ private fun HomePannableCanvas(
         }
     }
 
-    BoxWithConstraints(
+    LaunchedEffect(panBounds) {
+        canvasOffset = Offset(
+            x = canvasOffset.x.coerceIn(panBounds.minX, panBounds.maxX),
+            y = canvasOffset.y.coerceIn(panBounds.minY, panBounds.maxY),
+        )
+    }
+
+    Box(
         modifier = modifier
             .clipToBounds()
+            .pointerInput(panBounds) {
+                detectDragGestures(
+                    onDragStart = { backdropState.invalidate() },
+                ) { change, dragAmount ->
+                    change.consume()
+                    canvasOffset = Offset(
+                        x = (canvasOffset.x + dragAmount.x)
+                            .coerceIn(panBounds.minX, panBounds.maxX),
+                        y = (canvasOffset.y + dragAmount.y)
+                            .coerceIn(panBounds.minY, panBounds.maxY),
+                    )
+                    scheduleBackdropInvalidation()
+                }
+            },
     ) {
-        val horizontalDragLimit = with(density) {
-            (maxWidth * CanvasHorizontalDragRange).toPx()
-        }
-        val verticalDragLimit = with(density) {
-            (maxHeight * CanvasVerticalDragRange).toPx()
-        }
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(maxWidth, maxHeight) {
-                    detectDragGestures(
-                        onDragStart = { backdropState.invalidate() },
-                    ) { change, dragAmount ->
-                        change.consume()
-                        canvasOffset = Offset(
-                            x = (canvasOffset.x + dragAmount.x)
-                                .coerceIn(-horizontalDragLimit, horizontalDragLimit),
-                            y = (canvasOffset.y + dragAmount.y)
-                                .coerceIn(-verticalDragLimit, verticalDragLimit),
-                        )
-                        scheduleBackdropInvalidation()
-                    }
+                .offset {
+                    IntOffset(
+                        x = canvasOffset.x.roundToInt(),
+                        y = canvasOffset.y.roundToInt(),
+                    )
                 },
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .offset {
-                        IntOffset(
-                            x = canvasOffset.x.roundToInt(),
-                            y = canvasOffset.y.roundToInt(),
-                        )
-                    },
-                content = content,
-            )
-        }
+            content = content,
+        )
     }
 }
 
 @Composable
 private fun HomeSavedTripsLayer(
     savedTrips: List<HomeSavedTripUiModel>,
+    cardPlacements: List<HomeResolvedSavedTripPlacement>,
     backdropState: SairoBackdropState,
     onSavedTripClick: (courseId: String, savedTripId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val density = LocalDensity.current
-
-    BoxWithConstraints(modifier = modifier) {
-        val canvasSize = remember(maxWidth, maxHeight, density) {
-            with(density) {
-                HomeCanvasSize(
-                    width = maxWidth.toPx(),
-                    height = maxHeight.toPx(),
-                )
-            }
-        }
-        val cardSize = remember(density) {
-            with(density) {
-                HomeCanvasSize(
-                    width = HomeSavedTripCardWidth.toPx(),
-                    height = HomeSavedTripCardHeight.toPx(),
-                )
-            }
-        }
-        val layout = remember(canvasSize, cardSize, savedTrips.size) {
-            HomeCanvasLayoutPolicy.calculate(
-                canvasSize = canvasSize,
-                visibleViewport = HomeCanvasRect(
-                    left = 0f,
-                    top = 0f,
-                    right = canvasSize.width,
-                    bottom = canvasSize.height,
-                ),
-                cardSize = cardSize,
-                placements = HomeSavedTripPlacements.create(cardSize),
-                cardCount = savedTrips.size,
-            )
-        }
-
-        savedTrips.zip(layout.cardPlacements).forEach { (savedTrip, resolvedPlacement) ->
+    Box(modifier = modifier) {
+        savedTrips.zip(cardPlacements).forEach { (savedTrip, resolvedPlacement) ->
             key(savedTrip.savedTripId) {
                 val painter = rememberSairoBackdropImagePainter(
                     model = savedTrip.thumbnailImageUrl ?: R.drawable.img_dummy_view,
@@ -480,8 +486,6 @@ private val HomeHorizontalPadding = 24.dp
 private val HomeContentMaxWidth = 294.dp
 private val HomeContentTopSpacing = 55.dp
 private val HomeContentGap = 20.dp
-private const val CanvasHorizontalDragRange = 0.5f
-private const val CanvasVerticalDragRange = 0.25f
 
 @Preview(name = "Home Empty", showBackground = true, widthDp = 360, heightDp = 800)
 @Composable

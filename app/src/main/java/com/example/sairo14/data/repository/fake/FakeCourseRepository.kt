@@ -6,6 +6,7 @@ import com.example.sairo14.domain.model.Course
 import com.example.sairo14.domain.model.CourseDay
 import com.example.sairo14.domain.model.CoursePlace
 import com.example.sairo14.domain.model.MapCoordinate
+import com.example.sairo14.domain.model.SharedCourseLink
 import com.example.sairo14.domain.repository.CourseRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,6 +18,18 @@ class FakeCourseRepository @Inject constructor() : CourseRepository {
     override suspend fun getCourse(courseId: String): AppResult<Course> =
         sampleCourses[courseId]
             ?.let { course -> AppResult.Success(course) }
+            ?: AppResult.Failure(AppError.ResourceNotFound)
+
+    override suspend fun createShareLink(courseId: String): AppResult<SharedCourseLink> =
+        sampleCourses[courseId]
+            ?.let {
+                AppResult.Success(
+                    SharedCourseLink(
+                        shareId = "fake-share-$courseId",
+                        shareUrl = "https://example.com/shared/$courseId",
+                    ),
+                )
+            }
             ?: AppResult.Failure(AppError.ResourceNotFound)
 
     private companion object {

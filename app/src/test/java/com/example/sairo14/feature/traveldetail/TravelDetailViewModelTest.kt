@@ -8,10 +8,12 @@ import com.example.sairo14.domain.model.CoursePlace
 import com.example.sairo14.domain.model.MapCoordinate
 import com.example.sairo14.domain.model.SavedTripPage
 import com.example.sairo14.domain.model.SavedTripSaveResult
+import com.example.sairo14.domain.model.SharedCourseLink
 import com.example.sairo14.domain.repository.CourseRepository
 import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import com.example.sairo14.domain.repository.SavedTripRepository
 import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
+import com.example.sairo14.domain.usecase.CreateCourseShareLinkUseCase
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import com.example.sairo14.domain.usecase.SaveTripUseCase
 import com.example.sairo14.domain.usecase.SummarizePlaceInfoUseCase
@@ -541,6 +543,68 @@ class TravelDetailViewModelTest {
     }
 
     @Test
+    fun `공유 성공은 Sharesheet 효과를 한 번 전달하고 요청 상태를 해제한다`() = runTest(dispatcher) {
+        val viewModel = createViewModel(AppResult.Success(course()))
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+        val effect = async { viewModel.effect.first() }
+        runCurrent()
+
+        viewModel.onShareClick()
+        assertTrue((viewModel.uiState.value as TravelDetailUiState.Content).isShareRequesting)
+        advanceUntilIdle()
+
+        assertEquals(
+            TravelDetailEffect.OpenShareSheet(
+                regionName = "충북 보은권",
+                shareUrl = "https://example.com/course-boeun",
+            ),
+            effect.await(),
+        )
+        assertFalse((viewModel.uiState.value as TravelDetailUiState.Content).isShareRequesting)
+    }
+
+    @Test
+    fun `공유 실패는 콘텐츠를 유지하고 오류 효과를 전달한다`() = runTest(dispatcher) {
+        val viewModel = createViewModel(
+            result = AppResult.Success(course()),
+            shareResult = AppResult.Failure(AppError.NetworkUnavailable),
+        )
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+        val effect = async { viewModel.effect.first() }
+        runCurrent()
+
+        viewModel.onShareClick()
+        advanceUntilIdle()
+
+        assertEquals(
+            TravelDetailEffect.ShowShareError(AppError.NetworkUnavailable),
+            effect.await(),
+        )
+        val content = viewModel.uiState.value as TravelDetailUiState.Content
+        assertFalse(content.isShareRequesting)
+        assertEquals("course-boeun", content.course.courseId)
+    }
+
+    @Test
+    fun `공유 요청 중 연속 클릭은 공유 API를 한 번만 호출한다`() = runTest(dispatcher) {
+        val courseRepository = CourseResultRepository(AppResult.Success(course()))
+        val viewModel = createViewModel(
+            result = AppResult.Success(course()),
+            shareRepository = courseRepository,
+        )
+        viewModel.load("course-boeun")
+        advanceUntilIdle()
+
+        viewModel.onShareClick()
+        viewModel.onShareClick()
+        advanceUntilIdle()
+
+        assertEquals(listOf("course-boeun"), courseRepository.sharedCourseIds)
+    }
+
+    @Test
     fun `코스를 읽지 못하면 오류 상태를 표시한다`() = runTest(dispatcher) {
         val viewModel = createViewModel(AppResult.Failure(AppError.ResourceNotFound))
 
@@ -563,6 +627,7 @@ class TravelDetailViewModelTest {
             summarizePlaceInfo = SummarizePlaceInfoUseCase(),
             saveTripUseCase = SaveTripUseCase(SavedTripRepo()),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(SavedTripRepo()),
+            createCourseShareLinkUseCase = CreateCourseShareLinkUseCase(OutOfOrderCourseRepository()),
             bookmarkChangeNotifier = BookmarkChangeNotifier(),
         )
 
@@ -579,6 +644,10 @@ class TravelDetailViewModelTest {
         result: AppResult<Course>,
         savedTripRepo: SavedTripRepo = SavedTripRepo(),
         bookmarkChangeNotifier: BookmarkChangeNotifier = BookmarkChangeNotifier(),
+        shareResult: AppResult<SharedCourseLink> = AppResult.Success(
+            SharedCourseLink("share-course-boeun", "https://example.com/course-boeun"),
+        ),
+        shareRepository: CourseResultRepository? = null,
     ): TravelDetailViewModel =
         TravelDetailViewModel(
             getCourseDetail = GetCourseDetailUseCase(
@@ -588,13 +657,26 @@ class TravelDetailViewModelTest {
             summarizePlaceInfo = SummarizePlaceInfoUseCase(),
             saveTripUseCase = SaveTripUseCase(savedTripRepo),
             deleteSavedTripUseCase = DeleteSavedTripUseCase(savedTripRepo),
+            createCourseShareLinkUseCase = CreateCourseShareLinkUseCase(
+                shareRepository ?: CourseResultRepository(result, shareResult),
+            ),
             bookmarkChangeNotifier = bookmarkChangeNotifier,
         )
 
     private class CourseResultRepository(
         private val result: AppResult<Course>,
+        private val shareResult: AppResult<SharedCourseLink> = AppResult.Success(
+            SharedCourseLink("share-course", "https://example.com/course"),
+        ),
     ) : CourseRepository {
+        val sharedCourseIds = mutableListOf<String>()
+
         override suspend fun getCourse(courseId: String): AppResult<Course> = result
+
+        override suspend fun createShareLink(courseId: String): AppResult<SharedCourseLink> {
+            sharedCourseIds += courseId
+            return shareResult
+        }
     }
 
     private class OutOfOrderCourseRepository : CourseRepository {
@@ -610,6 +692,9 @@ class TravelDetailViewModelTest {
 
             else -> AppResult.Success(course().copy(courseId = "second"))
         }
+
+        override suspend fun createShareLink(courseId: String): AppResult<SharedCourseLink> =
+            AppResult.Success(SharedCourseLink("share-$courseId", "https://example.com/$courseId"))
     }
 
     private class SavedTripRepo(

@@ -4,6 +4,7 @@ import com.example.sairo14.data.repository.InMemoryOnboardingAnalysisSessionStor
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.Course
 import com.example.sairo14.domain.model.CourseDay
+import com.example.sairo14.domain.model.SharedCourseLink
 import com.example.sairo14.domain.repository.CourseRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -50,6 +51,9 @@ class GetCourseDetailUseCaseTest {
 
     private class Repository(private val course: Course) : CourseRepository {
         override suspend fun getCourse(courseId: String) = AppResult.Success(course)
+
+        override suspend fun createShareLink(courseId: String) =
+            AppResult.Success(SharedCourseLink("share-$courseId", "https://example.com/$courseId"))
     }
 
     private fun course(id: String) = Course(id, "제주도", listOf(CourseDay(1, emptyList())))

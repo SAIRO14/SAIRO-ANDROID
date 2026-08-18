@@ -44,6 +44,8 @@ stateless 화면은 재사용하기 쉽지만, 호출한 Feature가 재시도 �
 
 [`AndroidNetworkStatusRepository`](../../app/src/main/java/com/example/sairo14/core/network/AndroidNetworkStatusRepository.kt)는 `ConnectivityManager`의 검증된 인터넷 연결 상태를 `Flow`로 제공한다. 이를 위해 매니페스트에 `ACCESS_NETWORK_STATE` 권한이 필요하다. [`NetworkErrorViewModel`](../../app/src/main/java/com/example/sairo14/feature/error/NetworkErrorViewModel.kt)은 이 상태로 오프라인 중 재시도 버튼만 비활성화하고, 연결이 복구되면 다시 활성화한다. 이 값은 실제 서버 요청의 성공을 보장하지 않으므로 일반 요청을 미리 차단하거나 오류 화면을 먼저 표시하지 않는다.
 
+여행 상세의 공유처럼 이미 코스 콘텐츠를 표시한 뒤 실행하는 요청은 전체 오류 화면으로 전환하지 않는다. [`TravelDetailViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailViewModel.kt)은 실패 원인을 `TravelDetailEffect.ShowShareError`로 전달하고, [`TravelDetailScreen.kt`](../../app/src/main/java/com/example/sairo14/feature/traveldetail/TravelDetailScreen.kt)은 기존 지도와 시트를 유지한 채 Snackbar로 안내한다. 사용자는 공유 버튼을 다시 눌러 같은 요청을 재시도한다.
+
 ## 추가 학습 및 대안
 
 오류 화면을 별도 Nav3 목적지로 만들 수도 있다. 하지만 route에는 suspend 요청이나 콜백을 저장할 수 없어 재시도 문맥이 복잡해진다.

@@ -223,7 +223,6 @@ fun SairoNavDisplay(
                     savedTripId = route.savedTripId,
                     onBackClick = navigator::navigateUp,
                     onHomeClick = navigator::popToHome,
-                    onShareClick = {},
                 )
             }
         },

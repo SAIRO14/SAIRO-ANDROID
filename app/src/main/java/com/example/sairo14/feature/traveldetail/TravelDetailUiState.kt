@@ -19,6 +19,7 @@ sealed interface TravelDetailUiState {
         val selectedPlaceId: String? = null,
         val cameraFocusRequestId: Long = 0L,
         val bookmark: BookmarkUiState = BookmarkUiState(),
+        val isShareRequesting: Boolean = false,
     ) : TravelDetailUiState {
         val selectedDay: TravelDetailDayUiModel?
             get() = course.days.firstOrNull { day -> day.dayNumber == selectedDayNumber }

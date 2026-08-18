@@ -34,6 +34,25 @@ class FakeCourseRepositoryTest {
         )
     }
 
+    @Test
+    fun `같은 코스 공유 요청은 같은 링크를 반환한다`() = runTest {
+        val repository = FakeCourseRepository()
+
+        assertEquals(
+            repository.createShareLink("course-boeun"),
+            repository.createShareLink("course-boeun"),
+        )
+    }
+
+    @Test
+    fun `알 수 없는 코스 공유 요청은 찾을 수 없음 오류를 반환한다`() = runTest {
+        val result = FakeCourseRepository().createShareLink("missing-course")
+
+        assertTrue(
+            result is AppResult.Failure && result.error is AppError.ResourceNotFound,
+        )
+    }
+
     private fun <T> AppResult<T>.successValue(): T =
         (this as? AppResult.Success<T>)?.value
             ?: error("성공 결과를 기대했습니다.")

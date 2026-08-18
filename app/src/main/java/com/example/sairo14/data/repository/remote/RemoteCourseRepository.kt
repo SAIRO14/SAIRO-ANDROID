@@ -8,6 +8,7 @@ import com.example.sairo14.data.remote.runRemoteOperation
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.Course
+import com.example.sairo14.domain.model.SharedCourseLink
 import com.example.sairo14.domain.repository.CourseRepository
 import java.io.IOException
 import javax.inject.Inject
@@ -35,6 +36,23 @@ class RemoteCourseRepository @Inject constructor(
             json = json,
         ) {
             api.getCourse(
+                courseId = courseId,
+                deviceId = deviceId,
+            ).toDomain()
+        }
+    }
+
+    override suspend fun createShareLink(courseId: String): AppResult<SharedCourseLink> {
+        val deviceId = when (val result = getDeviceId()) {
+            is AppResult.Success -> result.value
+            is AppResult.Failure -> return result
+        }
+
+        return runRemoteOperation(
+            action = "코스 공유 링크를 만들지 못했습니다.",
+            json = json,
+        ) {
+            api.shareCourse(
                 courseId = courseId,
                 deviceId = deviceId,
             ).toDomain()

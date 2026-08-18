@@ -60,6 +60,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
  * @param regionName 여행 지역 태그에 표시할 문구
  * @param isSaved 현재 여행 저장 여부
  * @param isBookmarkRequesting 저장 또는 해제 요청이 진행 중인지 여부
+ * @param isShareRequesting 공유 링크 요청이 진행 중인지 여부
  * @param onShareClick 공유 아이콘을 눌렀을 때 호출할 동작
  * @param onSaveClick 저장 아이콘을 눌렀을 때 호출할 동작
  * @param expandedTopInset 시트가 완전히 펼쳐졌을 때 화면 위에서 남길 영역
@@ -73,6 +74,7 @@ internal fun TravelDetailSheet(
     regionName: String,
     isSaved: Boolean,
     isBookmarkRequesting: Boolean,
+    isShareRequesting: Boolean,
     onShareClick: () -> Unit,
     onSaveClick: () -> Unit,
     expandedTopInset: Dp,
@@ -154,6 +156,7 @@ internal fun TravelDetailSheet(
                 regionName = regionName,
                 isSaved = isSaved,
                 isBookmarkRequesting = isBookmarkRequesting,
+                isShareRequesting = isShareRequesting,
                 onShareClick = onShareClick,
                 onSaveClick = onSaveClick,
                 modifier = Modifier
@@ -182,6 +185,7 @@ private fun SheetHeader(
     regionName: String,
     isSaved: Boolean,
     isBookmarkRequesting: Boolean,
+    isShareRequesting: Boolean,
     onShareClick: () -> Unit,
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -221,6 +225,7 @@ private fun SheetHeader(
                 modifier = Modifier
                     .size(SheetActionTouchTargetSize)
                     .noRippleClickable(
+                        isEnabled = !isShareRequesting,
                         onClick = onShareClick,
                         role = Role.Button,
                     ),

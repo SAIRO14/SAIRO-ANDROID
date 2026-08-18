@@ -1,5 +1,6 @@
 package com.example.sairo14.feature.traveldetail
 
+import android.content.ActivityNotFoundException
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
@@ -41,6 +45,7 @@ import com.example.sairo14.core.map.SairoKakaoMap
 import com.example.sairo14.core.map.SairoMapCameraTarget
 import com.example.sairo14.core.map.SairoMapMarker
 import com.example.sairo14.core.map.SairoMapViewportPadding
+import com.example.sairo14.core.extension.openTextShareSheet
 import com.example.sairo14.domain.model.isNetworkError
 import com.example.sairo14.feature.error.NetworkErrorRoute
 import java.time.DayOfWeek
@@ -48,15 +53,14 @@ import java.time.DayOfWeek
 /**
  * Route의 코스 ID와 여행 상세 화면의 상태·행동을 연결한다.
  *
- * 코스 조회와 일차·저장 표시 상태는 [TravelDetailViewModel]이 소유하고, 뒤로가기·홈·공유 같은
- * 앱 이동 또는 외부 동작은 호출자가 소유한다.
+ * 코스 조회와 일차·저장·공유 표시 상태는 [TravelDetailViewModel]이 소유하고, 뒤로가기·홈 이동은
+ * 호출자가 소유한다. 공유 화면 실행과 실패 안내는 Route가 [TravelDetailEffect]를 수집해 처리한다.
  * @param courseId 표시할 코스의 안정적인 ID
  * @param onboardingSessionId 온보딩 분석 결과를 보관한 세션 ID. 있으면 해당 세션의 코스를 우선 표시한다
  * @param initialSaved 이전 화면에서 전달한 최신 저장 표시 상태. 없으면 상세 코스 응답을 사용한다
  * @param savedTripId 저장 해제 API에 사용할 저장 항목 ID. 없으면 `null`
  * @param onBackClick 헤더 뒤로가기 동작
  * @param onHomeClick 헤더 홈 이동 동작
- * @param onShareClick 공유 아이콘을 눌렀을 때 호출할 동작
  * @param modifier 화면 컨테이너에 적용할 Modifier
  * @param viewModel 코스 상세와 선택 상태를 소유하는 ViewModel
  */
@@ -68,11 +72,16 @@ fun TravelDetailRoute(
     savedTripId: String?,
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
-    onShareClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TravelDetailViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val shareSnackbarHostState = remember { SnackbarHostState() }
+    val shareNetworkErrorMessage = stringResource(R.string.travel_detail_share_network_error)
+    val shareNotFoundMessage = stringResource(R.string.travel_detail_share_not_found)
+    val shareFailedMessage = stringResource(R.string.travel_detail_share_failed)
+    val shareAppUnavailableMessage = stringResource(R.string.travel_detail_share_app_unavailable)
 
     LaunchedEffect(courseId, onboardingSessionId, initialSaved, savedTripId) {
         viewModel.load(
@@ -83,15 +92,58 @@ fun TravelDetailRoute(
         )
     }
 
+    LaunchedEffect(
+        viewModel,
+        context,
+        shareNetworkErrorMessage,
+        shareNotFoundMessage,
+        shareFailedMessage,
+        shareAppUnavailableMessage,
+    ) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is TravelDetailEffect.OpenShareSheet -> {
+                    try {
+                        context.openTextShareSheet(
+                            title = context.getString(R.string.travel_detail_share_title),
+                            text = context.getString(
+                                R.string.travel_detail_share_text,
+                                effect.regionName,
+                                effect.shareUrl,
+                            ),
+                            chooserTitle = context.getString(
+                                R.string.travel_detail_share_chooser_title,
+                            ),
+                        )
+                    } catch (_: ActivityNotFoundException) {
+                        shareSnackbarHostState.showSnackbar(shareAppUnavailableMessage)
+                    }
+                }
+
+                is TravelDetailEffect.ShowShareError -> {
+                    val message = when (effect.error) {
+                        com.example.sairo14.domain.model.AppError.NetworkUnavailable ->
+                            shareNetworkErrorMessage
+                        com.example.sairo14.domain.model.AppError.ResourceNotFound ->
+                            shareNotFoundMessage
+                        else -> shareFailedMessage
+                    }
+                    shareSnackbarHostState.showSnackbar(message)
+                }
+            }
+        }
+    }
+
     TravelDetailScreen(
         uiState = uiState,
         onBackClick = onBackClick,
         onHomeClick = onHomeClick,
-        onShareClick = onShareClick,
+        onShareClick = viewModel::onShareClick,
         onDayClick = viewModel::selectDay,
         onPlaceClick = viewModel::selectPlace,
         onSaveClick = viewModel::onBookmarkClick,
         onRetryClick = viewModel::retry,
+        shareSnackbarHostState = shareSnackbarHostState,
         modifier = modifier,
     )
 }
@@ -109,6 +161,7 @@ fun TravelDetailRoute(
  * @param onPlaceClick 장소 행을 선택했을 때 호출할 동작
  * @param onSaveClick 저장 아이콘을 눌렀을 때 호출할 동작
  * @param onRetryClick 오류 상태의 재시도 동작
+ * @param shareSnackbarHostState 공유 요청 결과를 안내할 Snackbar 상태. 없으면 표시하지 않는다
  * @param modifier 화면 컨테이너에 적용할 Modifier
  */
 @Composable
@@ -121,6 +174,7 @@ fun TravelDetailScreen(
     onPlaceClick: (String) -> Unit,
     onSaveClick: () -> Unit,
     onRetryClick: () -> Unit,
+    shareSnackbarHostState: SnackbarHostState? = null,
     modifier: Modifier = Modifier,
 ) {
     if (uiState is TravelDetailUiState.Error && uiState.error.isNetworkError()) {
@@ -149,6 +203,7 @@ fun TravelDetailScreen(
             onDayClick = onDayClick,
             onPlaceClick = onPlaceClick,
             onSaveClick = onSaveClick,
+            shareSnackbarHostState = shareSnackbarHostState,
             modifier = screenModifier,
         )
 
@@ -170,6 +225,7 @@ private fun TravelDetailContent(
     onDayClick: (Int) -> Unit,
     onPlaceClick: (String) -> Unit,
     onSaveClick: () -> Unit,
+    shareSnackbarHostState: SnackbarHostState?,
     modifier: Modifier,
 ) {
     val density = LocalDensity.current
@@ -219,6 +275,7 @@ private fun TravelDetailContent(
             regionName = content.course.regionName,
             isSaved = content.bookmark.isSaved,
             isBookmarkRequesting = content.bookmark.isRequesting,
+            isShareRequesting = content.isShareRequesting,
             onShareClick = onShareClick,
             onSaveClick = onSaveClick,
             expandedTopInset = headerHeight,
@@ -278,6 +335,15 @@ private fun TravelDetailContent(
             actionContentDescription = stringResource(R.string.sairo_header_home),
             onActionClick = onHomeClick,
         )
+
+        shareSnackbarHostState?.let { hostState ->
+            SnackbarHost(
+                hostState = hostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(ScreenHorizontalPadding),
+            )
+        }
     }
 }
 

@@ -11,6 +11,7 @@ import com.example.sairo14.domain.model.OperatingHoursSummary
 import com.example.sairo14.domain.model.ParkingSummary
 import com.example.sairo14.domain.model.PlaceInfoSummary
 import com.example.sairo14.domain.usecase.DeleteSavedTripUseCase
+import com.example.sairo14.domain.usecase.CreateCourseShareLinkUseCase
 import com.example.sairo14.domain.usecase.GetCourseDetailUseCase
 import com.example.sairo14.domain.usecase.SaveTripUseCase
 import com.example.sairo14.domain.usecase.SummarizePlaceInfoUseCase
@@ -21,8 +22,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -30,8 +34,8 @@ import kotlinx.coroutines.launch
  * 여행 상세 화면의 코스·일차·저장 표시 상태를 관리한다.
  *
  * 코스 조회 결과는 [TravelDetailUiState]의 UI 모델로 변환하며, 일차·장소 선택에 따라 지도와
- * 타임라인이 같은 장소 목록을 사용하도록 한다. 북마크는 서버 성공 후에만 표시 상태를 변경하며, 공유와
- * 화면 이동은 호출자가 소유한다.
+ * 타임라인이 같은 장소 목록을 사용하도록 한다. 북마크와 공유 요청 상태는 서버 성공 후에만 표시 상태를
+ * 변경하며, 공유 화면 열기와 실패 안내는 [TravelDetailEffect]로 전달한다.
  */
 @HiltViewModel
 class TravelDetailViewModel @Inject constructor(
@@ -39,11 +43,15 @@ class TravelDetailViewModel @Inject constructor(
     private val summarizePlaceInfo: SummarizePlaceInfoUseCase,
     private val saveTripUseCase: SaveTripUseCase,
     private val deleteSavedTripUseCase: DeleteSavedTripUseCase,
+    private val createCourseShareLinkUseCase: CreateCourseShareLinkUseCase,
     private val bookmarkChangeNotifier: BookmarkChangeNotifier,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<TravelDetailUiState>(TravelDetailUiState.Loading)
 
     val uiState: StateFlow<TravelDetailUiState> = _uiState.asStateFlow()
+
+    private val _effect = MutableSharedFlow<TravelDetailEffect>(extraBufferCapacity = 1)
+    val effect: SharedFlow<TravelDetailEffect> = _effect.asSharedFlow()
 
     private var courseId: String? = null
     private var onboardingSessionId: String? = null
@@ -51,6 +59,8 @@ class TravelDetailViewModel @Inject constructor(
     private var initialSavedTripId: String? = null
     private var loadJob: Job? = null
     private var loadRequestId = 0L
+    private var shareJob: Job? = null
+    private var shareRequestGeneration = 0L
 
     /** Route가 전달한 코스와 북마크 초기 상태를 조회하고 최신 요청만 표시한다. */
     fun load(
@@ -75,6 +85,8 @@ class TravelDetailViewModel @Inject constructor(
         this.initialSavedTripId = savedTripId
         val requestId = ++loadRequestId
         loadJob?.cancel()
+        shareJob?.cancel()
+        shareRequestGeneration++
         loadJob = viewModelScope.launch {
             _uiState.value = TravelDetailUiState.Loading
 
@@ -155,6 +167,44 @@ class TravelDetailViewModel @Inject constructor(
         }
     }
 
+    /** 현재 코스의 공유 링크를 요청하고 성공하면 시스템 공유 화면 효과를 전달한다.
+     *
+     * 요청 중에는 추가 클릭을 무시하며, 다른 코스 조회가 시작된 뒤 늦게 도착한 결과는 현재 화면에
+     * 적용하지 않는다. 공유 실패는 상세 콘텐츠를 유지한 채 [TravelDetailEffect.ShowShareError]로 알린다.
+     */
+    fun onShareClick() {
+        val content = _uiState.value as? TravelDetailUiState.Content ?: return
+        if (content.isShareRequesting) return
+
+        val requestedCourseId = content.course.courseId
+        val requestedRegionName = content.course.regionName
+        val generation = ++shareRequestGeneration
+        setShareRequesting(courseId = requestedCourseId, isRequesting = true)
+
+        shareJob = viewModelScope.launch {
+            when (val result = createCourseShareLinkUseCase(requestedCourseId)) {
+                is AppResult.Success -> {
+                    if (!isCurrentShareRequest(requestedCourseId, generation)) return@launch
+
+                    setShareRequesting(courseId = requestedCourseId, isRequesting = false)
+                    _effect.tryEmit(
+                        TravelDetailEffect.OpenShareSheet(
+                            regionName = requestedRegionName,
+                            shareUrl = result.value.shareUrl,
+                        ),
+                    )
+                }
+
+                is AppResult.Failure -> {
+                    if (!isCurrentShareRequest(requestedCourseId, generation)) return@launch
+
+                    setShareRequesting(courseId = requestedCourseId, isRequesting = false)
+                    _effect.tryEmit(TravelDetailEffect.ShowShareError(result.error))
+                }
+            }
+        }
+    }
+
     private fun saveTrip(courseId: String) {
         setBookmarkRequesting(isRequesting = true)
         viewModelScope.launch {
@@ -210,6 +260,18 @@ class TravelDetailViewModel @Inject constructor(
     private fun setBookmarkRequesting(isRequesting: Boolean) {
         updateBookmark { bookmark -> bookmark.copy(isRequesting = isRequesting) }
     }
+
+    private fun setShareRequesting(courseId: String, isRequesting: Boolean) {
+        _uiState.update { state ->
+            val content = state as? TravelDetailUiState.Content ?: return@update state
+            if (content.course.courseId != courseId) return@update content
+            content.copy(isShareRequesting = isRequesting)
+        }
+    }
+
+    private fun isCurrentShareRequest(courseId: String, generation: Long): Boolean =
+        generation == shareRequestGeneration &&
+            (_uiState.value as? TravelDetailUiState.Content)?.course?.courseId == courseId
 
     private inline fun updateBookmark(
         transform: (BookmarkUiState) -> BookmarkUiState,

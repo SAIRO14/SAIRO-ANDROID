@@ -2,6 +2,7 @@ package com.example.sairo14.data.remote
 
 import com.example.sairo14.domain.model.AppError
 import java.io.IOException
+import java.net.SocketTimeoutException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -55,6 +56,14 @@ class RemoteErrorMapperTest {
         assertEquals(
             AppError.NetworkUnavailable,
             IOException("offline").toRemoteAppError(json),
+        )
+    }
+
+    @Test
+    fun `maps socket timeout to NetworkUnavailable`() {
+        assertEquals(
+            AppError.NetworkUnavailable,
+            SocketTimeoutException("timed out").toRemoteAppError(json),
         )
     }
 

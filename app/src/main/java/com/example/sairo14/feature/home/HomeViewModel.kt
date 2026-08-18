@@ -91,7 +91,7 @@ class HomeViewModel @Inject constructor(
 
                 is AppResult.Failure -> {
                     if (requestId == homeContentRequestId && !keepsExistingContent) {
-                        _uiState.value = HomeUiState.Error
+                        _uiState.value = HomeUiState.Error(result.error)
                     }
                 }
             }

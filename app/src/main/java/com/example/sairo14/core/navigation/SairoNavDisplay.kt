@@ -97,8 +97,14 @@ fun SairoNavDisplay(
                     onFolderClick = {
                         navigator.navigateSingleTop(SavedTripsRoute)
                     },
-                    onSavedTripClick = { courseId ->
-                        navigator.navigateSingleTop(TravelDetailRoute(courseId))
+                    onSavedTripClick = { courseId, savedTripId ->
+                        navigator.navigateSingleTop(
+                            TravelDetailRoute(
+                                courseId = courseId,
+                                initialSaved = true,
+                                savedTripId = savedTripId,
+                            ),
+                        )
                     },
                 )
             }

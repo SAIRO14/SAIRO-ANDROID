@@ -66,7 +66,7 @@ import kotlinx.coroutines.launch
  * @param viewModel 홈 화면의 중앙 이미지 상태를 소유하는 ViewModel
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
- * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 함께 호출할 동작
+ * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 저장 항목 ID로 호출할 동작
  */
 @Composable
 fun HomeRoute(
@@ -74,7 +74,7 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
-    onSavedTripClick: (String) -> Unit = {},
+    onSavedTripClick: (courseId: String, savedTripId: String) -> Unit = { _, _ -> },
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
 
@@ -97,7 +97,7 @@ fun HomeRoute(
  * @param uiState 화면에 표시할 로딩·콘텐츠·오류 상태
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
- * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 함께 호출할 동작
+ * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 저장 항목 ID로 호출할 동작
  * @param onRetryClick 오류 화면의 재시도 버튼을 눌렀을 때 호출할 동작
  */
 @Composable
@@ -106,7 +106,7 @@ fun HomeScreen(
     uiState: HomeUiState = HomeUiState.Content(),
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
-    onSavedTripClick: (String) -> Unit = {},
+    onSavedTripClick: (courseId: String, savedTripId: String) -> Unit = { _, _ -> },
     onRetryClick: () -> Unit = {},
 ) {
     when (uiState) {
@@ -137,7 +137,7 @@ private fun HomeContentScreen(
     uiState: HomeUiState.Content,
     onFindTripClick: () -> Unit,
     onFolderClick: () -> Unit,
-    onSavedTripClick: (String) -> Unit,
+    onSavedTripClick: (courseId: String, savedTripId: String) -> Unit,
 ) {
     HomeContainer(
         modifier = modifier,
@@ -411,7 +411,7 @@ private fun HomePannableCanvas(
 private fun HomeSavedTripsLayer(
     savedTrips: List<HomeSavedTripUiModel>,
     backdropState: SairoBackdropState,
-    onSavedTripClick: (String) -> Unit,
+    onSavedTripClick: (courseId: String, savedTripId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -425,7 +425,9 @@ private fun HomeSavedTripsLayer(
             HomeSavedTripCard(
                 savedTrip = savedTrip,
                 painter = painter,
-                onClick = { onSavedTripClick(savedTrip.courseId) },
+                onClick = {
+                    onSavedTripClick(savedTrip.courseId, savedTrip.savedTripId)
+                },
                 modifier = Modifier
                     .align(slot.alignment)
                     .offset(x = slot.offsetX, y = slot.offsetY),

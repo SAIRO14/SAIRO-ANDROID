@@ -37,55 +37,6 @@ private fun CourseCardDto.toOnboardingRecommendation(summary: String): Onboardin
         isSaved = saved,
     )
 
-private fun CourseCardDto.toCourse(): Course = Course(
-    courseId = courseId,
-    regionName = regionName,
-    days = listOf(
-        CourseDay(dayNumber = 1, places = day1.map(SpotSummaryDto::toCoursePlace)),
-        CourseDay(dayNumber = 2, places = day2.map(SpotSummaryDto::toCoursePlace)),
-    ),
-    isSaved = saved,
-)
-
-private fun SpotSummaryDto.toCoursePlace(): CoursePlace {
-    val normalizedOperatingHours = operatingHours.normalizePlaceInfoText()
-    val normalizedClosedDays = closedDays.normalizePlaceInfoText()
-    val normalizedParking = parking.normalizePlaceInfoText()
-    val normalizedContact = contact.normalizePlaceInfoText()
-
-    return CoursePlace(
-        placeId = spotId,
-        name = name,
-        imageUrl = imageUrl.trimToNull(),
-        tags = listOfNotNull(
-            normalizedOperatingHours,
-            normalizedClosedDays,
-            normalizedParking,
-            normalizedContact,
-        ).distinct(),
-        coordinate = lat?.let { latitude ->
-            lng?.let { longitude -> MapCoordinate(latitude = latitude, longitude = longitude) }
-        },
-        operatingHours = normalizedOperatingHours,
-        closedDays = normalizedClosedDays,
-        parking = normalizedParking,
-        contact = normalizedContact,
-    )
-}
-
-private fun String?.trimToNull(): String? = this?.trim()?.takeIf(String::isNotEmpty)
-
-/** 장소 정보 원문의 줄바꿈 표기와 줄 단위 공백을 정규화한다. */
-private fun String?.normalizePlaceInfoText(): String? = this
-    ?.replace(Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE), "\n")
-    ?.replace("\r\n", "\n")
-    ?.replace('\r', '\n')
-    ?.lineSequence()
-    ?.map(String::trim)
-    ?.filter(String::isNotEmpty)
-    ?.joinToString("\n")
-    ?.takeIf(String::isNotEmpty)
-
 private fun List<String>.normalizedValues(): List<String> =
     asSequence()
         .map(String::trim)

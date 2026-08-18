@@ -29,24 +29,31 @@ internal fun CourseCardDto.toCourse(): Course = toCourse(
     day2 = day2,
 )
 
-internal fun SpotSummaryDto.toCoursePlace(): CoursePlace = CoursePlace(
-    placeId = spotId,
-    name = name,
-    imageUrl = imageUrl.trimToNull(),
-    tags = listOfNotNull(
-        operatingHours.trimToNull(),
-        closedDays.trimToNull(),
-        parking.trimToNull(),
-        contact.trimToNull(),
-    ).distinct(),
-    coordinate = lat?.let { latitude ->
-        lng?.let { longitude -> MapCoordinate(latitude = latitude, longitude = longitude) }
-    },
-    operatingHours = operatingHours.trimToNull(),
-    closedDays = closedDays.trimToNull(),
-    parking = parking.trimToNull(),
-    contact = contact.trimToNull(),
-)
+internal fun SpotSummaryDto.toCoursePlace(): CoursePlace {
+    val normalizedOperatingHours = operatingHours.normalizePlaceInfoText()
+    val normalizedClosedDays = closedDays.normalizePlaceInfoText()
+    val normalizedParking = parking.normalizePlaceInfoText()
+    val normalizedContact = contact.normalizePlaceInfoText()
+
+    return CoursePlace(
+        placeId = spotId,
+        name = name,
+        imageUrl = imageUrl.trimToNull(),
+        tags = listOfNotNull(
+            normalizedOperatingHours,
+            normalizedClosedDays,
+            normalizedParking,
+            normalizedContact,
+        ).distinct(),
+        coordinate = lat?.let { latitude ->
+            lng?.let { longitude -> MapCoordinate(latitude = latitude, longitude = longitude) }
+        },
+        operatingHours = normalizedOperatingHours,
+        closedDays = normalizedClosedDays,
+        parking = normalizedParking,
+        contact = normalizedContact,
+    )
+}
 
 private fun toCourse(
     courseId: String,
@@ -65,3 +72,13 @@ private fun toCourse(
 )
 
 internal fun String?.trimToNull(): String? = this?.trim()?.takeIf(String::isNotEmpty)
+
+private fun String?.normalizePlaceInfoText(): String? = this
+    ?.replace(Regex("""<br\s*/?>""", RegexOption.IGNORE_CASE), "\n")
+    ?.replace("\r\n", "\n")
+    ?.replace('\r', '\n')
+    ?.lineSequence()
+    ?.map(String::trim)
+    ?.filter(String::isNotEmpty)
+    ?.joinToString("\n")
+    ?.takeIf(String::isNotEmpty)

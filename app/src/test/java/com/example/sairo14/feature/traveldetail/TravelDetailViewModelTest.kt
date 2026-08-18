@@ -216,7 +216,12 @@ class TravelDetailViewModelTest {
         assertNull(place?.latitude)
         assertNull(place?.longitude)
         assertEquals(
-            listOf("09:00~18:00", "월요일", "주차 불가능", "000-0000-0000"),
+            listOf(
+                TravelDetailPlaceTagUiModel.Text("09:00~18:00"),
+                TravelDetailPlaceTagUiModel.WeeklyClosed(java.time.DayOfWeek.MONDAY),
+                TravelDetailPlaceTagUiModel.ParkingUnavailable,
+                TravelDetailPlaceTagUiModel.Text("000-0000-0000"),
+            ),
             place?.tags,
         )
     }

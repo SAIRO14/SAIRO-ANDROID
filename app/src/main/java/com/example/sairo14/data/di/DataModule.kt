@@ -1,11 +1,19 @@
 package com.example.sairo14.data.di
 
+import com.example.sairo14.data.repository.DefaultHomeRepository
 import com.example.sairo14.data.repository.DefaultOnboardingRepository
-import com.example.sairo14.data.repository.FakeHomeRepository
-import com.example.sairo14.data.repository.FakePhotoSelectionRepository
+import com.example.sairo14.data.repository.InMemoryOnboardingAnalysisSessionStore
+import com.example.sairo14.data.repository.remote.RemoteCourseRepository
+import com.example.sairo14.data.repository.remote.RemoteOnboardingRecommendationRepository
+import com.example.sairo14.data.repository.remote.RemotePhotoSelectionRepository
+import com.example.sairo14.data.repository.remote.RemoteSavedTripRepository
+import com.example.sairo14.domain.repository.CourseRepository
 import com.example.sairo14.domain.repository.HomeRepository
+import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
 import com.example.sairo14.domain.repository.OnboardingRepository
+import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import com.example.sairo14.domain.repository.PhotoSelectionRepository
+import com.example.sairo14.domain.repository.SavedTripRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -26,12 +34,36 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindHomeRepository(
-        repository: FakeHomeRepository,
+        repository: DefaultHomeRepository,
     ): HomeRepository
 
     @Binds
     @Singleton
+    abstract fun bindCourseRepository(
+        repository: RemoteCourseRepository,
+    ): CourseRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSavedTripRepository(
+        repository: RemoteSavedTripRepository,
+    ): SavedTripRepository
+
+    @Binds
+    @Singleton
     abstract fun bindPhotoSelectionRepository(
-        repository: FakePhotoSelectionRepository,
+        repository: RemotePhotoSelectionRepository,
     ): PhotoSelectionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOnboardingRecommendationRepository(
+        repository: RemoteOnboardingRecommendationRepository,
+    ): OnboardingRecommendationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOnboardingAnalysisSessionStore(
+        store: InMemoryOnboardingAnalysisSessionStore,
+    ): OnboardingAnalysisSessionStore
 }

@@ -2,7 +2,6 @@ package com.example.sairo14.core.designsystem.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +20,7 @@ import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
+import com.example.sairo14.core.extension.noRippleClickable
 import com.example.sairo14.core.extension.sairoDropShadow
 
 /**
@@ -55,9 +55,7 @@ fun SairoChip(
             )
             .background(backgroundColor, shape)
             .border(width = 1.dp, color = colors.borderDefault, shape = shape)
-            .clickable(
-                interactionSource = null,
-                indication = null,
+            .noRippleClickable(
                 role = Role.RadioButton,
                 onClick = onClick,
             )

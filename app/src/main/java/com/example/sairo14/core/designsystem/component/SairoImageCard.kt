@@ -3,8 +3,8 @@ package com.example.sairo14.core.designsystem.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
@@ -37,9 +37,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpSize
+import androidx.annotation.DrawableRes
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.core.extension.noRippleClickable
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
 import com.example.sairo14.core.extension.sairoDropShadow
 import kotlin.math.abs
@@ -66,6 +68,7 @@ enum class SairoImageCardSize {
  * @param cardWidth 카드의 실제 가로 길이. `null`이면 [size]의 기본 가로 길이를 사용하며,
  * 높이는 해당 규격의 이미지 비율로 계산한다.
  * @param contentDescription 카드 이미지의 접근성 설명
+ * @param showShadow 카드 뒤에 Figma glow 그림자를 표시할지 여부. 선택 카드의 기본값은 `true`다.
  * @param enabled `false`이면 클릭 이벤트를 전달하지 않는지 여부
  * @param onClick 카드를 클릭했을 때 호출할 콜백. `null`이면 클릭 기능을 적용하지 않는다.
  */
@@ -77,8 +80,83 @@ fun SairoImageCard(
     size: SairoImageCardSize = SairoImageCardSize.Large,
     cardWidth: Dp? = null,
     contentDescription: String? = null,
+    showShadow: Boolean = selected,
     enabled: Boolean = true,
     onClick: (() -> Unit)? = null,
+) = SairoImageCardLayout(
+    selected = selected,
+    modifier = modifier,
+    size = size,
+    cardWidth = cardWidth,
+    showShadow = showShadow,
+    enabled = enabled,
+    onClick = onClick,
+) {
+    if (painter != null) {
+        Image(
+            painter = painter,
+            contentDescription = contentDescription,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
+    }
+}
+
+/**
+ * 원격 이미지 기반 콘텐츠 카드와 선택 상태를 표시한다.
+ *
+ * 이미지 요청과 실패 처리는 [SairoRemoteImage]가 담당한다. 카드의 실제 너비와 배치는 호출자가
+ * [cardWidth] 또는 [modifier]로 소유하므로, 이 컴포넌트는 화면별 크기를 추가로 정의하지 않는다.
+ * @param imageUrl 카드에 표시할 원격 이미지 주소
+ * @param selected 현재 카드의 선택 여부
+ * @param modifier 카드에 적용할 Modifier
+ * @param size Figma의 Large 또는 Medium 크기 규격
+ * @param cardWidth 카드의 실제 가로 길이. `null`이면 [size]의 기본 가로 길이를 사용한다.
+ * @param contentDescription 카드 이미지의 접근성 설명
+ * @param fallbackRes URL이 없거나 이미지 요청에 실패했을 때 표시할 로컬 리소스
+ * @param showShadow 카드 뒤에 Figma glow 그림자를 표시할지 여부. 선택 카드의 기본값은 `true`다.
+ * @param enabled `false`이면 클릭 이벤트를 전달하지 않는지 여부
+ * @param onClick 카드를 클릭했을 때 호출할 콜백. `null`이면 클릭 기능을 적용하지 않는다.
+ */
+@Composable
+fun SairoImageCard(
+    imageUrl: String?,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    size: SairoImageCardSize = SairoImageCardSize.Large,
+    cardWidth: Dp? = null,
+    contentDescription: String? = null,
+    @DrawableRes fallbackRes: Int = R.drawable.img_dummy_view,
+    showShadow: Boolean = selected,
+    enabled: Boolean = true,
+    onClick: (() -> Unit)? = null,
+) = SairoImageCardLayout(
+    selected = selected,
+    modifier = modifier,
+    size = size,
+    cardWidth = cardWidth,
+    showShadow = showShadow,
+    enabled = enabled,
+    onClick = onClick,
+) {
+    SairoRemoteImage(
+        imageUrl = imageUrl,
+        contentDescription = contentDescription,
+        fallbackRes = fallbackRes,
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+@Composable
+private fun SairoImageCardLayout(
+    selected: Boolean,
+    modifier: Modifier,
+    size: SairoImageCardSize,
+    cardWidth: Dp?,
+    showShadow: Boolean,
+    enabled: Boolean,
+    onClick: (() -> Unit)?,
+    imageContent: @Composable BoxScope.() -> Unit,
 ) {
     val specification = size.specification
     val resolvedWidth = cardWidth ?: specification.defaultWidth
@@ -102,7 +180,7 @@ fun SairoImageCard(
             .width(resolvedWidth)
             .aspectRatio(specification.aspectRatio)
             .then(
-                if (selected) {
+                if (showShadow) {
                     Modifier.sairoDropShadow(
                         shape = shape,
                         shadowStyle = SairoShadowStyles.glowDefault,
@@ -127,10 +205,8 @@ fun SairoImageCard(
             .semantics { this.selected = selected }
             .then(
                 if (onClick != null) {
-                    Modifier.clickable(
-                        enabled = enabled,
-                        interactionSource = null,
-                        indication = null,
+                    Modifier.noRippleClickable(
+                        isEnabled = enabled,
                         role = Role.Button,
                         onClick = onClick,
                     )
@@ -152,14 +228,7 @@ fun SairoImageCard(
                     },
                 ),
         ) {
-            if (painter != null) {
-                Image(
-                    painter = painter,
-                    contentDescription = contentDescription,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
+            imageContent()
 
             if (selected) {
                 Box(

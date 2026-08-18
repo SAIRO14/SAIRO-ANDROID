@@ -2,9 +2,6 @@ package com.example.sairo14.core.designsystem.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import com.example.sairo14.R
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.core.extension.noRippleClickable
 
 /** 주요 CTA 버튼에 적용할 Figma 크기 규격이다. */
 enum class SairoButtonSize {
@@ -47,8 +44,8 @@ enum class SairoButtonStyle {
 /**
  * 주요 CTA의 문구와 상호작용 상태를 Figma 규격으로 표시한다.
  *
- * 눌림 상태는 실제 터치 상호작용에서 내부적으로 계산하고, 비활성 상태와 클릭 동작은 호출자가
- * [enabled], [onClick]으로 관리한다. 전체 너비 버튼이 필요하면 호출자가 [modifier]에
+ * 비활성 상태와 클릭 동작은 호출자가 [enabled], [onClick]으로 관리한다. 누름 ripple이나 별도
+ * 시각 효과는 표시하지 않는다. 전체 너비 버튼이 필요하면 호출자가 [modifier]에
  * [Modifier.fillMaxWidth]를 적용한다.
  *
  * @param text 버튼에 표시할 문구
@@ -67,18 +64,13 @@ fun SairoButton(
     style: SairoButtonStyle = SairoButtonStyle.Primary,
     enabled: Boolean = true,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed = interactionSource.collectIsPressedAsState().value
-
     SairoButtonContent(
         text = text,
         onClick = onClick,
-        interactionSource = interactionSource,
         modifier = modifier,
         size = size,
         style = style,
         enabled = enabled,
-        pressed = pressed,
     )
 }
 
@@ -86,12 +78,10 @@ fun SairoButton(
 private fun SairoButtonContent(
     text: String,
     onClick: (() -> Unit)?,
-    interactionSource: MutableInteractionSource?,
     modifier: Modifier,
     size: SairoButtonSize,
     style: SairoButtonStyle,
     enabled: Boolean,
-    pressed: Boolean,
 ) {
     val specification = size.specification
     val colors = SairoTheme.colors
@@ -99,9 +89,7 @@ private fun SairoButtonContent(
 
     val backgroundColor = when {
         !enabled -> colors.actionDisabled
-        outline && pressed -> colors.actionOutlineBackgroundPressed
         outline -> colors.actionOutlineBackground
-        pressed -> colors.actionPressed
         else -> colors.actionDefault
     }
     val contentColor = when {
@@ -129,10 +117,9 @@ private fun SairoButtonContent(
                 },
             )
             .then(
-                if (onClick != null && interactionSource != null) {
-                    Modifier.clickable(
-                        enabled = enabled,
-                        interactionSource = interactionSource,
+                if (onClick != null) {
+                    Modifier.noRippleClickable(
+                        isEnabled = enabled,
                         role = Role.Button,
                         onClick = onClick,
                     )
@@ -203,12 +190,6 @@ private fun SairoButtonVariantsPreview(size: SairoButtonSize) {
             size = size,
         )
         SairoButtonPreviewRow(
-            label = stringResource(R.string.sairo_button_preview_pressed),
-            buttonLabel = buttonLabel,
-            size = size,
-            pressed = true,
-        )
-        SairoButtonPreviewRow(
             label = stringResource(R.string.sairo_button_preview_disabled),
             buttonLabel = buttonLabel,
             size = size,
@@ -232,7 +213,6 @@ private fun SairoButtonPreviewRow(
     label: String,
     buttonLabel: String,
     size: SairoButtonSize,
-    pressed: Boolean = false,
     enabled: Boolean = true,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -245,22 +225,18 @@ private fun SairoButtonPreviewRow(
             SairoButtonContent(
                 text = buttonLabel,
                 onClick = null,
-                interactionSource = null,
                 modifier = Modifier.weight(1f),
                 size = size,
                 style = SairoButtonStyle.Primary,
                 enabled = enabled,
-                pressed = pressed,
             )
             SairoButtonContent(
                 text = buttonLabel,
                 onClick = null,
-                interactionSource = null,
                 modifier = Modifier.weight(1f),
                 size = size,
                 style = SairoButtonStyle.Outline,
                 enabled = enabled,
-                pressed = pressed,
             )
         }
     }

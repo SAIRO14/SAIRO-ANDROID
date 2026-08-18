@@ -44,7 +44,7 @@ flowchart LR
 
 DataStore와 Retrofit의 suspend API는 main-safe하므로 시작 판단에 `Dispatchers.IO`를 직접 지정하지 않는다. 대량 변환이나 직접적인 파일 I/O처럼 CPU 또는 blocking 작업이 추가될 때만 Dispatcher를 주입한다.
 
-`hasCompletedOnboarding`은 인트로 CTA가 아니라 전체 온보딩의 최종 완료 시점에만 저장해야 한다. 인트로에서 홈으로 돌아간 사용자는 다음 앱 실행에서 다시 인트로를 보게 된다.
+`hasCompletedOnboarding`은 인트로 CTA가 아니라 전체 온보딩의 최종 완료 시점에만 저장해야 한다. 인트로에서 홈으로 돌아간 사용자는 다음 앱 실행에서 다시 인트로를 보게 된다. 추천 결과를 여러 번 빠르게 열 때는 DataStore가 `onboarding_completion_token`을 증가시키고, 최신 토큰과 일치하는 요청만 완료 여부를 변경한다. 이 토큰은 추천 결과 자체가 아니라 작은 순서 제어 값이므로 완료 상태와 같은 Preferences DataStore에 둔다.
 
 ## 추가 학습 및 대안
 

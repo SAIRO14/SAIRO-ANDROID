@@ -5,6 +5,7 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -25,7 +26,7 @@ private val Context.appPreferencesDataStore by preferencesDataStore(
 )
 
 /**
- * 온보딩 완료 여부를 저장하고 손상 시 기본 상태로 복구한다.
+ * 온보딩 완료 여부를 저장·해제하고 손상 시 기본 상태로 복구한다.
  *
  * 이 DataStore는 온보딩 상태만 소유한다. 익명 사용자 식별자는 파일 손상 범위를 분리하기 위해
  * [AnonymousIdentityDataStore]에서 별도로 관리한다.
@@ -40,10 +41,28 @@ class AppPreferencesDataStore @Inject constructor(
         .map { preferences -> preferences[HAS_COMPLETED_ONBOARDING] ?: false }
         .distinctUntilChanged()
 
-    suspend fun markOnboardingCompleted() {
+    suspend fun createOnboardingCompletionRequest(): Long {
+        var nextToken = 0L
         dataStore.edit { preferences ->
-            preferences[HAS_COMPLETED_ONBOARDING] = true
+            val currentToken = preferences[ONBOARDING_COMPLETION_TOKEN] ?: 0L
+            nextToken = currentToken + 1L
+            preferences[ONBOARDING_COMPLETION_TOKEN] = nextToken
         }
+        return nextToken
+    }
+
+    suspend fun updateOnboardingCompletionIfCurrent(
+        token: Long,
+        completed: Boolean,
+    ): Boolean {
+        var updated = false
+        dataStore.edit { preferences ->
+            if (preferences[ONBOARDING_COMPLETION_TOKEN] == token) {
+                preferences[HAS_COMPLETED_ONBOARDING] = completed
+                updated = true
+            }
+        }
+        return updated
     }
 
     /**
@@ -63,6 +82,7 @@ class AppPreferencesDataStore @Inject constructor(
 
     private companion object {
         val HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
+        val ONBOARDING_COMPLETION_TOKEN = longPreferencesKey("onboarding_completion_token")
         val ANONYMOUS_USER_ID = stringPreferencesKey("anonymous_user_id")
     }
 }

@@ -2,8 +2,8 @@ package com.example.sairo14.core.designsystem.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -28,10 +28,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.sairo14.R
+import com.example.sairo14.core.extension.noRippleClickable
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
 import com.example.sairo14.core.designsystem.token.SairoShadowStyles
@@ -39,8 +41,6 @@ import com.example.sairo14.core.extension.sairoDropShadow
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
-
-//TODO: 폴더 크기 가변에 따른 태그 및 텍스트, 북마커 위치 변경에 대한 고려가 필요 -> 해당 페이지 구현 시에 실질적으로 구현하며 필요한 부분 수정 필요 / 현재 떠오르는 방법은 폴더 크기에 따라 박스로 구역 나누기?
 
 /**
  * 저장한 여행지의 지역·분위기·장소를 폴더 형태로 표시하는 카드를 그린다.
@@ -57,7 +57,10 @@ import kotlin.math.sin
  * @param onBookmarkClick 북마크 버튼을 클릭했을 때 호출할 동작
  * @param modifier 카드에 적용할 Modifier
  * @param imageContentDescription 여행지 이미지의 접근성 설명
- * @param enabled `false`이면 카드와 북마크 클릭을 전달하지 않는지 여부
+ * @param enabled `false`이면 카드와 북마크 클릭을 모두 전달하지 않는지 여부
+ * @param cardEnabled 카드 본문 클릭을 전달할지 여부. 상세 화면이 아직 없는 목록에서 카드의 시각 상태는
+ * 유지하면서 클릭만 막을 때 사용한다.
+ * @param bookmarkEnabled 북마크 클릭을 전달할지 여부
  */
 @Composable
 fun SairoPlaceFolderCard(
@@ -71,6 +74,8 @@ fun SairoPlaceFolderCard(
     modifier: Modifier = Modifier,
     imageContentDescription: String? = null,
     enabled: Boolean = true,
+    cardEnabled: Boolean = enabled,
+    bookmarkEnabled: Boolean = enabled,
 ) {
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
@@ -82,10 +87,9 @@ fun SairoPlaceFolderCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(
-                    enabled = enabled,
-                    interactionSource = null,
-                    indication = null,
+                .aspectRatio(FolderCardAspectRatio)
+                .noRippleClickable(
+                    isEnabled = cardEnabled,
                     role = Role.Button,
                     onClick = onClick,
                 ),
@@ -103,7 +107,7 @@ fun SairoPlaceFolderCard(
                 description = description,
                 placeNames = placeNames,
                 saved = saved,
-                enabled = enabled,
+                enabled = bookmarkEnabled,
                 onBookmarkClick = onBookmarkClick,
                 scaleFactor = scaleFactor,
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -192,6 +196,7 @@ private fun PlaceFolderImage(
 }
 
 private val FolderBaseWidth = 300.dp
+private const val FolderCardAspectRatio = 300f / 286f
 private const val ImageWidthRatio = 260f / 300f
 private const val ImageBottomPaddingRatio = 26f / 300f
 private const val BackImageRotation = 1f
@@ -242,32 +247,49 @@ private fun FolderInformation(
                         text = description,
                         color = SairoTheme.colors.textPrimary,
                         style = SairoTextStyles.headRegular16,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 SairoBookmarker(
                     saved = saved,
                     enabled = enabled,
                     onClick = onBookmarkClick,
-                    size = 24.dp * scaleFactor,
+                    size = 24.dp,
+                    modifier = Modifier
+                        .offset(
+                            y = BookmarkVerticalAdjustment * scaleFactor,
+                        ),
                 )
             }
         }
         Row(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 12.dp * scaleFactor, bottom = 16.dp * scaleFactor),
+                .fillMaxWidth()
+                .padding(
+                    start = 12.dp * scaleFactor,
+                    end = 12.dp * scaleFactor,
+                    bottom = 16.dp * scaleFactor,
+                ),
             horizontalArrangement = Arrangement.spacedBy(8.dp * scaleFactor),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            placeNames.forEach { placeName ->
-                PlaceLocation(name = placeName, scaleFactor = scaleFactor)
+            placeNames.take(MaxPlaceCount).forEach { placeName ->
+                PlaceLocation(
+                    name = placeName,
+                    scaleFactor = scaleFactor,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun PlaceLocation(name: String, scaleFactor: Float) {
+private fun PlaceLocation(
+    name: String,
+    scaleFactor: Float,
+) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(2.dp * scaleFactor),
         verticalAlignment = Alignment.CenterVertically,
@@ -282,9 +304,14 @@ private fun PlaceLocation(name: String, scaleFactor: Float) {
             text = name,
             color = SairoTheme.colors.textPrimary,
             style = SairoTextStyles.bodyLight14,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
+
+private const val MaxPlaceCount = 2
+private val BookmarkVerticalAdjustment = 4.dp
 
 @Preview(name = "Sairo Place Folder Card", showBackground = true, widthDp = 360, heightDp = 340)
 @Composable

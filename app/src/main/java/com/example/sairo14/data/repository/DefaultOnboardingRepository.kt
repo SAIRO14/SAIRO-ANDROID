@@ -4,6 +4,7 @@ import androidx.datastore.core.CorruptionException
 import com.example.sairo14.core.datastore.AppPreferencesDataStore
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
+import com.example.sairo14.domain.model.OnboardingCompletionToken
 import com.example.sairo14.domain.repository.OnboardingRepository
 import java.io.IOException
 import javax.inject.Inject
@@ -25,11 +26,23 @@ class DefaultOnboardingRepository @Inject constructor(
             preferencesDataStore.hasCompletedOnboarding.first()
         }
 
-    override suspend fun markOnboardingCompleted(): AppResult<Unit> =
+    override suspend fun createCompletionRequest(): AppResult<OnboardingCompletionToken> =
         runDataStoreOperation(
-            action = "온보딩 완료 상태를 저장하지 못했습니다.",
+            action = "온보딩 완료 상태 요청을 등록하지 못했습니다.",
         ) {
-            preferencesDataStore.markOnboardingCompleted()
+            OnboardingCompletionToken(
+                preferencesDataStore.createOnboardingCompletionRequest(),
+            )
+        }
+
+    override suspend fun updateCompletionIfCurrent(
+        token: OnboardingCompletionToken,
+        completed: Boolean,
+    ): AppResult<Boolean> =
+        runDataStoreOperation(
+            action = "온보딩 완료 상태를 갱신하지 못했습니다.",
+        ) {
+            preferencesDataStore.updateOnboardingCompletionIfCurrent(token.value, completed)
         }
 
     private suspend fun <T> runDataStoreOperation(

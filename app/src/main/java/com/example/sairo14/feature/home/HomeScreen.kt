@@ -146,11 +146,13 @@ private fun HomeContentScreen(
         onFolderClick = onFolderClick,
     ) { backdropState, headerHeight ->
         val backImagePainter = rememberSairoBackdropImagePainter(
-            model = uiState.discoveryImages.backImageUrl ?: R.drawable.img_dummy_view,
+            model = uiState.discoveryImages.backImageUrl
+                ?: uiState.discoveryImages.backFallbackRes,
             backdropState = backdropState,
         )
         val frontImagePainter = rememberSairoBackdropImagePainter(
-            model = uiState.discoveryImages.frontImageUrl ?: R.drawable.img_dummy_view,
+            model = uiState.discoveryImages.frontImageUrl
+                ?: uiState.discoveryImages.frontFallbackRes,
             backdropState = backdropState,
         )
 

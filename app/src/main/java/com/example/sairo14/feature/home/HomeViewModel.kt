@@ -2,6 +2,8 @@ package com.example.sairo14.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.sairo14.core.dummyimage.DummyImagePair
+import com.example.sairo14.core.dummyimage.SeasonalDummyImageProvider
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.HomeContent
 import com.example.sairo14.domain.usecase.GetHomeContentUseCase
@@ -26,6 +28,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel @Inject constructor(
     private val getHomeContent: GetHomeContentUseCase,
     private val bookmarkChangeNotifier: BookmarkChangeNotifier,
+    private val seasonalDummyImageProvider: SeasonalDummyImageProvider,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     private var homeContentJob: Job? = null
@@ -63,7 +66,9 @@ class HomeViewModel @Inject constructor(
             when (val result = getHomeContent()) {
                 is AppResult.Success -> {
                     if (requestId == homeContentRequestId) {
-                        _uiState.value = result.value.toUiModel()
+                        _uiState.value = result.value.toUiModel(
+                            fallbackImages = seasonalDummyImageProvider.imagesForToday().homePair,
+                        )
                     }
                 }
 
@@ -77,11 +82,13 @@ class HomeViewModel @Inject constructor(
     }
 }
 
-private fun HomeContent.toUiModel(): HomeUiState.Content =
+private fun HomeContent.toUiModel(fallbackImages: DummyImagePair): HomeUiState.Content =
     HomeUiState.Content(
         discoveryImages = HomeDiscoveryImagesUiModel(
             backImageUrl = discoveryImages.backImageUrl,
             frontImageUrl = discoveryImages.frontImageUrl,
+            backFallbackRes = fallbackImages.backImageRes,
+            frontFallbackRes = fallbackImages.frontImageRes,
         ),
         savedTrips = savedTrips.map { savedTrip ->
             HomeSavedTripUiModel(

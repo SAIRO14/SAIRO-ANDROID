@@ -118,6 +118,8 @@
     <string name="shared_course_place_image">%1$s 이미지</string>
     <string name="shared_course_loading">공유 코스를 불러오고 있어요.</string>
     <string name="shared_course_load_error">공유 코스를 불러오지 못했어요.</string>
+    <string name="shared_course_not_found">공유 링크가 만료되었거나 존재하지 않아요.</string>
     <string name="shared_course_retry">다시 시도</string>
+    <string name="shared_course_go_home">홈으로 이동</string>
     <string name="shared_course_empty_day">표시할 여행 장소가 없어요.</string>
 </resources>

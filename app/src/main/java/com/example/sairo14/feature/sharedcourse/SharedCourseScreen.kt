@@ -65,6 +65,7 @@ import com.example.sairo14.core.map.SairoKakaoMap
 import com.example.sairo14.core.map.SairoMapCameraTarget
 import com.example.sairo14.core.map.SairoMapMarker
 import com.example.sairo14.core.map.SairoMapViewportPadding
+import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.isNetworkError
 import com.example.sairo14.feature.error.NetworkErrorRoute
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -147,23 +148,46 @@ fun SharedCourseScreen(
             modifier = modifier,
         )
 
-        is SharedCourseUiState.Error -> SharedCourseMessageLayout(
-            title = stringResource(R.string.shared_course_header_title),
+        is SharedCourseUiState.Error -> SharedCourseError(
+            error = uiState.error,
             onBackClick = onBackClick,
             onHomeClick = onHomeClick,
+            onRetryClick = onRetryClick,
             modifier = modifier,
-        ) {
-            Text(
-                text = stringResource(R.string.shared_course_load_error),
-                color = SairoTheme.colors.textPrimary,
-                style = SairoTextStyles.bodyLight18,
-            )
-            Spacer(modifier = Modifier.height(MessageContentGap))
-            SairoButton(
-                text = stringResource(R.string.shared_course_retry),
-                onClick = onRetryClick,
-            )
-        }
+        )
+    }
+}
+
+@Composable
+private fun SharedCourseError(
+    error: AppError,
+    onBackClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    onRetryClick: () -> Unit,
+    modifier: Modifier,
+) {
+    val isNotFound = error == AppError.ResourceNotFound
+
+    SharedCourseMessageLayout(
+        title = stringResource(R.string.shared_course_header_title),
+        onBackClick = onBackClick,
+        onHomeClick = onHomeClick,
+        modifier = modifier,
+    ) {
+        Text(
+            text = stringResource(
+                if (isNotFound) R.string.shared_course_not_found else R.string.shared_course_load_error,
+            ),
+            color = SairoTheme.colors.textPrimary,
+            style = SairoTextStyles.bodyLight18,
+        )
+        Spacer(modifier = Modifier.height(MessageContentGap))
+        SairoButton(
+            text = stringResource(
+                if (isNotFound) R.string.shared_course_go_home else R.string.shared_course_retry,
+            ),
+            onClick = if (isNotFound) onHomeClick else onRetryClick,
+        )
     }
 }
 

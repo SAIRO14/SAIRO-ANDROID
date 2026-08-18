@@ -97,6 +97,7 @@ fun SairoNavDisplay(
                     onFolderClick = {
                         navigator.navigateSingleTop(SavedTripsRoute)
                     },
+                    onHomeClick = navigator::popToHome,
                     onSavedTripClick = { courseId, savedTripId ->
                         navigator.navigateSingleTop(
                             TravelDetailRoute(

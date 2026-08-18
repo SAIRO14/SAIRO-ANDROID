@@ -71,6 +71,7 @@ import kotlinx.coroutines.launch
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
  * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 저장 항목 ID로 호출할 동작
+ * @param onHomeClick 네트워크 오류 화면에서 홈으로 이동할 때 호출할 동작
  */
 @Composable
 fun HomeRoute(
@@ -79,6 +80,7 @@ fun HomeRoute(
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
     onSavedTripClick: (courseId: String, savedTripId: String) -> Unit = { _, _ -> },
+    onHomeClick: () -> Unit = {},
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
 
@@ -92,6 +94,7 @@ fun HomeRoute(
         onFindTripClick = onFindTripClick,
         onFolderClick = onFolderClick,
         onSavedTripClick = onSavedTripClick,
+        onHomeClick = onHomeClick,
         onRetryClick = viewModel::retry,
     )
 }
@@ -106,6 +109,7 @@ fun HomeRoute(
  * @param onFindTripClick 여행지 찾기 CTA를 눌렀을 때 호출할 동작
  * @param onFolderClick 상단 저장 목록 액션을 눌렀을 때 호출할 동작
  * @param onSavedTripClick 저장 여행지 카드를 눌렀을 때 코스 ID와 저장 항목 ID로 호출할 동작
+ * @param onHomeClick 네트워크 오류 화면에서 홈으로 이동할 때 호출할 동작
  * @param onRetryClick 오류 화면의 재시도 버튼을 눌렀을 때 호출할 동작
  */
 @Composable
@@ -115,6 +119,7 @@ fun HomeScreen(
     onFindTripClick: () -> Unit = {},
     onFolderClick: () -> Unit = {},
     onSavedTripClick: (courseId: String, savedTripId: String) -> Unit = { _, _ -> },
+    onHomeClick: () -> Unit = {},
     onRetryClick: () -> Unit = {},
 ) {
     when (uiState) {
@@ -135,8 +140,7 @@ fun HomeScreen(
             NetworkErrorRoute(
                 modifier = modifier,
                 onRetryClick = onRetryClick,
-                onHomeClick = {},
-                showHomeAction = false,
+                onHomeClick = onHomeClick,
             )
         } else {
             HomeGenericErrorScreen(

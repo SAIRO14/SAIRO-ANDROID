@@ -159,13 +159,14 @@ class TravelDetailViewModel @Inject constructor(
         setBookmarkRequesting(isRequesting = true)
         viewModelScope.launch {
             when (val result = saveTripUseCase(courseId)) {
-                is AppResult.Success -> updateBookmark {
-                    it.copy(
-                        isSaved = true,
-                        savedTripId = result.value.savedTripId,
-                        isRequesting = false,
-                    )
-                }.also {
+                is AppResult.Success -> {
+                    updateBookmark {
+                        it.copy(
+                            isSaved = true,
+                            savedTripId = result.value.savedTripId,
+                            isRequesting = false,
+                        )
+                    }
                     bookmarkChangeNotifier.notify(
                         BookmarkChange(
                             courseId = courseId,
@@ -184,13 +185,14 @@ class TravelDetailViewModel @Inject constructor(
         setBookmarkRequesting(isRequesting = true)
         viewModelScope.launch {
             when (deleteSavedTripUseCase(savedTripId)) {
-                is AppResult.Success -> updateBookmark {
-                    it.copy(
-                        isSaved = false,
-                        savedTripId = null,
-                        isRequesting = false,
-                    )
-                }.also {
+                is AppResult.Success -> {
+                    updateBookmark {
+                        it.copy(
+                            isSaved = false,
+                            savedTripId = null,
+                            isRequesting = false,
+                        )
+                    }
                     bookmarkChangeNotifier.notify(
                         BookmarkChange(
                             courseId = courseId,

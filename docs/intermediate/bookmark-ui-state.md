@@ -85,6 +85,8 @@ BookmarkChange(
 )
 ```
 
+통지자는 `tryEmit()`처럼 실패를 호출자가 무시할 수 있는 비동기 발행 대신 suspend `emit()`을 사용한다. 활성 수집자가 느려서 `SharedFlow`의 버퍼가 가득 차면 발행 coroutine은 빈 공간이 생길 때까지 기다리므로, 서로 다른 코스의 연속 저장·삭제 결과가 유실되지 않는다. 따라서 발행은 반드시 `viewModelScope.launch`처럼 suspend 문맥에서 수행한다.
+
 이 통지자는 앱 메모리에서 살아 있는 화면만 갱신하며, DataStore나 서버 상태 캐시가 아니다. 추천 결과 ViewModel은 현재 목록에 포함된 같은 `courseId`만 반영하고, 화면을 다시 로드할 때는 서버 응답을 다시 사용한다. [`SavedTripsViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/savedtrip/SavedTripsViewModel.kt)는 저장 해제 알림을 받으면 해당 `courseId` 카드를 즉시 제거한 뒤 첫 페이지를 다시 조회한다. 이 재조회가 실패하면 방금 제거한 로컬 목록을 유지한다.
 
 [`HomeViewModel.kt`](../../app/src/main/java/com/example/sairo14/feature/home/HomeViewModel.kt)는 이벤트의 `isSaved`나 `savedTripId`로 카드를 직접 수정하지 않는다. 저장 이벤트에는 새 카드의 지역명·대표 이미지가 없고, 삭제 이벤트에는 네 번째 자리를 채울 다음 카드가 없기 때문이다. 대신 [`GetHomeContentUseCase.kt`](../../app/src/main/java/com/example/sairo14/domain/usecase/GetHomeContentUseCase.kt)를 다시 호출해 서버의 최신 저장 여행지 요약을 받아 교체한다.
@@ -93,7 +95,7 @@ BookmarkChange(
 
 ## 트레이드오프와 주의점
 
-`BookmarkChangeNotifier`의 `SharedFlow`는 구독 중인 화면에만 변경을 전달한다. 홈 ViewModel이 없는 동안 이벤트가 사라져도, 홈이 새로 생성될 때 서버를 최초 조회하므로 최종 상태는 복구된다. 반대로 이벤트를 영속하거나 다른 기기 변경까지 즉시 반영해야 한다면 이 방식만으로는 부족하다.
+`BookmarkChangeNotifier`의 `SharedFlow`는 구독 중인 화면에만 변경을 전달한다. 활성 수집자가 있는 동안에는 `emit()`이 연속 이벤트의 순서를 보존하지만, 구독자가 전혀 없을 때는 `replay = 0` 계약에 따라 과거 이벤트를 재생하지 않는다. 홈 ViewModel이 없는 동안 이벤트가 사라져도, 홈이 새로 생성될 때 서버를 최초 조회하므로 최종 상태는 복구된다. 반대로 이벤트를 영속하거나 다른 기기 변경까지 즉시 반영해야 한다면 이 방식만으로는 부족하다.
 
 홈은 이벤트가 아니라 서버 재조회 결과를 사용하므로 카드 메타데이터와 최신 정렬 순서는 정확하지만, 변경 직후 네트워크 요청이 한 번 더 발생한다. 이벤트만으로 카드를 직접 더하거나 지우면 요청 수는 줄일 수 있지만, 삭제 후 다음 카드를 채우거나 저장 직후의 이미지·지역명을 보장하기 어렵다. `isRequesting` 검사는 버튼의 `enabled` 처리뿐 아니라 ViewModel에도 있어야 중복 이벤트를 막을 수 있다.
 

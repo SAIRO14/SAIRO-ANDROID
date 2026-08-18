@@ -268,24 +268,22 @@ private fun CoursePlace.toDisplayTags(
 }
 
 private fun PlaceInfoSummary.toUiTags(): List<TravelDetailPlaceTagUiModel> = buildList {
-    operatingHours?.toUiTag()?.let(::add)
+    operatingHours?.toUiTags()?.forEach(::add)
     closedDays.map(ClosedDaysSummary::toUiTag).forEach(::add)
     parking?.toUiTag()?.let(::add)
     contact?.toUiTag()?.let(::add)
 }.distinct()
 
-private fun OperatingHoursSummary.toUiTag(): TravelDetailPlaceTagUiModel = when (this) {
-    OperatingHoursSummary.AlwaysOpen -> TravelDetailPlaceTagUiModel.AlwaysOpen
-    OperatingHoursSummary.PhoneInquiry -> TravelDetailPlaceTagUiModel.PhoneInquiry
-    is OperatingHoursSummary.TimeRange -> TravelDetailPlaceTagUiModel.Text(value)
-    is OperatingHoursSummary.Periods -> TravelDetailPlaceTagUiModel.Periods(
-        values = values.map { period ->
-            PeriodHoursUiModel(label = period.label, hours = period.hours)
-        },
-    )
-    is OperatingHoursSummary.WeekdayWeekend -> TravelDetailPlaceTagUiModel.WeekdayWeekend(
-        weekday = weekday,
-        weekend = weekend,
+private fun OperatingHoursSummary.toUiTags(): List<TravelDetailPlaceTagUiModel> = when (this) {
+    OperatingHoursSummary.AlwaysOpen -> listOf(TravelDetailPlaceTagUiModel.AlwaysOpen)
+    OperatingHoursSummary.PhoneInquiry -> listOf(TravelDetailPlaceTagUiModel.PhoneInquiry)
+    is OperatingHoursSummary.TimeRange -> listOf(TravelDetailPlaceTagUiModel.Text(value))
+    is OperatingHoursSummary.Periods -> values.map { period ->
+        TravelDetailPlaceTagUiModel.PeriodHours(label = period.label, hours = period.hours)
+    }
+    is OperatingHoursSummary.WeekdayWeekend -> listOfNotNull(
+        weekday?.let(TravelDetailPlaceTagUiModel::WeekdayHours),
+        weekend?.let(TravelDetailPlaceTagUiModel::WeekendHours),
     )
 }
 

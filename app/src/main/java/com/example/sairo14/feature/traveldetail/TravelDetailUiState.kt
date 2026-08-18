@@ -74,18 +74,14 @@ sealed interface TravelDetailPlaceTagUiModel {
 
     data class Text(val value: String) : TravelDetailPlaceTagUiModel
 
-    data class Periods(val values: List<PeriodHoursUiModel>) : TravelDetailPlaceTagUiModel
-
-    data class WeekdayWeekend(
-        val weekday: String?,
-        val weekend: String?,
+    data class PeriodHours(
+        val label: String,
+        val hours: String,
     ) : TravelDetailPlaceTagUiModel
+
+    data class WeekdayHours(val value: String) : TravelDetailPlaceTagUiModel
+
+    data class WeekendHours(val value: String) : TravelDetailPlaceTagUiModel
 
     data class WeeklyClosed(val dayOfWeek: DayOfWeek) : TravelDetailPlaceTagUiModel
 }
-
-/** 기간 라벨과 시간을 상세 화면 태그에 전달한다. */
-data class PeriodHoursUiModel(
-    val label: String,
-    val hours: String,
-)

@@ -94,7 +94,6 @@
     <string name="travel_detail_tag_weekday_hours">평일 %1$s</string>
     <string name="travel_detail_tag_weekend_hours">주말 %1$s</string>
     <string name="travel_detail_tag_weekly_closed">매주 %1$s요일</string>
-    <string name="travel_detail_tag_separator"> / </string>
     <string name="travel_detail_tag_monday">월</string>
     <string name="travel_detail_tag_tuesday">화</string>
     <string name="travel_detail_tag_wednesday">수</string>

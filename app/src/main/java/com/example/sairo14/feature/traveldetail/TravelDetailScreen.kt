@@ -284,29 +284,12 @@ private fun TravelDetailPlaceTagUiModel.toDisplayText(): String = when (this) {
         stringResource(R.string.travel_detail_tag_parking_unavailable)
     TravelDetailPlaceTagUiModel.PhoneInquiry -> stringResource(R.string.travel_detail_tag_phone_inquiry)
     is TravelDetailPlaceTagUiModel.Text -> value
-    is TravelDetailPlaceTagUiModel.Periods -> {
-        val separator = stringResource(R.string.travel_detail_tag_separator)
-        var text = ""
-        for (period in values) {
-            if (text.isNotEmpty()) text += separator
-            text += stringResource(
-                R.string.travel_detail_tag_period_hours,
-                period.label,
-                period.hours,
-            )
-        }
-        text
-    }
-    is TravelDetailPlaceTagUiModel.WeekdayWeekend -> {
-        val separator = stringResource(R.string.travel_detail_tag_separator)
-        var text = ""
-        if (weekday != null) text = stringResource(R.string.travel_detail_tag_weekday_hours, weekday)
-        if (weekend != null) {
-            if (text.isNotEmpty()) text += separator
-            text += stringResource(R.string.travel_detail_tag_weekend_hours, weekend)
-        }
-        text
-    }
+    is TravelDetailPlaceTagUiModel.PeriodHours ->
+        stringResource(R.string.travel_detail_tag_period_hours, label, hours)
+    is TravelDetailPlaceTagUiModel.WeekdayHours ->
+        stringResource(R.string.travel_detail_tag_weekday_hours, value)
+    is TravelDetailPlaceTagUiModel.WeekendHours ->
+        stringResource(R.string.travel_detail_tag_weekend_hours, value)
     is TravelDetailPlaceTagUiModel.WeeklyClosed -> stringResource(
         R.string.travel_detail_tag_weekly_closed,
         dayOfWeek.toKoreanDayName(),

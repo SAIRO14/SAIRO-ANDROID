@@ -153,6 +153,60 @@ class TravelDetailViewModelTest {
     }
 
     @Test
+    fun `기간별과 평일 주말 운영시간을 각각의 태그로 전달한다`() = runTest(dispatcher) {
+        val course = Course(
+            courseId = "course-hours",
+            regionName = "제주도",
+            days = listOf(
+                CourseDay(
+                    dayNumber = 1,
+                    places = listOf(
+                        CoursePlace(
+                            placeId = "seasonal-place",
+                            name = "절기 장소",
+                            imageUrl = null,
+                            tags = emptyList(),
+                            coordinate = null,
+                            operatingHours = "[하절기] 09:00~18:00\n[동절기] 09:00~17:00",
+                        ),
+                        CoursePlace(
+                            placeId = "weekday-place",
+                            name = "요일 장소",
+                            imageUrl = null,
+                            tags = emptyList(),
+                            coordinate = null,
+                            operatingHours = "평일 12:00~20:00\n주말 12:00~21:00",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val viewModel = createViewModel(AppResult.Success(course))
+
+        viewModel.load("course-hours")
+        advanceUntilIdle()
+
+        val places = (viewModel.uiState.value as TravelDetailUiState.Content)
+            .selectedDay
+            ?.places
+            .orEmpty()
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.PeriodHours("하절기", "09:00~18:00"),
+                TravelDetailPlaceTagUiModel.PeriodHours("동절기", "09:00~17:00"),
+            ),
+            places[0].tags,
+        )
+        assertEquals(
+            listOf(
+                TravelDetailPlaceTagUiModel.WeekdayHours("12:00~20:00"),
+                TravelDetailPlaceTagUiModel.WeekendHours("12:00~21:00"),
+            ),
+            places[1].tags,
+        )
+    }
+
+    @Test
     fun `구조화된 장소 정보가 없으면 기존 태그를 유지한다`() = runTest(dispatcher) {
         val course = course().copy(
             days = listOf(

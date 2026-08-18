@@ -9,10 +9,12 @@ import com.example.sairo14.data.remote.dto.SavedTripListResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveRequestDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveResponseDto
 import com.example.sairo14.data.remote.dto.ShareCourseResponseDto
+import com.example.sairo14.data.remote.dto.SharedCourseResponseDto
 import com.example.sairo14.data.remote.dto.SpotSummaryDto
 import com.example.sairo14.data.remote.dto.TasteAnalysisRequestDto
 import com.example.sairo14.data.remote.dto.TasteAnalysisResponseDto
 import com.example.sairo14.data.repository.remote.RemoteCourseRepository
+import com.example.sairo14.data.repository.remote.RemoteSharedCourseRepository
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
 import com.example.sairo14.domain.model.Course
@@ -136,6 +138,33 @@ class RemoteCourseRepositoryTest {
         )
     }
 
+    @Test
+    fun `공개 공유 조회는 기기 ID 없이 공유 ID를 전달하고 스냅샷을 반환한다`() = runTest {
+        val api = RecordingSairoApi()
+        val repository = RemoteSharedCourseRepository(api, json)
+
+        val result = repository.getSharedCourse("share-1")
+
+        assertEquals("share-1", api.requestedShareId)
+        val sharedCourse = (result as AppResult.Success).value
+        assertEquals("share-1", sharedCourse.shareId)
+        assertEquals("course-1", sharedCourse.courseId)
+        assertEquals("제주도", sharedCourse.regionName)
+    }
+
+    @Test
+    fun `공개 공유 조회 네트워크 오류를 앱 오류로 변환한다`() = runTest {
+        val repository = RemoteSharedCourseRepository(
+            api = RecordingSairoApi(sharedCourseError = IOException("offline")),
+            json = json,
+        )
+
+        assertEquals(
+            AppResult.Failure(AppError.NetworkUnavailable),
+            repository.getSharedCourse("share-1"),
+        )
+    }
+
     private fun createRepository(api: SairoApi) = RemoteCourseRepository(
         api = api,
         deviceIdProvider = TestDeviceIdProvider("device-1"),
@@ -162,6 +191,8 @@ class RemoteCourseRepositoryTest {
             shareUrl = "https://example.com/shared/share-1",
         ),
         private val shareError: Throwable? = null,
+        private val sharedCourseResponse: SharedCourseResponseDto = sharedCourseResponse(),
+        private val sharedCourseError: Throwable? = null,
     ) : SairoApi {
         var requestedCourseId: String? = null
             private set
@@ -170,6 +201,8 @@ class RemoteCourseRepositoryTest {
         var sharedCourseId: String? = null
             private set
         var sharedDeviceId: String? = null
+            private set
+        var requestedShareId: String? = null
             private set
 
         override suspend fun getCourse(
@@ -190,6 +223,12 @@ class RemoteCourseRepositoryTest {
             sharedDeviceId = deviceId
             shareError?.let { throwable -> throw throwable }
             return shareResponse
+        }
+
+        override suspend fun getSharedCourse(shareId: String): SharedCourseResponseDto {
+            requestedShareId = shareId
+            sharedCourseError?.let { throwable -> throw throwable }
+            return sharedCourseResponse
         }
 
         override suspend fun saveTrip(
@@ -229,6 +268,18 @@ class RemoteCourseRepositoryTest {
                     imageUrl = "https://example.com/spot.jpg",
                     operatingHours = "09:00~18:00",
                     parking = "가능",
+                ),
+            ),
+            day2 = emptyList(),
+        )
+
+        fun sharedCourseResponse() = SharedCourseResponseDto(
+            courseId = "course-1",
+            regionName = "제주도",
+            day1 = listOf(
+                SpotSummaryDto(
+                    spotId = "spot-1",
+                    name = "성산일출봉",
                 ),
             ),
             day2 = emptyList(),

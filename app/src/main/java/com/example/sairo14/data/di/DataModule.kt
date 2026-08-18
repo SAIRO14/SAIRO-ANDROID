@@ -7,6 +7,7 @@ import com.example.sairo14.data.repository.remote.RemoteCourseRepository
 import com.example.sairo14.data.repository.remote.RemoteOnboardingRecommendationRepository
 import com.example.sairo14.data.repository.remote.RemotePhotoSelectionRepository
 import com.example.sairo14.data.repository.remote.RemoteSavedTripRepository
+import com.example.sairo14.data.repository.remote.RemoteSharedCourseRepository
 import com.example.sairo14.domain.repository.CourseRepository
 import com.example.sairo14.domain.repository.HomeRepository
 import com.example.sairo14.domain.repository.OnboardingAnalysisSessionStore
@@ -14,6 +15,7 @@ import com.example.sairo14.domain.repository.OnboardingRepository
 import com.example.sairo14.domain.repository.OnboardingRecommendationRepository
 import com.example.sairo14.domain.repository.PhotoSelectionRepository
 import com.example.sairo14.domain.repository.SavedTripRepository
+import com.example.sairo14.domain.repository.SharedCourseRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -42,6 +44,12 @@ abstract class DataModule {
     abstract fun bindCourseRepository(
         repository: RemoteCourseRepository,
     ): CourseRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSharedCourseRepository(
+        repository: RemoteSharedCourseRepository,
+    ): SharedCourseRepository
 
     @Binds
     @Singleton

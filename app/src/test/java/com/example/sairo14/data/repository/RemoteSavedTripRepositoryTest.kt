@@ -10,6 +10,7 @@ import com.example.sairo14.data.remote.dto.SavedTripResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveRequestDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveResponseDto
 import com.example.sairo14.data.remote.dto.ShareCourseResponseDto
+import com.example.sairo14.data.remote.dto.SharedCourseResponseDto
 import com.example.sairo14.data.remote.dto.TasteAnalysisRequestDto
 import com.example.sairo14.data.remote.dto.TasteAnalysisResponseDto
 import com.example.sairo14.data.repository.remote.RemoteSavedTripRepository
@@ -199,6 +200,9 @@ class RemoteSavedTripRepositoryTest {
             courseId: String,
             deviceId: String,
         ): ShareCourseResponseDto = error("호출되지 않아야 합니다.")
+
+        override suspend fun getSharedCourse(shareId: String): SharedCourseResponseDto =
+            error("호출되지 않아야 합니다.")
 
         override suspend fun saveTrip(
             deviceId: String,

@@ -1,6 +1,7 @@
 package com.example.sairo14.data.repository
 
 import com.example.sairo14.data.repository.fake.FakeCourseRepository
+import com.example.sairo14.data.repository.fake.FakeSharedCourseRepository
 import com.example.sairo14.domain.model.AppError
 import com.example.sairo14.domain.model.AppResult
 import kotlinx.coroutines.test.runTest
@@ -51,6 +52,18 @@ class FakeCourseRepositoryTest {
         assertTrue(
             result is AppResult.Failure && result.error is AppError.ResourceNotFound,
         )
+    }
+
+    @Test
+    fun `공유 링크 식별자로 읽기 전용 고정 스냅샷을 반환한다`() = runTest {
+        val result = FakeSharedCourseRepository().getSharedCourse("7429b36b9d")
+
+        val sharedCourse = result.successValue()
+
+        assertEquals("7429b36b9d", sharedCourse.shareId)
+        assertEquals("course-boeun", sharedCourse.courseId)
+        assertEquals("충북 보은권", sharedCourse.regionName)
+        assertEquals(listOf(1, 2), sharedCourse.days.map { it.dayNumber })
     }
 
     private fun <T> AppResult<T>.successValue(): T =

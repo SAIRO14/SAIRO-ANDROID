@@ -6,6 +6,7 @@ import com.example.sairo14.data.remote.dto.SavedTripListResponseDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveRequestDto
 import com.example.sairo14.data.remote.dto.SavedTripSaveResponseDto
 import com.example.sairo14.data.remote.dto.ShareCourseResponseDto
+import com.example.sairo14.data.remote.dto.SharedCourseResponseDto
 import com.example.sairo14.data.remote.dto.TasteAnalysisRequestDto
 import com.example.sairo14.data.remote.dto.TasteAnalysisResponseDto
 import retrofit2.http.Body
@@ -42,6 +43,16 @@ interface SairoApi {
         @Path("courseId") courseId: String,
         @Header("X-Device-Id") deviceId: String,
     ): ShareCourseResponseDto
+
+    /** 공유 링크의 읽기 전용 코스 스냅샷을 조회한다.
+     *
+     * 공개 공유 데이터이므로 `X-Device-Id` 헤더를 보내지 않는다.
+     * @param shareId 공유 URL에서 전달받은 스냅샷 식별자
+     */
+    @GET("courses/shared/{shareId}")
+    suspend fun getSharedCourse(
+        @Path("shareId") shareId: String,
+    ): SharedCourseResponseDto
 
     /** 현재 기기에 저장된 여행지를 최신 저장순으로 한 페이지 조회한다.
      *

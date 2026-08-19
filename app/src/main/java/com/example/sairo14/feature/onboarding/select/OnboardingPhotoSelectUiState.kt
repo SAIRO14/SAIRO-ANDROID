@@ -21,8 +21,10 @@ sealed interface OnboardingPhotoSelectUiState {
      *
      * [selectedPhotoIds]는 사용자가 선택한 순서를 보존한다. 새 사진 선택은
      * [maximumSelectionCount]에 도달하면 막고, 이미 선택한 사진의 해제는 항상 허용한다.
+     * [viewedPhotoIds]는 Pager에서 한 번 표시된 사진을 기록해 하단 진행 표시 상태에 사용한다.
      * @param photos 화면에 표시할 사진 후보
      * @param selectedPhotoIds 선택한 사진 ID와 선택 순서
+     * @param viewedPhotoIds Pager에서 확인한 사진 ID와 확인 순서
      * @param minimumSelectionCount 완료에 필요한 최소 사진 수
      * @param maximumSelectionCount 선택할 수 있는 최대 사진 수
      */
@@ -30,6 +32,7 @@ sealed interface OnboardingPhotoSelectUiState {
     data class Content(
         val photos: List<OnboardingPhotoUiModel>,
         val selectedPhotoIds: List<String> = emptyList(),
+        val viewedPhotoIds: List<String> = emptyList(),
         val minimumSelectionCount: Int = MinimumSelectionCount,
         val maximumSelectionCount: Int = MaximumSelectionCount,
     ) : OnboardingPhotoSelectUiState {

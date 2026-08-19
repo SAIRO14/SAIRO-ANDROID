@@ -16,11 +16,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * 온보딩 사진 선택 화면의 후보 목록과 선택 상태를 관리한다.
+ * 온보딩 사진 선택 화면의 후보 목록과 선택·확인 상태를 관리한다.
  *
  * 로딩·빈 목록·오류·콘텐츠는 [OnboardingPhotoSelectUiState]로 노출하며, 카드와 썸네일 이벤트는
- * 선택 순서를 변경한다. 완료 가능한 선택은 [OnboardingPhotoSelectEffect.SelectionCompleted]로
- * 전달하고 화면 이동은 Route가 담당한다.
+ * 선택 순서를 변경하고 Pager에 표시된 사진은 확인 상태로 기록한다. 완료 가능한 선택은
+ * [OnboardingPhotoSelectEffect.SelectionCompleted]로 전달하고 화면 이동은 Route가 담당한다.
  */
 @HiltViewModel
 class OnboardingPhotoSelectViewModel @Inject constructor(
@@ -70,6 +70,17 @@ class OnboardingPhotoSelectViewModel @Inject constructor(
     fun removePhotoSelection(photoId: String) {
         updateContent { content ->
             content.copy(selectedPhotoIds = content.selectedPhotoIds.filterNot { id -> id == photoId })
+        }
+    }
+
+    /** Pager에 표시된 사진을 확인 상태로 기록하고 같은 사진은 한 번만 유지한다. */
+    fun markPhotoViewed(photoId: String) {
+        updateContent { content ->
+            if (content.photos.none { photo -> photo.id == photoId } || photoId in content.viewedPhotoIds) {
+                content
+            } else {
+                content.copy(viewedPhotoIds = content.viewedPhotoIds + photoId)
+            }
         }
     }
 

@@ -69,6 +69,22 @@ class OnboardingPhotoSelectViewModelTest {
     }
 
     @Test
+    fun `확인한 사진은 순서대로 기록하고 중복이나 알 수 없는 사진은 추가하지 않는다`() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.markPhotoViewed("photo-3")
+        viewModel.markPhotoViewed("photo-1")
+        viewModel.markPhotoViewed("photo-3")
+        viewModel.markPhotoViewed("unknown")
+
+        assertEquals(
+            listOf("photo-3", "photo-1"),
+            viewModel.content().viewedPhotoIds,
+        )
+    }
+
+    @Test
     fun `완료 효과는 전체 선택 ID와 앞 다섯 장의 애니메이션 사진을 순서대로 전달한다`() = runTest(dispatcher) {
         val viewModel = createViewModel()
         advanceUntilIdle()

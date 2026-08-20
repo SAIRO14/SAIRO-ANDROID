@@ -108,8 +108,12 @@ fun OnboardingIntroRoute(
         PrivacyPolicyDialog(
             onDismissRequest = { isPrivacyPolicyDialogVisible = false },
             onConfirmClick = {
-                isPrivacyPolicyDialogVisible = false
-                uriHandler.openUri(privacyPolicyUrl)
+                try {
+                    uriHandler.openUri(privacyPolicyUrl)
+                    isPrivacyPolicyDialogVisible = false
+                } catch (_: IllegalArgumentException) {
+                    // 외부 브라우저를 열지 못하면 사용자가 취소하거나 다시 시도할 수 있도록 유지한다.
+                }
             },
         )
     }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -107,8 +108,12 @@ fun OnboardingIntroRoute(
         PrivacyPolicyDialog(
             onDismissRequest = { isPrivacyPolicyDialogVisible = false },
             onConfirmClick = {
-                isPrivacyPolicyDialogVisible = false
-                uriHandler.openUri(privacyPolicyUrl)
+                try {
+                    uriHandler.openUri(privacyPolicyUrl)
+                    isPrivacyPolicyDialogVisible = false
+                } catch (_: IllegalArgumentException) {
+                    // 외부 브라우저를 열지 못하면 사용자가 취소하거나 다시 시도할 수 있도록 유지한다.
+                }
             },
         )
     }
@@ -304,7 +309,8 @@ private fun PrivacyPolicyDialog(
     onDismissRequest: () -> Unit,
     onConfirmClick: () -> Unit,
 ) {
-    val colors = SairoTheme.colors
+    val colorScheme = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
 
     Dialog(
         onDismissRequest = onDismissRequest,
@@ -321,7 +327,7 @@ private fun PrivacyPolicyDialog(
                     .widthIn(max = PrivacyPolicyDialogMaxWidth)
                     .fillMaxWidth()
                     .clip(PrivacyPolicyDialogShape)
-                    .background(colors.surfaceRaised)
+                    .background(colorScheme.surfaceContainerHigh)
                     .padding(
                         start = 16.dp,
                         top = 24.dp,
@@ -337,13 +343,13 @@ private fun PrivacyPolicyDialog(
                 ) {
                     Text(
                         text = stringResource(R.string.onboarding_privacy_policy_dialog_title),
-                        color = colors.textPrimary,
-                        style = SairoTextStyles.headRegular18,
+                        color = colorScheme.onSurface,
+                        style = typography.headlineSmall,
                     )
                     Text(
                         text = stringResource(R.string.onboarding_privacy_policy_dialog_description),
-                        color = colors.textMuted,
-                        style = SairoTextStyles.headRegular16,
+                        color = colorScheme.onSurfaceVariant,
+                        style = typography.titleLarge,
                     )
                 }
                 Row(

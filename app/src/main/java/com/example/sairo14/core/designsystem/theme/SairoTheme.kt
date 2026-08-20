@@ -43,6 +43,7 @@ private fun sairoLightMaterialColorScheme(colors: SairoColors) = lightColorSchem
     onSurface = colors.textPrimary,
     surfaceVariant = colors.surfaceSunken,
     onSurfaceVariant = colors.textMuted,
+    surfaceContainerHigh = colors.surfaceRaised,
     outline = colors.borderDefault,
     outlineVariant = colors.borderSubtle,
     scrim = colors.overlayScrim,

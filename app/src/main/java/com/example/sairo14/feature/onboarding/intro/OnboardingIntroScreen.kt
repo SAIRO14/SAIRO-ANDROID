@@ -2,10 +2,12 @@ package com.example.sairo14.feature.onboarding.intro
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,20 +29,26 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.sairo14.R
 import com.example.sairo14.core.dummyimage.DummyImagePair
 import com.example.sairo14.core.designsystem.component.SairoButton
 import com.example.sairo14.core.designsystem.component.SairoBackdropHost
+import com.example.sairo14.core.designsystem.component.SairoButtonSize
+import com.example.sairo14.core.designsystem.component.SairoButtonStyle
 import com.example.sairo14.core.designsystem.component.SairoHeader
 import com.example.sairo14.core.designsystem.component.SairoHeaderVariant
 import com.example.sairo14.core.designsystem.component.SairoOverlappingImageCards
@@ -73,6 +82,8 @@ fun OnboardingIntroRoute(
     onInfoClick: () -> Unit = {},
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+    val uriHandler = LocalUriHandler.current
+    val privacyPolicyUrl = stringResource(R.string.onboarding_privacy_policy_url)
     var isPrivacyPolicyDialogVisible by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
@@ -91,6 +102,16 @@ fun OnboardingIntroRoute(
             onInfoClick()
         },
     )
+
+    if (isPrivacyPolicyDialogVisible) {
+        PrivacyPolicyDialog(
+            onDismissRequest = { isPrivacyPolicyDialogVisible = false },
+            onConfirmClick = {
+                isPrivacyPolicyDialogVisible = false
+                uriHandler.openUri(privacyPolicyUrl)
+            },
+        )
+    }
 }
 
 /**
@@ -278,6 +299,78 @@ private val InfoTouchTargetSize = 48.dp
 private val InfoIconTouchPadding = 12.dp
 private val InfoTouchTargetHorizontalOffset = 12.dp
 private val InfoToCtaSpacing = 8.dp
+private val PrivacyPolicyDialogShape = RoundedCornerShape(16.dp)
+private val PrivacyPolicyDialogMaxWidth = 312.dp
+
+@Composable
+private fun PrivacyPolicyDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmClick: () -> Unit,
+) {
+    val colors = SairoTheme.colors
+
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = PrivacyPolicyDialogMaxWidth)
+                    .fillMaxWidth()
+                    .clip(PrivacyPolicyDialogShape)
+                    .background(colors.surfaceRaised)
+                    .padding(
+                        start = 16.dp,
+                        top = 24.dp,
+                        end = 16.dp,
+                        bottom = 16.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.onboarding_privacy_policy_dialog_title),
+                        color = colors.textPrimary,
+                        style = SairoTextStyles.headRegular18,
+                    )
+                    Text(
+                        text = stringResource(R.string.onboarding_privacy_policy_dialog_description),
+                        color = colors.textMuted,
+                        style = SairoTextStyles.headRegular16,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    SairoButton(
+                        text = stringResource(R.string.onboarding_privacy_policy_dialog_cancel),
+                        onClick = onDismissRequest,
+                        modifier = Modifier.weight(1f),
+                        size = SairoButtonSize.Medium,
+                        style = SairoButtonStyle.Outline,
+                    )
+                    SairoButton(
+                        text = stringResource(R.string.onboarding_privacy_policy_dialog_confirm),
+                        onClick = onConfirmClick,
+                        modifier = Modifier.weight(1f),
+                        size = SairoButtonSize.Medium,
+                    )
+                }
+            }
+        }
+    }
+}
 
 private data class IntroCardPosition(
     val x: Dp,

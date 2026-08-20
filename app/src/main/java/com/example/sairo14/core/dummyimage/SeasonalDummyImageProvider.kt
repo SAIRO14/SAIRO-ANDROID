@@ -103,7 +103,6 @@ private object SeasonalDummyImageCatalog {
         R.drawable.dummy_travel_common_09,
         R.drawable.dummy_travel_common_10,
         R.drawable.dummy_travel_common_11,
-        R.drawable.dummy_travel_common_12,
     )
 
     fun imagesFor(season: DummyImageSeason): List<Int> = when (season) {
@@ -137,6 +136,7 @@ private object SeasonalDummyImageCatalog {
         R.drawable.dummy_travel_autumn_04,
         R.drawable.dummy_travel_autumn_05,
         R.drawable.dummy_travel_autumn_06,
+        R.drawable.dummy_travel_autumn_07,
     )
     private val winterImages = listOf(
         R.drawable.dummy_travel_winter_01,

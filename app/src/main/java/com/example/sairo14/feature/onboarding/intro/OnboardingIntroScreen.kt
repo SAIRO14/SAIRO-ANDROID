@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +26,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -41,6 +43,7 @@ import com.example.sairo14.core.designsystem.component.rememberSairoBackdropImag
 import com.example.sairo14.core.designsystem.component.rememberSairoBackdropState
 import com.example.sairo14.core.designsystem.theme.SairoTextStyles
 import com.example.sairo14.core.designsystem.theme.SairoTheme
+import com.example.sairo14.core.extension.noRippleClickable
 import com.example.sairo14.core.navigation.OnboardingIntroEntryPoint
 
 /**
@@ -53,6 +56,7 @@ import com.example.sairo14.core.navigation.OnboardingIntroEntryPoint
  * @param onBackClick Home 진입 인트로의 뒤로가기 동작
  * @param onHomeClick 홈으로 이동해야 할 때 호출할 콜백
  * @param onStartClick 여행지 찾기를 시작해야 할 때 호출할 콜백
+ * @param onInfoClick 개인정보처리방침 안내 아이콘을 눌렀을 때 호출할 콜백
  */
 @Composable
 fun OnboardingIntroRoute(
@@ -62,6 +66,7 @@ fun OnboardingIntroRoute(
     onBackClick: () -> Unit = {},
     onHomeClick: () -> Unit,
     onStartClick: () -> Unit = {},
+    onInfoClick: () -> Unit = {},
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
 
@@ -76,6 +81,7 @@ fun OnboardingIntroRoute(
         onBackClick = onBackClick,
         onHomeClick = onHomeClick,
         onStartClick = onStartClick,
+        onInfoClick = onInfoClick,
     )
 }
 
@@ -90,6 +96,7 @@ fun OnboardingIntroRoute(
  * @param onBackClick Home 진입 인트로의 뒤로가기 동작
  * @param onHomeClick 우측 홈 버튼을 눌렀을 때 호출할 콜백
  * @param onStartClick 여행지 찾기 시작 CTA를 눌렀을 때 호출할 콜백
+ * @param onInfoClick 개인정보처리방침 안내 아이콘을 눌렀을 때 호출할 콜백
  */
 @Composable
 fun OnboardingIntroScreen(
@@ -99,6 +106,7 @@ fun OnboardingIntroScreen(
     onBackClick: () -> Unit = {},
     onHomeClick: () -> Unit = {},
     onStartClick: () -> Unit = {},
+    onInfoClick: () -> Unit = {},
 ) {
     val colors = SairoTheme.colors
     val backdropState = rememberSairoBackdropState(cpuBlurEnabled = true)
@@ -186,6 +194,28 @@ fun OnboardingIntroScreen(
                 )
                 Spacer(modifier = Modifier.weight(1f))
 
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(InfoTouchTargetSize),
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_info),
+                        contentDescription = stringResource(R.string.onboarding_intro_info),
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .offset(x = InfoTouchTargetHorizontalOffset)
+                            .size(InfoTouchTargetSize)
+                            .noRippleClickable(
+                                role = Role.Button,
+                                onClick = onInfoClick,
+                            )
+                            .padding(InfoIconTouchPadding),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
+                Spacer(modifier = Modifier.height(InfoToCtaSpacing))
+
                 SairoButton(
                     text = stringResource(R.string.onboarding_intro_start),
                     onClick = onStartClick,
@@ -236,6 +266,10 @@ private fun OnboardingIntroImageBackdrop(
 
 private const val IntroCardWidthRatio = 260f / 360f
 private val IntroCardMaxWidth = 260.dp
+private val InfoTouchTargetSize = 48.dp
+private val InfoIconTouchPadding = 12.dp
+private val InfoTouchTargetHorizontalOffset = 12.dp
+private val InfoToCtaSpacing = 8.dp
 
 private data class IntroCardPosition(
     val x: Dp,

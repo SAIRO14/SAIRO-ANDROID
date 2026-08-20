@@ -42,6 +42,7 @@
     <string name="onboarding_intro_description">마음에 드는 사진을 고르면,\n어울리는 분위기의 지역과 코스를 찾아드려요.</string>
     <string name="onboarding_intro_start">내 취향 여행지 찾으러 가기</string>
     <string name="onboarding_intro_header_title">여행지 찾기</string>
+    <string name="onboarding_intro_info">개인정보처리방침 안내</string>
     <string name="onboarding_photo_select_title">마음이 가는 장면을 담아주세요</string>
     <string name="onboarding_photo_select_description">5장 이상 선택 시 여행지 추천을 받을 수 있어요.</string>
     <string name="onboarding_photo_select_count">%1$d/%2$d</string>

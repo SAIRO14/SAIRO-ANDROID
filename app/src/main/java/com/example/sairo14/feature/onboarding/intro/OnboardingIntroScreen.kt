@@ -243,8 +243,6 @@ fun OnboardingIntroScreen(
                         contentScale = ContentScale.Fit,
                     )
                 }
-                Spacer(modifier = Modifier.height(InfoToCtaSpacing))
-
                 SairoButton(
                     text = stringResource(R.string.onboarding_intro_start),
                     onClick = onStartClick,
@@ -298,7 +296,6 @@ private val IntroCardMaxWidth = 260.dp
 private val InfoTouchTargetSize = 48.dp
 private val InfoIconTouchPadding = 12.dp
 private val InfoTouchTargetHorizontalOffset = 12.dp
-private val InfoToCtaSpacing = 8.dp
 private val PrivacyPolicyDialogShape = RoundedCornerShape(16.dp)
 private val PrivacyPolicyDialogMaxWidth = 312.dp
 

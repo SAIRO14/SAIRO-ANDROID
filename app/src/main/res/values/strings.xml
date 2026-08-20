@@ -43,7 +43,7 @@
     <string name="onboarding_intro_start">내 취향 여행지 찾으러 가기</string>
     <string name="onboarding_intro_header_title">여행지 찾기</string>
     <string name="onboarding_intro_info">개인정보처리방침 안내</string>
-    <string name="onboarding_privacy_policy_url" translatable="false">https://www.naver.com/</string>
+    <string name="onboarding_privacy_policy_url" translatable="false">https://sairo14.github.io/SAIRO-PRIVACY-POLICY/</string>
     <string name="onboarding_privacy_policy_dialog_title">개인정보처리방침 페이지로 이동할까요?</string>
     <string name="onboarding_privacy_policy_dialog_description">웹 브라우저에서 확인이 가능해요.</string>
     <string name="onboarding_privacy_policy_dialog_cancel">취소</string>

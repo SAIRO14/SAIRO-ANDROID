@@ -20,6 +20,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -69,6 +73,7 @@ fun OnboardingIntroRoute(
     onInfoClick: () -> Unit = {},
 ) {
     val uiState = viewModel.uiState.collectAsStateWithLifecycle().value
+    var isPrivacyPolicyDialogVisible by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) {
         viewModel.onScreenEntered()
@@ -81,7 +86,10 @@ fun OnboardingIntroRoute(
         onBackClick = onBackClick,
         onHomeClick = onHomeClick,
         onStartClick = onStartClick,
-        onInfoClick = onInfoClick,
+        onInfoClick = {
+            isPrivacyPolicyDialogVisible = true
+            onInfoClick()
+        },
     )
 }
 

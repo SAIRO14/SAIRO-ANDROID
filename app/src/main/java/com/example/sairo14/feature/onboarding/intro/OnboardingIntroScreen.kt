@@ -372,6 +372,17 @@ private fun PrivacyPolicyDialog(
     }
 }
 
+@Preview(name = "Privacy Policy Dialog", showBackground = true, widthDp = 360, heightDp = 800)
+@Composable
+private fun PrivacyPolicyDialogPreview() {
+    SairoTheme {
+        PrivacyPolicyDialog(
+            onDismissRequest = {},
+            onConfirmClick = {},
+        )
+    }
+}
+
 private data class IntroCardPosition(
     val x: Dp,
     val y: Dp,

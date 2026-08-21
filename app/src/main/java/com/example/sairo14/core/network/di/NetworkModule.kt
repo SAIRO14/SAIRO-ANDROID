@@ -58,7 +58,7 @@ object NetworkModule {
         val baseUrl = BuildConfig.BASE_URL
             .takeIf(String::isNotBlank)
             ?.ensureTrailingSlash()
-            ?: error("local.properties에 BASEURL을 설정해주세요.")
+            ?: error("local.properties에 빌드 타입별 BASEURL을 설정해주세요.")
 
         return Retrofit.Builder()
             .baseUrl(baseUrl)

@@ -88,12 +88,12 @@ private fun AppStartLoadingScreen() {
             Image(
                 painter = painterResource(R.drawable.ic_logo_green),
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(32.dp),
             )
             Image(
                 painter = painterResource(R.drawable.img_sairo_typo_green),
                 contentDescription = null,
-                modifier = Modifier.size(width = 60.dp, height = 24.dp),
+                modifier = Modifier.size(width = 80.dp, height = 32.dp),
             )
         }
     }

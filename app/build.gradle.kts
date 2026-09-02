@@ -15,13 +15,25 @@ val localProperties = Properties().apply {
     }
 }
 
-val baseUrl = localProperties.getProperty("BASEURL", "")
-    .replace("\\", "\\\\")
-    .replace("\"", "\\\"")
+val fallbackBaseUrl = localProperties.getProperty("BASEURL", "")
+val fallbackKakaoNativeAppKey = localProperties.getProperty("KAKAO_NATIVE_APP_KEY", "")
 
-val kakaoNativeAppKey = localProperties.getProperty("KAKAO_NATIVE_APP_KEY", "")
-    .replace("\\", "\\\\")
-    .replace("\"", "\\\"")
+fun String.escapeForBuildConfig(): String =
+    replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+
+val debugBaseUrl = localProperties
+    .getProperty("DEBUG_BASEURL", fallbackBaseUrl)
+    .escapeForBuildConfig()
+val releaseBaseUrl = localProperties
+    .getProperty("RELEASE_BASEURL", fallbackBaseUrl)
+    .escapeForBuildConfig()
+val debugKakaoNativeAppKey = localProperties
+    .getProperty("DEBUG_KAKAO_NATIVE_APP_KEY", fallbackKakaoNativeAppKey)
+    .escapeForBuildConfig()
+val releaseKakaoNativeAppKey = localProperties
+    .getProperty("RELEASE_KAKAO_NATIVE_APP_KEY", fallbackKakaoNativeAppKey)
+    .escapeForBuildConfig()
 
 android {
     namespace = "com.example.sairo14"
@@ -32,20 +44,27 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.sairo14"
+        applicationId = "com.buddybuddy14.sairo"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
-
-        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
-        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
+        versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+
+            buildConfigField("String", "BASE_URL", "\"$debugBaseUrl\"")
+            buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$debugKakaoNativeAppKey\"")
+        }
         release {
+            buildConfigField("String", "BASE_URL", "\"$releaseBaseUrl\"")
+            buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$releaseKakaoNativeAppKey\"")
+
             optimization {
                 enable = false
             }
